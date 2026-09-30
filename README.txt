@@ -47,7 +47,7 @@ BULLPEN SCRIPT TEMPLATES
     3. Paste that line into bullpen/templates.js, above the closing ]
     4. Rename it in that line, e.g. {name:"Winter Week 3", code:"TBP1..."}
     5. Upload templates.js AND bump the version in bullpen/sw.js
-       (titans-bullpen-v4 -> v5), or the iPads keep the old list
+       (titans-bullpen-v6 -> v7), or the iPads keep the old list
 
   THE LOCK
     Loading a template locks the script. Unlock to edit is one tap,
@@ -55,3 +55,30 @@ BULLPEN SCRIPT TEMPLATES
     and every row of that iPad's export is stamped ScriptModified = Y.
     When you merge the four CSVs, sort on ScriptID — one value means all four
     mounds ran the same routine.
+
+
+WHICH VERSION IS AN iPAD ON?
+  Both apps print their build in the header — "v6" next to the app name on the
+  bullpen chart, "v2" next to Pitch Chart on the game app. Read it off the
+  screen; no need to hunt for a feature that changed.
+
+  If it shows something like "v6 =/= v5" in amber, that iPad has downloaded a
+  new version but is still showing the old one. Close the app fully from the
+  app switcher and open it again.
+
+  The build also goes into the exports, so a file tells you which app produced it.
+
+PICKING UP A NEW VERSION
+  1. Open the app on wifi. The new copy downloads quietly in the background;
+     the screen still shows the old one.
+  2. Close it completely from the app switcher.
+  3. Open it again. New version.
+  Don't delete and re-add the home screen icon to force it — on iOS that can
+  take the app's saved session with it. Export first if you ever do.
+
+WHEN I CHANGE AN APP, THREE THINGS MOVE TOGETHER
+  <app>/index.html     the app itself
+  <app>/sw.js          CACHE version, or the iPads keep the old copy
+  the BUILD line near the top of the script in index.html
+  If the last two disagree the app says so in amber, so a missed bump shows up
+  rather than sitting there silently.

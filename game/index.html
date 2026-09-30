@@ -87,6 +87,8 @@ input{font:inherit;color:inherit}
 .top{background:var(--navy);color:#fff;display:flex;flex-wrap:wrap;align-items:stretch;gap:2px;border-bottom:3px solid var(--ink)}
 .brand{padding:9px 16px;display:flex;flex-direction:column;justify-content:center;min-width:150px}
 .brand h1{margin:0;font-family:var(--cond);font-weight:700;font-size:21px;letter-spacing:.05em;text-transform:uppercase;line-height:1}
+.build{font-family:var(--mono);font-size:10px;letter-spacing:0;text-transform:none;font-style:normal}
+.build.warn{color:#FFC27A;font-weight:600}
 .brand span{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.62;font-family:var(--cond);font-weight:500}
 
 .gamebar{display:flex;align-items:center;gap:14px;padding:8px 16px;flex-wrap:wrap;min-width:0}
@@ -443,7 +445,7 @@ input{font:inherit;color:inherit}
 </style>
 
 <div class="top">
-  <div class="brand"><h1>Legend Titans</h1><span>Pitch Chart</span></div>
+  <div class="brand"><h1>Legend Titans</h1><span>Pitch Chart &middot; <i class="build" id="buildStamp"></i></span></div>
   <div class="gamebar">
     <label class="gf"><span class="lbl">Date</span><input id="fDate" placeholder="—"></label>
     <label class="gf"><span class="lbl">Opponent</span><input id="fOpp" placeholder="—"></label>
@@ -1926,7 +1928,7 @@ function render(){
 function exportText(){
   var L=[], s=gameStats();
   L.push("LEGEND TITANS — PITCH CHART");
-  L.push("Date: "+(G.date||"—")+"    Opponent: "+(G.opp||"—"));
+  L.push("Date: "+(G.date||"—")+"    Opponent: "+(G.opp||"—")+"    App "+BUILD);
   L.push("");
   L.push("PITCHERS");
   L.push("");
@@ -2340,6 +2342,29 @@ function build(){
   });
 }
 
+/* ---------- build stamp ----------
+   The number shown is the one baked into THIS index.html. If the service worker
+   is serving a different version the two disagree — which is the silent failure
+   worth catching: a stale app that looks perfectly fine. */
+var BUILD = "v2";
+function stampBuild(){
+  var e = document.getElementById("buildStamp");
+  if(!e) return;
+  e.textContent = BUILD; e.className = "build";
+  if(!("caches" in window)) return;
+  caches.keys().then(function(keys){
+    var k=null;
+    for(var i=0;i<keys.length;i++) if(keys[i].indexOf("titans-game-")===0) k=keys[i];
+    if(!k) return;
+    var cached = k.slice("titans-game-".length);
+    if(cached !== BUILD){
+      e.textContent = BUILD + " \u2260 " + cached;
+      e.className = "build warn";
+      e.title = "The page and the saved copy are different versions. Close the app fully and open it again.";
+    }
+  })["catch"](function(){});
+}
+
 /* ---------- offline readiness ---------- */
 function offlineBanner(state){
   var bar=document.getElementById("netBar");
@@ -2371,6 +2396,7 @@ function initOffline(){
 G = load() || sampleGame();
 build();
 render();
+stampBuild();
 initOffline();
 document.addEventListener("pointerdown", function once(){
   keepAwake();
