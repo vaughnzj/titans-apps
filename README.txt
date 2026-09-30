@@ -47,7 +47,7 @@ BULLPEN SCRIPT TEMPLATES
     3. Paste that line into bullpen/templates.js, above the closing ]
     4. Rename it in that line, e.g. {name:"Winter Week 3", code:"TBP1..."}
     5. Upload templates.js AND bump the version in bullpen/sw.js
-       (titans-bullpen-v6 -> v7), or the iPads keep the old list
+       (titans-bullpen-v7 -> v8), or the iPads keep the old list
 
   THE LOCK
     Loading a template locks the script. Unlock to edit is one tap,
@@ -58,11 +58,11 @@ BULLPEN SCRIPT TEMPLATES
 
 
 WHICH VERSION IS AN iPAD ON?
-  Both apps print their build in the header — "v6" next to the app name on the
+  Both apps print their build in the header — "v7" next to the app name on the
   bullpen chart, "v2" next to Pitch Chart on the game app. Read it off the
   screen; no need to hunt for a feature that changed.
 
-  If it shows something like "v6 =/= v5" in amber, that iPad has downloaded a
+  If it shows something like "v7 =/= v5" in amber, that iPad has downloaded a
   new version but is still showing the old one. Close the app fully from the
   app switcher and open it again.
 

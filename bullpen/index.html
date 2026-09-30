@@ -114,10 +114,26 @@ input[type=text],input[type=date],select,textarea{
 }
 textarea{resize:vertical;min-height:70px;font-size:14px}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-/* min-width:0 is the whole fix: without it a flex item refuses to shrink below its
-   content, and the iOS date picker is wide enough to shove the next field out. */
 .row > *{flex:1 1 170px;min-width:0}
-input[type=date]{max-width:100%}
+
+/* The session row is a GRID, not flex. Grid tracks are set by the template, so a
+   control cannot widen its own column no matter what it thinks its natural size
+   is — which is the failure mode with the iOS date picker. Flex sizing negotiates
+   with the content; grid does not. */
+.sessrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;align-items:end}
+.sessrow > *{min-width:0;max-width:100%}
+
+/* Strip the native date control's own chrome. iOS gives it an intrinsic width and
+   paints it outside the element box; appearance:none makes it an ordinary field
+   and the picker still opens on tap. */
+input[type=date]{
+  -webkit-appearance:none; appearance:none;
+  display:block; width:100%; min-width:0; max-width:100%;
+  min-height:38px; line-height:1.25; text-align:left;
+}
+input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+input[type=date]::-webkit-calendar-picker-indicator{margin-inline-start:4px}
 
 .btn{
   border:1px solid var(--line);background:var(--card-2);border-radius:8px;
@@ -322,7 +338,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
       <div class="panel">
         <h2>Session</h2>
         <div class="body">
-          <div class="row">
+          <div class="sessrow">
             <label class="fld">iPad / Mound
               <input type="text" id="s-pad" placeholder="Mound 1">
             </label>
@@ -595,7 +611,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v6";
+var BUILD = "v7";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
