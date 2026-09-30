@@ -130,10 +130,21 @@ textarea{resize:vertical;min-height:70px;font-size:14px}
 input[type=date]{
   -webkit-appearance:none; appearance:none;
   display:block; width:100%; min-width:0; max-width:100%;
-  min-height:38px; line-height:1.25; text-align:left;
 }
-input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
-input[type=date]::-webkit-calendar-picker-indicator{margin-inline-start:4px}
+
+/* Every box in this row is the SAME HEIGHT, set explicitly rather than left to
+   padding. A native date control does not derive its height from padding the way
+   a text field does, so matching the padding is not enough — pin the height and
+   centre the text with line-height (40 less the 1px borders). The second selector
+   only exists to outrank input[type=date] above. */
+.sessrow input, .sessrow input[type=date]{
+  height:40px; min-height:40px; padding:0 10px;
+  font-size:15px; line-height:38px;
+}
+.sessrow input[type=date]::-webkit-date-and-time-value{
+  line-height:38px; margin:0; text-align:left;
+}
+.sessrow input[type=date]::-webkit-calendar-picker-indicator{margin-inline-start:4px}
 
 .btn{
   border:1px solid var(--line);background:var(--card-2);border-radius:8px;
@@ -611,7 +622,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v7";
+var BUILD = "v8";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
