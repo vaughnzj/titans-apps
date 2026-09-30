@@ -109,6 +109,16 @@ code{font-family:var(--mono);font-size:.88em;background:var(--panel);
 .note{background:var(--close-bg);border-left:3px solid var(--close);
   padding:13px 16px;border-radius:0 6px 6px 0;margin-top:16px}
 .note p{margin:0;font-size:15.5px;max-width:66ch}
+ol{margin:0;padding-left:21px;display:flex;flex-direction:column;gap:9px}
+ol li{padding-left:2px;max-width:70ch}
+ol li::before{display:none}
+h3.upd{margin-top:24px}
+.warn{background:var(--miss-bg);border-left:3px solid var(--miss);
+  padding:13px 16px;border-radius:0 6px 6px 0;margin-top:16px}
+.warn p{margin:0;font-size:15.5px;max-width:66ch}
+.warn .lab{font-family:var(--cond);font-weight:700;font-size:12.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--miss);display:block;margin-bottom:3px}
+
 .note .lab{font-family:var(--cond);font-weight:700;font-size:12.5px;letter-spacing:.11em;
   text-transform:uppercase;color:var(--close);display:block;margin-bottom:3px}
 
@@ -185,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Pitch Chart Coach's Guide</h1>
       <p>Everything you need to chart a game on the iPad. Read it once before you go, then keep it open on your phone for the first inning.</p>
-      <div class="meta">App v3 &nbsp;&middot;&nbsp; September 2026 &nbsp;&middot;&nbsp; Game day</div>
+      <div class="meta">App v4 &nbsp;&middot;&nbsp; September 2026 &nbsp;&middot;&nbsp; Game day</div>
     </div>
   </div>
 
@@ -217,7 +227,19 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v2</b>. If it shows two numbers in amber, like <code>v2 &ne; v1</code>, that iPad has downloaded an update but is still showing the old one &mdash; close the app fully from the app switcher and open it again.</p>
+      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v4</b>. If it shows two numbers in amber, like <code>v4 &ne; v3</code>, that iPad has downloaded an update but is still showing the old one &mdash; see below.</p>
+    </div>
+
+    <h3 class="upd">Getting a new version</h3>
+    <p class="sub">You set the icon up once. It never has to be replaced &mdash; the app replaces itself underneath it.</p>
+    <ol>
+      <li>Open the app once <b>on wifi</b>. The new copy downloads quietly in the background; the screen still shows the old one.</li>
+      <li><b>Close it completely</b> from the app switcher &mdash; swipe up, then flick the app away.</li>
+      <li>Open it again. New version. Check the build in the header.</li>
+    </ol>
+    <div class="warn">
+      <span class="lab">Don't delete the icon and add it back</span>
+      <p>That is the one way to lose data. On iOS, removing a home-screen app can take its saved game with it. The two steps above are all an update needs. If you ever do have to remove it, <b>export first</b>.</p>
     </div>
   </section>
 

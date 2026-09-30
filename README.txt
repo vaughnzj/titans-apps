@@ -33,7 +33,7 @@ UPDATING AN APP LATER
   Replace <app>/index.html in the repo AND change the version line at the
   top of that app's sw.js:
       bullpen/sw.js   titans-bullpen-v8 -> v9
-      game/sw.js      titans-game-v2    -> v3
+      game/sw.js      titans-game-v3    -> v4
   Without that change the iPads keep serving the old cached copy. The two
   apps cache separately, so updating one never disturbs the other.
 
@@ -64,7 +64,7 @@ THE COACH'S GUIDES
   The guides are cached offline with the app, so a coach can read them in the
   gym with no signal. They are also linked from the landing page.
 
-  The guides carry an "App v9" / "App v3" line under the title. When you change
+  The guides carry an "App v9" / "App v4" line under the title. When you change
   an app, change that line too so a coach can tell the guide matches the app in
   front of them. A guide is a plain web page — edit it in GitHub, bump the
   version in <app>/sw.js, and the iPads pick it up the same way they pick up
@@ -72,7 +72,7 @@ THE COACH'S GUIDES
 
 WHICH VERSION IS AN iPAD ON?
   Both apps print their build in the header — "v9" next to the app name on the
-  bullpen chart, "v3" next to Pitch Chart on the game app. Read it off the
+  bullpen chart, "v4" next to Pitch Chart on the game app. Read it off the
   screen; no need to hunt for a feature that changed.
 
   If it shows something like "v9 =/= v8" in amber, that iPad has downloaded a
