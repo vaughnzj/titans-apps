@@ -1,0 +1,16 @@
+{
+  "name": "Dugout Pitch Chart",
+  "short_name": "Pitch Chart",
+  "description": "In-game pitch charting for Legend Titans.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16325C",
+  "theme_color": "#16325C",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

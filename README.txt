@@ -2,9 +2,11 @@ LEGEND TITANS — COACHING APPS
 Files for a free GitHub Pages site.
 
 WHAT'S HERE
-  index.html            Landing page listing the apps
+  index.html            Landing page listing both apps
   bullpen/index.html    The Bullpen Chart app
-  bullpen/manifest.webmanifest, sw.js, icon-*.png   What makes it work offline
+  bullpen/templates.js  The weekly bullpen scripts (you edit this one)
+  game/index.html       The Dugout Pitch Chart app
+  <app>/manifest.webmanifest, sw.js, icon-*.png   What makes each one work offline
 
 ONE-TIME SETUP (about 15 minutes)
   1. Make a free account at github.com
@@ -25,7 +27,31 @@ PUTTING IT ON AN iPAD
   4. Share > Add to Home Screen
   From then on it opens with no signal, with the Titans icon.
 
-UPDATING THE APP LATER
-  Replace bullpen/index.html in the repo AND change the version line at the
-  top of bullpen/sw.js (titans-bullpen-v1 -> v2). Without that change the
-  iPads keep serving the old cached copy.
+UPDATING AN APP LATER
+  Replace <app>/index.html in the repo AND change the version line at the
+  top of that app's sw.js:
+      bullpen/sw.js   titans-bullpen-v1 -> v2
+      game/sw.js      titans-game-v1    -> v2
+  Without that change the iPads keep serving the old cached copy. The two
+  apps cache separately, so updating one never disturbs the other.
+
+
+BULLPEN SCRIPT TEMPLATES
+  Every mound has to run the same script or the leaderboard stops meaning
+  anything, so load the same template on all four. Building a script by hand
+  is still allowed — it just will not compare across mounds.
+
+  ADDING A WEEKLY TEMPLATE (do this at home)
+    1. Build the script on an iPad
+    2. Tap "Save as template" — it hands you a finished line
+    3. Paste that line into bullpen/templates.js, above the closing ]
+    4. Rename it in that line, e.g. {name:"Winter Week 3", code:"TBP1..."}
+    5. Upload templates.js AND bump the version in bullpen/sw.js
+       (titans-bullpen-v4 -> v5), or the iPads keep the old list
+
+  THE LOCK
+    Loading a template locks the script. Unlock to edit is one tap,
+    but the moment the script changes the bar turns amber and says "Modified",
+    and every row of that iPad's export is stamped ScriptModified = Y.
+    When you merge the four CSVs, sort on ScriptID — one value means all four
+    mounds ran the same routine.

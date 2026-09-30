@@ -1,11 +1,10 @@
-/* Titans Bullpen Chart - offline cache
+/* Dugout Pitch Chart - offline cache
    Bump CACHE when you upload a new index.html, or iPads keep the old one. */
-var CACHE = "titans-bullpen-v5";
+var CACHE = "titans-game-v1";
 var FILES = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./templates.js",
   "./icon-180.png",
   "./icon-192.png",
   "./icon-512.png"

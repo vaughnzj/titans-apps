@@ -105,14 +105,17 @@ button{cursor:pointer}
 .cols{display:grid;gap:18px}
 @media (min-width:900px){ .cols.c2{grid-template-columns:minmax(0,1fr) minmax(300px,380px)} }
 
-label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:600}
+label.fld{display:flex;flex-direction:column;gap:4px;min-width:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:600}
 input[type=text],input[type=date],select,textarea{
   background:var(--field);border:1px solid var(--line);border-radius:7px;padding:8px 10px;
   font-size:15px;width:100%;min-width:0;
 }
 textarea{resize:vertical;min-height:70px;font-size:14px}
-.row{display:flex;gap:12px;flex-wrap:wrap}
-.row > *{flex:1 1 150px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+/* min-width:0 is the whole fix: without it a flex item refuses to shrink below its
+   content, and the iOS date picker is wide enough to shove the next field out. */
+.row > *{flex:1 1 170px;min-width:0}
+input[type=date]{max-width:100%}
 
 .btn{
   border:1px solid var(--line);background:var(--card-2);border-radius:8px;
@@ -136,9 +139,22 @@ table.grid td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align
 table.grid tr:last-child td{border-bottom:0}
 .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .no{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;color:var(--ink-2);width:34px}
-select.mini{padding:5px 6px;font-size:14px;width:auto}
+select.mini{padding:5px 8px;font-size:14px;width:auto}
+/* every control inside a grid table is the same height, whatever kind it is */
+table.grid select,table.grid input[type=text],table.grid input[type=number]{
+  height:34px;padding:4px 8px;font-size:14px;line-height:1.2
+}
 .tiny{font-size:12.5px;color:var(--ink-2)}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-top:12px}
+.tplbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 13px;border-radius:9px;
+  border:1px solid var(--line);background:var(--card-2);margin-bottom:14px;font-size:14px}
+.tplbar.lock{border-color:var(--bar-2);background:var(--chip)}
+.tplbar.mod{border-color:var(--close);background:var(--close-bg)}
+.tplbar b{font-family:"Barlow Condensed",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.tplbar .id{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--ink-2)}
+.tplbar .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+#codeBox{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+#codeText{font-family:ui-monospace,Menlo,monospace;font-size:12px;min-height:110px}
 .legend b{color:var(--ink);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;letter-spacing:.04em}
 
 /* ---------- pitcher strip ---------- */
@@ -322,6 +338,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
       <div class="panel">
         <h2>The script &mdash; every pitcher throws this</h2>
         <div class="body">
+          <div class="tplbar" id="tplBar"></div>
           <div class="scroller">
             <table class="grid" id="scriptTbl">
               <thead><tr><th class="no">#</th><th>Pitch</th><th>W/S</th><th>Spot</th><th>Situation</th><th></th></tr></thead>
@@ -331,7 +348,24 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
           <div class="row" style="margin-top:14px">
             <button class="btn" id="addPitch" style="flex:0 0 auto">+ Add pitch</button>
             <button class="btn" id="dupLast" style="flex:0 0 auto">+ Repeat last</button>
-            <button class="btn" id="loadDefault" style="flex:0 0 auto">Load standard routine</button>
+          </div>
+
+          <div class="row" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+            <label class="fld" style="flex:1 1 220px">Template
+              <select id="tplPick"></select>
+            </label>
+            <button class="btn dk" id="tplLoad" style="flex:0 0 auto;align-self:flex-end">Load template</button>
+            <button class="btn" id="tplSave" style="flex:0 0 auto;align-self:flex-end">Save as template</button>
+          </div>
+
+          <div id="codeBox" hidden>
+            <label class="fld" id="codeLbl">Script code</label>
+            <textarea id="codeText" spellcheck="false"></textarea>
+            <div class="row" style="margin-top:10px">
+              <button class="btn sm" id="codeCopyBtn" style="flex:0 0 auto">Copy</button>
+              <button class="btn sm" id="codeClose" style="flex:0 0 auto">Close</button>
+              <span class="tiny" id="codeNote" style="flex:1 1 160px;align-self:center"></span>
+            </div>
           </div>
           <div class="legend">
             <span><b>1</b> FB</span><span><b>2</b> CB</span><span><b>3</b> SL</span><span><b>4</b> CH</span><span><b>5</b> CT</span>
@@ -467,6 +501,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
 <footer>Data lives on this iPad only, one session at a time. Export before you start the next one.<br>
 Add this page to your home screen and it works with no signal at all. Legend Titans.</footer>
 
+<script src="templates.js"></script>
 <script>
 (function(){
 "use strict";
@@ -515,13 +550,15 @@ function pfree(p){
 }
 function blank(){
   return {v:1,pad:"Mound 1",date:today(),coach:"",sample:false,
-          script:defaultScript(),
+          tpl:"", tplId:"", locked:false,
+          script:[],
           pitchers:[newPitcher(""),newPitcher(""),newPitcher(""),newPitcher(""),newPitcher("")],
           cur:null};
 }
 function sampleState(){
   var s = blank();
   s.sample = true;
+  s.script = defaultScript();      /* the demo needs a script to demonstrate against */
   s.pitchers[0].name = "SAMPLE — clear me";
   s.pitchers[0].num = "17"; s.pitchers[0].safe = 78;
   var seed = [[2,2,82],[2,1,null],[2,2,81],[1,2,83],[3,1,null],[3,2,82],[2,1,80],[3,1,null],
@@ -542,12 +579,71 @@ try{
 }catch(e){ S = null; }
 if(!S || !S.script || !S.pitchers){ S = sampleState(); }
 if(!S.cur || !byId(S.cur)) S.cur = S.pitchers.length ? S.pitchers[0].id : null;
+if(typeof S.locked !== "boolean") S.locked = false;
+if(typeof S.tpl !== "string") S.tpl = "";
+if(typeof S.tplId !== "string") S.tplId = "";
 
 function save(){
   try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
 }
 function byId(id){ for(var i=0;i<S.pitchers.length;i++) if(S.pitchers[i].id===id) return S.pitchers[i]; return null; }
 function cur(){ return byId(S.cur); }
+
+/* ============ templates and fingerprint ============
+   A template is stored as a compact code so a whole routine is one line in
+   templates.js. The same encoder backs "Save as template".
+   NOT WIRED UP, ON PURPOSE: parseCode also reads a code pasted by hand, which
+   is all a send-a-script-between-iPads feature would need. Left in for a
+   future version — the only missing piece is the UI. */
+var TPLS = (window.TITANS_BULLPEN_TEMPLATES && window.TITANS_BULLPEN_TEMPLATES.length)
+           ? window.TITANS_BULLPEN_TEMPLATES : [];
+
+/* Bullpen scripts repeat heavily — four of the same call in a row is normal —
+   so runs collapse to one entry and a 25-pitch script travels in a couple of
+   hundred characters instead of a thousand. */
+function rle(script){
+  var out=[], last=null;
+  script.forEach(function(r){
+    var t=r.type, w=r.ws, s=+r.spot, x=r.sit||"";
+    if(last && last[1]===t && last[2]===w && last[3]===s && last[4]===x) last[0]++;
+    else { last=[1,t,w,s,x]; out.push(last); }
+  });
+  return out;
+}
+function unrle(groups){
+  var out=[];
+  groups.forEach(function(g){
+    var n=Math.max(1, Math.min(200, g[0]|0));
+    for(var i=0;i<n;i++) out.push({id:uid(), type:String(g[1]), ws:(g[2]==="W"?"W":"S"),
+                                   spot:Math.max(0,Math.min(5,+g[3]||0)), sit:String(g[4]||"")});
+  });
+  return out;
+}
+function b64e(s){ return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }
+function b64d(s){ s=String(s).replace(/-/g,"+").replace(/_/g,"/"); while(s.length%4) s+="="; return decodeURIComponent(escape(atob(s))); }
+function scriptCode(script){ return "TBP1." + b64e(JSON.stringify(rle(script))); }
+function parseCode(code){
+  var c = String(code||"").replace(/\s+/g,"");
+  var i = c.indexOf("TBP1.");
+  if(i<0) return null;
+  c = c.slice(i+5).replace(/[^A-Za-z0-9\-_]/g,"");
+  try{
+    var g = JSON.parse(b64d(c));
+    if(!Array.isArray(g) || !g.length) return null;
+    var s = unrle(g);
+    return s.length ? s : null;
+  }catch(e){ return null; }
+}
+/* Short, stable fingerprint. Two iPads showing the same ID ran the same routine —
+   that is the whole reason the leaderboard means anything. */
+function scriptId(script){
+  if(!script || !script.length) return "";
+  var str = script.map(function(r){ return r.type+"|"+r.ws+"|"+r.spot+"|"+(r.sit||""); }).join(";");
+  var h = 5381;
+  for(var i=0;i<str.length;i++) h = (((h*33) ^ str.charCodeAt(i)) >>> 0);
+  return ("00000"+h.toString(36).toUpperCase()).slice(-6);
+}
+function tplModified(){ return !!S.tpl && scriptId(S.script) !== S.tplId; }
 
 /* ===================== scoring ===================== */
 function call(p, i){
@@ -636,17 +732,20 @@ function drawSetup(){
   el("sampleBar").hidden = !S.sample;
 
   var tb = el("scriptTbl").querySelector("tbody"), h="";
+  var lk = S.locked ? " disabled" : "";
   for(var i=0;i<S.script.length;i++){
     var r = S.script[i];
     h += '<tr data-i="'+i+'">'+
       '<td class="no">'+(i+1)+'</td>'+
-      '<td><select class="mini" data-f="type">'+typeOpts(r.type)+'</select></td>'+
-      '<td><select class="mini" data-f="ws">'+wsOpts(r.ws)+'</select></td>'+
-      '<td><select class="mini" data-f="spot">'+spotOpts(r.spot)+'</select></td>'+
-      '<td><input type="text" data-f="sit" value="'+esc(r.sit)+'"></td>'+
-      '<td><button class="btn sm" data-del="1">&times;</button></td></tr>';
+      '<td><select class="mini" data-f="type"'+lk+'>'+typeOpts(r.type)+'</select></td>'+
+      '<td><select class="mini" data-f="ws"'+lk+'>'+wsOpts(r.ws)+'</select></td>'+
+      '<td><select class="mini" data-f="spot"'+lk+'>'+spotOpts(r.spot)+'</select></td>'+
+      '<td><input type="text" data-f="sit" value="'+esc(r.sit)+'"'+lk+'></td>'+
+      '<td>'+(S.locked?'':'<button class="btn sm" data-del="1">&times;</button>')+'</td></tr>';
   }
-  tb.innerHTML = h || '<tr><td colspan="6" class="empty">No pitches yet. Load the standard routine or add your own.</td></tr>';
+  tb.innerHTML = h || '<tr><td colspan="6" class="empty">No script yet &mdash; load a template below, or add pitches one at a time.</td></tr>';
+
+  drawTplBar();
 
   var rb = el("rosterTbl").querySelector("tbody"), h2="";
   for(var j=0;j<S.pitchers.length;j++){
@@ -664,12 +763,77 @@ function drawSetup(){
   rb.innerHTML = h2;
 }
 
+
+/* ---------- template bar ---------- */
+function drawTplBar(){
+  var bar = el("tplBar"), id = scriptId(S.script), mod = tplModified();
+  var h = "";
+  if(S.locked){
+    bar.className = "tplbar lock";
+    h = '<b>Running: '+esc(S.tpl || "a template")+'</b>'+
+        '<span class="id">ID '+id+' &middot; '+S.script.length+' pitches</span>'+
+        '<span class="tiny">Locked so every mound charts the same routine.</span>'+
+        '<span class="sp"><button class="btn sm" id="tplUnlock">Unlock to edit</button></span>';
+  } else if(mod){
+    bar.className = "tplbar mod";
+    h = '<b>Modified from '+esc(S.tpl)+'</b>'+
+        '<span class="id">ID '+id+' &middot; was '+S.tplId+'</span>'+
+        '<span class="tiny">This mound no longer matches. The export will say so.</span>'+
+        '<span class="sp"><button class="btn sm" id="tplRelock">Lock as is</button>'+
+        '<button class="btn sm" id="tplRevert">Drop the template</button></span>';
+  } else if(S.tpl){
+    bar.className = "tplbar";
+    h = '<b>'+esc(S.tpl)+'</b><span class="id">ID '+id+'</span>'+
+        '<span class="sp"><button class="btn sm" id="tplRelock">Lock</button></span>';
+  } else {
+    bar.className = "tplbar";
+    h = '<b>No template</b><span class="id">'+(id ? 'ID '+id+' &middot; ' : '')+S.script.length+' pitches</span>'+
+        '<span class="tiny">Freehand — fine for one mound, but load a template if you want the four to compare.</span>';
+  }
+  bar.innerHTML = h;
+
+  var pick = el("tplPick"), po = '<option value="">&mdash; pick a template &mdash;</option>';
+  for(var i=0;i<TPLS.length;i++) po += '<option value="'+i+'">'+esc(TPLS[i].name)+'</option>';
+  if(!TPLS.length) po = '<option value="">No templates in this build</option>';
+  pick.innerHTML = po;
+  el("tplLoad").disabled = !TPLS.length;
+
+  ["addPitch","dupLast"].forEach(function(k){ el(k).disabled = S.locked; });
+
+  var u = el("tplUnlock");
+  if(u) u.onclick = function(){ S.locked = false; save(); drawSetup(); };
+  var rl = el("tplRelock");
+  if(rl) rl.onclick = function(){ S.tplId = scriptId(S.script); S.locked = true; save(); drawSetup(); };
+  var rv = el("tplRevert");
+  if(rv) rv.onclick = function(){ S.tpl=""; S.tplId=""; S.locked=false; save(); drawSetup(); };
+}
+
+function applyScript(rows, name){
+  S.script = rows;
+  S.tpl = name || "";
+  S.tplId = scriptId(rows);
+  S.locked = true;
+  save(); drawSetup();
+}
+function codeNote(m){ el("codeNote").textContent = m || ""; }
+function openTplSave(){
+  el("codeBox").hidden = false;
+  el("codeLbl").textContent = "Save as template — paste this line into templates.js in the repo";
+  el("codeText").value = '  {name:"' + (S.tpl || "New routine").replace(/"/g,"'") + '", code:"' +
+                         scriptCode(S.script) + '"},';
+  codeNote("");
+  el("codeText").focus();
+  el("codeText").select();
+}
+
 el("scriptTbl").addEventListener("input", function(e){
   var tr = e.target.closest("tr"); if(!tr) return;
   var i = +tr.getAttribute("data-i"), f = e.target.getAttribute("data-f");
   if(!f || !S.script[i]) return;
   S.script[i][f] = (f==="spot") ? +e.target.value : e.target.value;
-  save(); if(!el(views.chart).hidden) drawChart();
+  save();
+  drawTplBar();                      /* the ID moves the moment the script does */
+  if(!el(views.chart).hidden) drawChart();
 });
 el("scriptTbl").addEventListener("click", function(e){
   if(!e.target.getAttribute || !e.target.getAttribute("data-del")) return;
@@ -704,14 +868,35 @@ el("dupLast").onclick = function(){
   var l = S.script[S.script.length-1] || {type:"FB",ws:"S",spot:0,sit:""};
   S.script.push({id:uid(),type:l.type,ws:l.ws,spot:l.spot,sit:l.sit}); save(); drawSetup();
 };
-el("loadDefault").onclick = function(){
-  if(S.script.length && !confirm("Replace the current script with the standard routine?")) return;
-  S.script = defaultScript(); save(); drawSetup();
-};
 el("addPitcher").onclick = function(){ S.pitchers.push(newPitcher("")); save(); drawSetup(); };
+el("tplLoad").onclick = function(){
+  var i = el("tplPick").value;
+  if(i === "") { return; }
+  var t = TPLS[+i];
+  if(!t) return;
+  var rows = parseCode(t.code);
+  if(!rows){ alert("That template could not be read."); return; }
+  if(S.script.length && !confirm("Replace the current script with \""+t.name+"\"?")) return;
+  applyScript(rows, t.name);
+};
+el("tplSave").onclick = openTplSave;
+el("codeClose").onclick = function(){ el("codeBox").hidden = true; };
+el("codeCopyBtn").onclick = function(){
+  var t = el("codeText");
+  t.focus(); t.select();
+  var done = false;
+  try{ done = document.execCommand("copy"); }catch(e){}
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t.value).then(function(){ codeNote("Copied."); },
+                                                function(){ codeNote(done?"Copied.":"Select it and copy by hand."); });
+  } else codeNote(done ? "Copied." : "Select it and copy by hand.");
+};
+
 el("clearSample").onclick = function(){
-  var keep = S.script;
-  S = blank(); S.script = keep; S.sample = false;
+  /* Keep a template you deliberately loaded; drop the demo's routine. */
+  var t = S.tpl ? {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked} : null;
+  S = blank(); S.sample = false;
+  if(t){ S.script=t.script; S.tpl=t.tpl; S.tplId=t.tplId; S.locked=t.locked; }
   S.cur = S.pitchers[0].id; save(); drawSetup(); show("setup");
 };
 
@@ -742,9 +927,12 @@ function drawCall(){
   if(!p){ el("call").innerHTML = '<div class="idx">Add a pitcher on the Setup tab</div>'; return; }
   var i = activeIdx(p), c = call(p,i);
   if(!c){
+    var none = !S.script.length && !p.pitches.length;
     el("call").innerHTML = '<div><div class="idx">'+esc(p.name||"This pitcher")+'</div>'+
-      '<div class="big">Script complete</div>'+
-      '<div class="spotname">'+p.pitches.length+' pitches charted. Next pitcher, or add an extra pitch.</div></div>';
+      '<div class="big">'+(none ? "No script" : "Script complete")+'</div>'+
+      '<div class="spotname">'+(none
+        ? 'Load a template on the Setup tab, or set this pitcher to Freeform.'
+        : p.pitches.length+' pitches charted. Next pitcher, or add an extra pitch.')+'</div></div>';
     return;
   }
   var t = SPOTS[c.spot], mini = "";
@@ -1034,10 +1222,11 @@ function drawReport(){
 /* ===================== export ===================== */
 function slug(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
 function csv(){
-  var head = ["Mound","Date","Coach","Pitcher","Jersey","Hand","PitchSafe","StretchOnly","Mode","PitchNo",
+  var head = ["Mound","Date","Coach","Template","ScriptID","ScriptModified",
+              "Pitcher","Jersey","Hand","PitchSafe","StretchOnly","Mode","PitchNo",
               "CalledType","CalledWS","CalledSpot","SpotName","Situation","OffScript",
               "ActualRow","ActualCol","Strike","Result","MissVert","MissHoriz","Velo"];
-  var lines = [head.join(",")];
+  var lines = [head.join(",")], sid = scriptId(S.script);
   function q(v){ v = (v==null?"":String(v)); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   for(var i=0;i<S.pitchers.length;i++){
     var p = S.pitchers[i];
@@ -1045,7 +1234,8 @@ function csv(){
       var x = p.pitches[j], t = SPOTS[x.spot], g = grade(x);
       var mv = t ? (x.r<t.r?"up":(x.r>t.r?"down":"")) : "";
       var mh = t ? (x.c<t.c?"in":(x.c>t.c?"out":"")) : "";
-      lines.push([S.pad,S.date,S.coach,p.name,p.num,p.hand,p.safe,p.stretch?"Y":"N",
+      lines.push([S.pad,S.date,S.coach,S.tpl||"",sid,tplModified()?"Y":"N",
+        p.name,p.num,p.hand,p.safe,p.stretch?"Y":"N",
         x.free?"Freeform":"Script",j+1,
         x.type,x.ws,x.spot,t?t.l:"",x.sit,x.off?"Y":"N",
         x.r+1,x.c+1,inZone(x.r,x.c)?"Y":"N",
@@ -1059,7 +1249,8 @@ function txt(){
   L.push("LEGEND TITANS — BULLPEN SESSION");
   L.push(S.date+"   "+S.pad+(S.coach?"   Charted by "+S.coach:""));
   L.push("");
-  L.push("SCRIPT ("+S.script.length+" pitches)");
+  L.push("SCRIPT ("+S.script.length+" pitches)   ID "+scriptId(S.script)+
+         (S.tpl ? "   template: "+S.tpl+(tplModified()?"  [MODIFIED — this mound does not match the template]":"") : "   [no template]"));
   for(var i=0;i<S.script.length;i++){
     var r = S.script[i];
     L.push("  "+(i+1)+".  "+r.ws+"  "+r.type+"  spot "+r.spot+" ("+SPOTS[r.spot].l+")"+(r.sit?"   — "+r.sit:""));
