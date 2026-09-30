@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16325C">
+<title>Pitch Chart Coach's Guide</title>
+</head>
+<body>
+<style>
+:root{
+  --navy:#16325C;
+  --navy-2:#2A4C82;
+  --ground:#EEF1F6;
+  --paper:#FFFFFF;
+  --panel:#E4E9F1;
+  --rule:#CCD6E3;
+  --rule-soft:#DFE5EE;
+  --text:#16233A;
+  --text-2:#4F5F78;
+  --text-3:#7F8FA5;
+  --spot:#1A7F4B;
+  --spot-bg:#E2F3EA;
+  --close:#A07214;
+  --close-bg:#FAF0DA;
+  --miss:#AD3728;
+  --miss-bg:#FAE5E1;
+  --accent:#C85C1C;
+  --shadow:0 1px 2px rgba(17,28,46,.05), 0 6px 18px rgba(17,28,46,.07);
+  --cond:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --navy:#22406E; --navy-2:#6E9BDA;
+    --ground:#0B1220; --paper:#141E30; --panel:#1C2A3F;
+    --rule:#31415A; --rule-soft:#26344A;
+    --text:#E4EAF4; --text-2:#A3B3C8; --text-3:#7386A0;
+    --spot:#4CC088; --spot-bg:#12301F;
+    --close:#D7A63C; --close-bg:#332708;
+    --miss:#E2705F; --miss-bg:#361612;
+    --accent:#E8873F;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#22406E; --navy-2:#6E9BDA;
+  --ground:#0B1220; --paper:#141E30; --panel:#1C2A3F;
+  --rule:#31415A; --rule-soft:#26344A;
+  --text:#E4EAF4; --text-2:#A3B3C8; --text-3:#7386A0;
+  --spot:#4CC088; --spot-bg:#12301F;
+  --close:#D7A63C; --close-bg:#332708;
+  --miss:#E2705F; --miss-bg:#361612;
+  --accent:#E8873F;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ground);color:var(--text);
+  font-family:var(--sans);font-size:16px;line-height:1.55;
+}
+.page{max-width:820px;margin:0 auto;padding-inline:20px;padding-block:0 64px}
+
+.backlink{display:inline-block;margin:18px 0 -14px;font-family:var(--cond);font-weight:600;
+  font-size:14px;letter-spacing:.07em;text-transform:uppercase;color:var(--navy-2);text-decoration:none}
+.backlink:hover{text-decoration:underline}
+@media print{.backlink{display:none}}
+.mast{background:var(--navy);color:#fff;margin-inline:-20px;padding:34px 20px 26px;margin-bottom:34px}
+.mast .inner{max-width:820px;margin:0 auto}
+.eyebrow{font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.18em;
+  text-transform:uppercase;opacity:.66}
+h1{font-family:var(--cond);font-weight:700;font-size:clamp(34px,7vw,52px);line-height:1;
+  letter-spacing:.01em;text-transform:uppercase;margin:6px 0 10px;text-wrap:balance}
+.mast p{margin:0;max-width:60ch;font-size:16.5px;color:rgba(255,255,255,.86)}
+.mast .meta{margin-top:16px;padding-top:13px;border-top:1px solid rgba(255,255,255,.2);
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;color:rgba(255,255,255,.6)}
+
+section{margin-bottom:34px}
+h2{font-family:var(--cond);font-weight:700;font-size:26px;letter-spacing:.02em;
+  text-transform:uppercase;color:var(--navy-2);margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--text-2);font-size:15px;margin:0 0 14px;max-width:66ch}
+ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+li{padding-left:20px;position:relative;max-width:70ch}
+li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+  border-radius:1px;background:var(--navy-2)}
+li ul{margin-top:9px}
+li li::before{background:var(--text-3);width:5px;height:5px}
+b,strong{font-weight:600}
+code{font-family:var(--mono);font-size:.88em;background:var(--panel);
+  padding:1px 5px;border-radius:3px;color:var(--text)}
+
+.steps{display:flex;flex-direction:column;gap:0;background:var(--paper);
+  border:1px solid var(--rule);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.step{display:grid;grid-template-columns:52px 1fr;gap:0;border-bottom:1px solid var(--rule-soft)}
+.step:last-child{border-bottom:none}
+.step .n{background:var(--panel);display:flex;align-items:flex-start;justify-content:center;
+  padding-top:17px;font-family:var(--mono);font-weight:600;font-size:19px;color:var(--navy-2)}
+.step .body{padding:15px 17px}
+.step h3{margin:0 0 3px;font-family:var(--cond);font-weight:600;font-size:20px;
+  letter-spacing:.04em;text-transform:uppercase}
+.step p{margin:0;color:var(--text-2);font-size:15.5px;max-width:62ch}
+.step .keys{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
+.key{font-family:var(--mono);font-size:12.5px;font-weight:500;padding:3px 8px;
+  border:1px solid var(--rule);border-radius:4px;background:var(--ground);white-space:nowrap}
+
+.note{background:var(--close-bg);border-left:3px solid var(--close);
+  padding:13px 16px;border-radius:0 6px 6px 0;margin-top:16px}
+.note p{margin:0;font-size:15.5px;max-width:66ch}
+.note .lab{font-family:var(--cond);font-weight:700;font-size:12.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--close);display:block;margin-bottom:3px}
+
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--paper);
+  box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:460px;font-size:15px}
+th{background:var(--navy);color:#fff;text-align:left;font-family:var(--cond);font-weight:600;
+  font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:9px 13px}
+td{padding:8px 13px;border-top:1px solid var(--rule-soft);vertical-align:top}
+td:first-child{font-family:var(--mono);font-weight:600;white-space:nowrap;width:1%}
+tbody tr:nth-child(odd) td{background:color-mix(in srgb, var(--panel) 42%, transparent)}
+.disc{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;
+  text-align:center;font-family:var(--cond);font-weight:700;font-size:14px;color:#fff;background:var(--navy-2)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px}
+.dot.s{background:var(--spot)} .dot.c{background:var(--close)} .dot.m{background:var(--miss)}
+
+.ask{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--accent);
+  border-radius:8px;padding:20px 22px;box-shadow:var(--shadow)}
+.ask h2{margin-bottom:6px}
+
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
+
+@media (max-width:520px){
+  .step{grid-template-columns:40px 1fr}
+  .step .n{padding-top:15px;font-size:17px}
+}
+
+@media print{
+  :root{--ground:#fff;--paper:#fff;--panel:#f2f2f2;--text:#000;--text-2:#333;--text-3:#555;
+        --navy:#000;--navy-2:#000;--rule:#999;--rule-soft:#ccc;--shadow:none}
+  body{background:#fff;font-size:9.3pt;line-height:1.34}
+  .page{max-width:none;padding:0}
+  .mast{background:#fff;color:#000;border-bottom:2px solid #000;margin-inline:0;
+        padding:0 0 7pt;margin-bottom:11pt}
+  .mast p,.mast .meta{color:#000}
+  .mast p{font-size:10pt}
+  .mast .meta{border-top-color:#999;margin-top:8pt;padding-top:6pt;font-size:8pt}
+  .eyebrow{opacity:1;font-size:9pt}
+  h1{font-size:22pt;margin:2pt 0 5pt}
+  h2{font-size:13pt;margin-bottom:2pt}
+  .sub{font-size:9pt;margin-bottom:7pt}
+  section{margin-bottom:9.5pt}
+  ul{gap:2.6pt}
+  li{max-width:none;padding-left:14pt}
+  li::before{width:4px;height:4px;left:1px}
+  .step .body{padding:7pt 9pt}
+  .step .n{padding-top:9pt;font-size:13pt}
+  .step h3{font-size:11pt}
+  .step p{font-size:9.5pt;max-width:none}
+  .step .keys{margin-top:5pt}
+  .key{font-size:8.5pt;padding:1pt 5pt}
+  .note{padding:6pt 9pt;margin-top:7pt;background:#f6f6f6;border-left-color:#000}
+  .note p{font-size:9.5pt;max-width:none}
+  table{font-size:9pt;min-width:0}
+  th{padding:5pt 8pt;font-size:8.5pt;background:#000}
+  td{padding:2.6pt 8pt}
+  .disc{background:#000}
+  .ask{padding:9pt 11pt}
+  footer{margin-top:16pt;padding-top:7pt;font-size:8.5pt}
+  .steps,.tw,.ask{break-inside:avoid}
+  h2{break-after:avoid}
+  li{break-inside:avoid}
+  @page{margin:16mm}
+}
+</style>
+
+<div class="page">
+
+  <a class="backlink" href="./index.html">&larr; Back to the app</a>
+
+  <div class="mast">
+    <div class="inner">
+      <div class="eyebrow">Legend Titans Baseball</div>
+      <h1>Pitch Chart Coach's Guide</h1>
+      <p>Everything you need to chart a game on the iPad. Read it once before you go, then keep it open on your phone for the first inning.</p>
+      <div class="meta">App v3 &nbsp;&middot;&nbsp; September 2026 &nbsp;&middot;&nbsp; Game day</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>What it does</h2>
+    <ul>
+      <li>Records every pitch: type, where it crossed the plate, and what the hitter did with it.</li>
+      <li>Keeps a running count, strike percentage, first-pitch strike percentage and AO3+ for each pitcher.</li>
+      <li>Builds a scouting read on every opposing hitter as the game goes, so the second and third time through you can see how you've pitched him.</li>
+      <li>Exports the whole game as text you can paste into a spreadsheet.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Before you start</span>
+      <p>It holds <b>one game at a time</b>. Starting a new game erases the last one. Export before you start the next.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Getting it on the iPad</h2>
+    <p class="sub">Do this at home, on wifi. Once it is on the home screen it opens with no signal at all &mdash; which matters, because you cannot count on reception at the field.</p>
+    <ul>
+      <li>Open <b>vaughnzj.github.io/titans-apps</b> in <b>Safari</b>. Not Chrome, and not the browser inside Messages or Mail &mdash; if it opens in one of those, tap the compass icon to send it to Safari.</li>
+      <li>Tap <b>Dugout Pitch Chart</b>.</li>
+      <li><b>Wait for the green bar</b> that says &ldquo;Ready to use offline.&rdquo; That is the app telling you it has saved a copy. Don't skip it.</li>
+      <li>Share &rarr; <b>Add to Home Screen</b>. Name it <b>Pitch Chart</b>. You get the Titans field icon.</li>
+      <li>Prove it: turn on Airplane Mode, close Safari, tap the new icon. It should open normally.</li>
+      <li>Settings &rarr; Display &amp; Brightness &rarr; Auto-Lock &rarr; <b>Never</b>. The app also asks iOS to hold the screen on; this is the backup for when iOS says no.</li>
+      <li>Chart in <b>landscape</b>. The page scrolls up and down, never sideways. Portrait puts the result buttons below the fold.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Which version am I on?</span>
+      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v2</b>. If it shows two numbers in amber, like <code>v2 &ne; v1</code>, that iPad has downloaded an update but is still showing the old one &mdash; close the app fully from the app switcher and open it again.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>60 seconds before first pitch</h2>
+    <ul>
+      <li>Tap <b>Start real game</b>. The app opens on a sample game so you can see it filled in, and nothing saves until you clear it.</li>
+      <li>Fill in the date, the opponent and your starter's name across the top.</li>
+      <li>Type the opposing lineup down the left: name, jersey, position, and R or L. Tap a row to select that hitter, tap again to type in the box.</li>
+      <li>The lineup defaults to <b>9 spots</b>. Use the minus and plus at the bottom to go up to <b>12</b> if they bat a longer order. A spot that already has a name or a pitch in it won't drop.</li>
+      <li>Tap <b>&#9668; Lineup</b> in the header once the lineup is in. It collapses the left column and gives the charting side more room.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Use the return key</span>
+      <p>Return walks you forward: date, opponent, then every lineup field top to bottom. Type, hit return, keep typing. The key says <b>next</b> until the last field and then <b>done</b>, which drops the keyboard. It works the same down the pitcher names and down the IP/R/ER card at the end. Nothing needs to be &ldquo;saved&rdquo; on the way &mdash; every keystroke is already written.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Charting a pitch</h2>
+    <p class="sub">Three taps, always in this order. On a fastball-heavy inning it's two, because the pitch type stays where you left it.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          <h3>Pitch type</h3>
+          <p>Only when it changes. Whatever you pick stays selected until you pick something else.</p>
+          <div class="keys"><span class="key">FB</span><span class="key">CH</span><span class="key">SL</span><span class="key">CB</span><span class="key">SP</span><span class="key">CT</span></div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          <h3>Location</h3>
+          <p>Tap the grid where the ball crossed. It's the catcher's view, so a right-handed hitter stands on the left side of the grid. The shaded middle 9 boxes are the strike zone and the ring around them is everything off the plate.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          <h3>What happened</h3>
+          <p>This applies to every pitch, including the ones he never offered at. Answer it before the next pitch.</p>
+          <div class="keys"><span class="key">Took It</span><span class="key">Foul</span><span class="key">Swing &amp; Miss</span><span class="key">In Play</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <span class="lab">Location sets the call</span>
+      <p>A taken pitch inside the middle 9 boxes counts as a strike, and anything outside counts as a ball. There is no way to record a pitch the umpire got wrong, so strike percentage measures where the ball crossed.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ending the at-bat</h2>
+    <ul>
+      <li>Tap the result on the right pad. 16 options, from <code>K</code> and <code>BB</code> through <code>DP</code> and <code>SAC</code>.</li>
+      <li>For anything he hit, tap the <b>spray chart</b> where the ball ended up. Hits and errors also want a trajectory: GB, LD, FB or PU. Everything else fills its own trajectory in.</li>
+      <li>Tap <b>Next Batter</b>. It turns gold once a result is in, so a gold button means the app is waiting on you.</li>
+      <li>Tap the out dots in the count bar as outs happen. The app has no idea what inning it is.</li>
+      <li>When you change pitchers, tap the new pitcher's chip at the top. Nothing detects a pitching change.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Nothing moves on its own</span>
+      <p>Strike three and ball four turn the count red and flag it, and the at-bat still stays open until you pick the result. The hitter only changes when you tap Next Batter. That's on purpose, so a ball in play never advances past the spray chart.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Fixing something</h2>
+    <ul>
+      <li><b>Wrong on the last pitch:</b> tap <b>Undo last pitch</b>. Once for a result, again to drop the pitch itself.</li>
+      <li><b>Wrong pitch type:</b> tap that pitch in the at-bat strip under the zone to cycle it.</li>
+      <li><b>Wrong result on the hitter before:</b> tap <b>&#9666; Go back</b> on the bar under the count. It stays there through the whole next at-bat, so you have time to notice.</li>
+      <li><b>Something further back:</b> tap that hitter in the lineup, then the numbered <b>AB</b> chips next to his name to open the at-bat you want. If that spot has had a sub, pick the man first with the <b>In</b> chips.</li>
+      <li>Any time you're looking at an old at-bat the panel dims and a banner says so. Zone taps won't log a pitch there, and it tells you why in red rather than doing nothing. Tap <b>Back to the plate</b> to carry on.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Pinch hitters and substitutions</h2>
+    <p class="sub">A lineup spot is not a player. When somebody new hits in that spot, he gets his own at-bats, his own tags and his own scouting read.</p>
+    <ul>
+      <li>Tap <b>SUB</b> in the batter strip, to the right of the hitter's name. The spot stays where it is in the order and a new, empty hitter takes it over.</li>
+      <li>Type his name and jersey the same way. Nothing carries over from the man he hit for, which is the point: his read should be his own.</li>
+      <li>A row of numbered <b>In</b> chips appears under the name once a spot has more than one man in it. Chip 1 is the starter, chip 2 is the first sub, and so on.</li>
+      <li><b>Re-entry:</b> tap the earlier chip. If that spot is at the plate he gets a fresh at-bat, and every at-bat he already had stays untouched.</li>
+      <li>Tapped SUB by mistake? An empty sub with no name and no pitches has a small <b>&times;</b> on his chip. Tap it to take him back off.</li>
+      <li>The export lists each man separately and marks the sub with <code>[in for Ortega]</code>, so the scorebook and the chart line up after the game.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Tagging a baserunner</h2>
+    <p class="sub">Steals and extra bases happen while somebody else is hitting, and you don't want to lose your place.</p>
+    <ul>
+      <li>Use the <b>spot picker</b> at the top of Batter Scouting to point the scouting box at the runner. It shows one button per spot in the order.</li>
+      <li>Tag him, then tap back. The at-bat, the count and the pitch log all stay exactly where they were.</li>
+      <li>Tapping his <b>lineup row</b> does something different: it makes him the hitter. Use the spot picker for this, not the lineup.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The scouting tags</h2>
+    <p class="sub">13 tags in 2 groups. The first 6 change where your fielders stand and how you hold a runner. The rest change what you throw him. 5 of them light up on their own once the pitches support them: those show with a dashed border and a dot, and you can tap one to override it either way.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Tag</th><th>Means</th><th>Set by</th></tr></thead>
+        <tbody>
+          <tr><td colspan="3" style="font-family:var(--cond);font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--navy-2)">Defense</td></tr>
+          <tr><td>SPEED</td><td>Speed threat</td><td>You</td></tr>
+          <tr><td>SLOW</td><td>Below-average runner. Play him deeper, no need to hold him</td><td>You</td></tr>
+          <tr><td>BFH</td><td>Bunt for a hit</td><td>You</td></tr>
+          <tr><td>SAC</td><td>Tried a sacrifice bunt</td><td>App</td></tr>
+          <tr><td>STEAL</td><td>Steal threat</td><td>You</td></tr>
+          <tr><td>AGG</td><td>Aggressive on the bases, takes the extra base</td><td>You</td></tr>
+          <tr><td colspan="3" style="font-family:var(--cond);font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--navy-2)">How to pitch him</td></tr>
+          <tr><td>LATE</td><td>Late on the fastball</td><td>You</td></tr>
+          <tr><td>PULL</td><td>Pull swing. Changes the pitch and the defense both</td><td>You</td></tr>
+          <tr><td>BOB</td><td>Bad on breaking balls. 2 or more misses on a slider or curve</td><td>App</td></tr>
+          <tr><td>DNW</td><td>Do not walk him</td><td>You</td></tr>
+          <tr><td>FPS</td><td>First pitch swinger. Swung at pitch 1 in over half his at-bats</td><td>App</td></tr>
+          <tr><td>CHASE</td><td>Chases. 2 or more swings at pitches off the plate</td><td>App</td></tr>
+          <tr><td>2K</td><td>Battles with 2 strikes. Fouls them off or survives the at-bat</td><td>App</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul style="margin-top:14px">
+      <li><b>SPEED and SLOW cancel each other.</b> Tapping one releases the other, because a hitter can't be both. Leaving both off just means you haven't decided.</li>
+      <li>Under the Defense tags, <b>Position</b> sets where you actually play him: Pull, Str up or Oppo. PULL the tag is the read; Position is what you do about it.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What it shows you during the game</h2>
+    <ul>
+      <li><b>Across the top:</b> pitch count for the man on the mound, strike percentage, first-pitch strike percentage, and AO3+.</li>
+      <li><b>AO3+</b> is our stat for forcing action. An at-bat gets a plus if it ended in 3 pitches or fewer, or we were ahead after 3. It gets a second plus if it produced an out. The grid splits all 4 combinations.</li>
+      <li><b>Mix</b> shows the percentage of each pitch type that pitcher has thrown.</li>
+      <li><b>Pitch Sequencing</b> under the zone is the hitter's page: a plain-language read, every pitch he's seen on one grid, a table by pitch type, and each of his at-bats pitch by pitch.</li>
+      <li>The read line calls out where he swings and misses and where he does damage, for example <i>misses up and away</i>. It needs a few pitches before it says anything.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>End of the game</h2>
+    <ul>
+      <li>Open the <b>Game</b> tab and type in IP, R and ER for each pitcher. The app can't work those out because it doesn't track innings.</li>
+      <li>Tap <b>Export</b> in the header. Then <b>Save file</b> to download it, or <b>Share</b> for the iPad share sheet &mdash; Save to Files, Mail and AirDrop are all in there. The full text is also sitting in the box if you would rather copy and paste it.</li>
+      <li>The file is named for the game, like <code>pitch-chart-4-18-ponderosa.txt</code>, so a season's worth sorts itself.</li>
+      <li>You get 3 things in it: readable pitcher lines, tab-separated rows for the season spreadsheet, and a pitch log with one row per pitch including the zone location and the spray point.</li>
+      <li>The header line records which app build produced the file.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Export before you start the next game</span>
+      <p>The game lives in the iPad's storage and the next game overwrites it. Nothing is sent anywhere, so the export is the only copy that leaves the device.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Things it doesn't do</h2>
+    <p class="sub">These are known. No need to write them up.</p>
+    <ul>
+      <li>No innings, no score, no baserunners. Outs are manual and IP is typed in at the end.</li>
+      <li>No velocity.</li>
+      <li>One game stored at a time, so a hitter's history resets every game.</li>
+      <li>Two people can't chart the same game on two iPads.</li>
+      <li>On the spray chart the infield is drawn to scale and the outfield is squeezed to fit the panel. Direction is accurate, depth is relative.</li>
+    </ul>
+  </section>
+
+  <section class="ask">
+    <h2>What to send back</h2>
+    <p class="sub">Chart a full game if you can, or 3 innings if that's what you get. Then tell me:</p>
+    <ul>
+      <li>Anything you tapped that didn't do what you expected.</li>
+      <li>Any pitch or result that ended up on the wrong hitter, and what you were doing when it happened.</li>
+      <li>Anything you had to hunt for on the screen.</li>
+      <li>Whether 3 taps keeps up with a quick inning, or whether you fell behind.</li>
+      <li>What you ended up writing on paper anyway. That one matters most.</li>
+    </ul>
+  </section>
+
+  <footer>Legend Titans Pitch Chart &middot; app v2 &middot; Guide prepared for game day</footer>
+
+</div>
+</body>
+</html>

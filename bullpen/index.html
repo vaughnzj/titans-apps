@@ -84,6 +84,10 @@ button{cursor:pointer}
   text-transform:uppercase;letter-spacing:.07em;padding:7px 16px;border-radius:6px;
 }
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);opacity:1}
+.barlink{display:inline-block;margin-left:8px;padding:7px 12px;border-radius:8px;
+  background:rgba(255,255,255,.12);color:#fff;text-decoration:none;
+  font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:600;font-size:14px;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
 
 .build{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none}
 .build.warn{color:#ffc27a;font-weight:700}
@@ -324,6 +328,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
     <button id="tab-chart" role="tab" aria-selected="false" aria-controls="v-chart">Chart</button>
     <button id="tab-report" role="tab" aria-selected="false" aria-controls="v-report">Report</button>
   </div>
+  <a class="barlink" href="./guide.html" target="_blank" rel="noopener">Guide</a>
   <button class="btn pri" id="expNow" style="margin-left:8px">Export now</button>
 </div>
 
@@ -622,7 +627,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v8";
+var BUILD = "v9";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;

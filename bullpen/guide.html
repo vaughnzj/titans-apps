@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16325C">
+<title>Bullpen Chart Coach's Guide</title>
+</head>
+<body>
+<style>
+:root{
+  --navy:#16325C;
+  --navy-2:#2A4C82;
+  --ground:#EEF1F6;
+  --paper:#FFFFFF;
+  --panel:#E4E9F1;
+  --rule:#CCD6E3;
+  --rule-soft:#DFE5EE;
+  --text:#16233A;
+  --text-2:#4F5F78;
+  --text-3:#7F8FA5;
+  --spot:#1A7F4B;
+  --spot-bg:#E2F3EA;
+  --close:#A07214;
+  --close-bg:#FAF0DA;
+  --miss:#AD3728;
+  --miss-bg:#FAE5E1;
+  --accent:#C85C1C;
+  --shadow:0 1px 2px rgba(17,28,46,.05), 0 6px 18px rgba(17,28,46,.07);
+  --cond:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --navy:#22406E; --navy-2:#6E9BDA;
+    --ground:#0B1220; --paper:#141E30; --panel:#1C2A3F;
+    --rule:#31415A; --rule-soft:#26344A;
+    --text:#E4EAF4; --text-2:#A3B3C8; --text-3:#7386A0;
+    --spot:#4CC088; --spot-bg:#12301F;
+    --close:#D7A63C; --close-bg:#332708;
+    --miss:#E2705F; --miss-bg:#361612;
+    --accent:#E8873F;
+    --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --navy:#22406E; --navy-2:#6E9BDA;
+  --ground:#0B1220; --paper:#141E30; --panel:#1C2A3F;
+  --rule:#31415A; --rule-soft:#26344A;
+  --text:#E4EAF4; --text-2:#A3B3C8; --text-3:#7386A0;
+  --spot:#4CC088; --spot-bg:#12301F;
+  --close:#D7A63C; --close-bg:#332708;
+  --miss:#E2705F; --miss-bg:#361612;
+  --accent:#E8873F;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 8px 22px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--ground);color:var(--text);
+  font-family:var(--sans);font-size:16px;line-height:1.55;
+}
+.page{max-width:820px;margin:0 auto;padding-inline:20px;padding-block:0 64px}
+
+.backlink{display:inline-block;margin:18px 0 -14px;font-family:var(--cond);font-weight:600;
+  font-size:14px;letter-spacing:.07em;text-transform:uppercase;color:var(--navy-2);text-decoration:none}
+.backlink:hover{text-decoration:underline}
+@media print{.backlink{display:none}}
+.mast{background:var(--navy);color:#fff;margin-inline:-20px;padding:34px 20px 26px;margin-bottom:34px}
+.mast .inner{max-width:820px;margin:0 auto}
+.eyebrow{font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.18em;
+  text-transform:uppercase;opacity:.66}
+h1{font-family:var(--cond);font-weight:700;font-size:clamp(34px,7vw,52px);line-height:1;
+  letter-spacing:.01em;text-transform:uppercase;margin:6px 0 10px;text-wrap:balance}
+.mast p{margin:0;max-width:60ch;font-size:16.5px;color:rgba(255,255,255,.86)}
+.mast .meta{margin-top:16px;padding-top:13px;border-top:1px solid rgba(255,255,255,.2);
+  font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;color:rgba(255,255,255,.6)}
+
+section{margin-bottom:34px}
+h2{font-family:var(--cond);font-weight:700;font-size:26px;letter-spacing:.02em;
+  text-transform:uppercase;color:var(--navy-2);margin:0 0 4px;text-wrap:balance}
+.sub{color:var(--text-2);font-size:15px;margin:0 0 14px;max-width:66ch}
+ul{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+li{padding-left:20px;position:relative;max-width:70ch}
+li::before{content:"";position:absolute;left:2px;top:.62em;width:6px;height:6px;
+  border-radius:1px;background:var(--navy-2)}
+li ul{margin-top:9px}
+li li::before{background:var(--text-3);width:5px;height:5px}
+b,strong{font-weight:600}
+code{font-family:var(--mono);font-size:.88em;background:var(--panel);
+  padding:1px 5px;border-radius:3px;color:var(--text)}
+
+.steps{display:flex;flex-direction:column;gap:0;background:var(--paper);
+  border:1px solid var(--rule);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.step{display:grid;grid-template-columns:52px 1fr;gap:0;border-bottom:1px solid var(--rule-soft)}
+.step:last-child{border-bottom:none}
+.step .n{background:var(--panel);display:flex;align-items:flex-start;justify-content:center;
+  padding-top:17px;font-family:var(--mono);font-weight:600;font-size:19px;color:var(--navy-2)}
+.step .body{padding:15px 17px}
+.step h3{margin:0 0 3px;font-family:var(--cond);font-weight:600;font-size:20px;
+  letter-spacing:.04em;text-transform:uppercase}
+.step p{margin:0;color:var(--text-2);font-size:15.5px;max-width:62ch}
+.step .keys{margin-top:9px;display:flex;flex-wrap:wrap;gap:5px}
+.key{font-family:var(--mono);font-size:12.5px;font-weight:500;padding:3px 8px;
+  border:1px solid var(--rule);border-radius:4px;background:var(--ground);white-space:nowrap}
+
+.note{background:var(--close-bg);border-left:3px solid var(--close);
+  padding:13px 16px;border-radius:0 6px 6px 0;margin-top:16px}
+.note p{margin:0;font-size:15.5px;max-width:66ch}
+.note .lab{font-family:var(--cond);font-weight:700;font-size:12.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--close);display:block;margin-bottom:3px}
+
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;background:var(--paper);
+  box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;min-width:460px;font-size:15px}
+th{background:var(--navy);color:#fff;text-align:left;font-family:var(--cond);font-weight:600;
+  font-size:13px;letter-spacing:.1em;text-transform:uppercase;padding:9px 13px}
+td{padding:8px 13px;border-top:1px solid var(--rule-soft);vertical-align:top}
+td:first-child{font-family:var(--mono);font-weight:600;white-space:nowrap;width:1%}
+tbody tr:nth-child(odd) td{background:color-mix(in srgb, var(--panel) 42%, transparent)}
+.disc{display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;
+  text-align:center;font-family:var(--cond);font-weight:700;font-size:14px;color:#fff;background:var(--navy-2)}
+.dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:6px}
+.dot.s{background:var(--spot)} .dot.c{background:var(--close)} .dot.m{background:var(--miss)}
+
+.ask{background:var(--paper);border:1px solid var(--rule);border-top:3px solid var(--accent);
+  border-radius:8px;padding:20px 22px;box-shadow:var(--shadow)}
+.ask h2{margin-bottom:6px}
+
+footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12.5px;color:var(--text-3)}
+
+@media (max-width:520px){
+  .step{grid-template-columns:40px 1fr}
+  .step .n{padding-top:15px;font-size:17px}
+}
+
+@media print{
+  :root{--ground:#fff;--paper:#fff;--panel:#f2f2f2;--text:#000;--text-2:#333;--text-3:#555;
+        --navy:#000;--navy-2:#000;--rule:#999;--rule-soft:#ccc;--shadow:none}
+  body{background:#fff;font-size:9.3pt;line-height:1.34}
+  .page{max-width:none;padding:0}
+  .mast{background:#fff;color:#000;border-bottom:2px solid #000;margin-inline:0;
+        padding:0 0 7pt;margin-bottom:11pt}
+  .mast p,.mast .meta{color:#000}
+  .mast p{font-size:10pt}
+  .mast .meta{border-top-color:#999;margin-top:8pt;padding-top:6pt;font-size:8pt}
+  .eyebrow{opacity:1;font-size:9pt}
+  h1{font-size:22pt;margin:2pt 0 5pt}
+  h2{font-size:13pt;margin-bottom:2pt}
+  .sub{font-size:9pt;margin-bottom:7pt}
+  section{margin-bottom:9.5pt}
+  ul{gap:2.6pt}
+  li{max-width:none;padding-left:14pt}
+  li::before{width:4px;height:4px;left:1px}
+  .step .body{padding:7pt 9pt}
+  .step .n{padding-top:9pt;font-size:13pt}
+  .step h3{font-size:11pt}
+  .step p{font-size:9.5pt;max-width:none}
+  .step .keys{margin-top:5pt}
+  .key{font-size:8.5pt;padding:1pt 5pt}
+  .note{padding:6pt 9pt;margin-top:7pt;background:#f6f6f6;border-left-color:#000}
+  .note p{font-size:9.5pt;max-width:none}
+  table{font-size:9pt;min-width:0}
+  th{padding:5pt 8pt;font-size:8.5pt;background:#000}
+  td{padding:2.6pt 8pt}
+  .disc{background:#000}
+  .ask{padding:9pt 11pt}
+  footer{margin-top:16pt;padding-top:7pt;font-size:8.5pt}
+  .steps,.tw,.ask{break-inside:avoid}
+  h2{break-after:avoid}
+  li{break-inside:avoid}
+  @page{margin:16mm}
+}
+</style>
+
+<div class="page">
+
+  <a class="backlink" href="./index.html">&larr; Back to the app</a>
+
+  <div class="mast">
+    <div class="inner">
+      <div class="eyebrow">Legend Titans Baseball</div>
+      <h1>Bullpen Chart Coach's Guide</h1>
+      <p>How to run a winter bullpen on the iPad. The script goes in before anybody warms up; after that it's one tap a pitch.</p>
+      <div class="meta">App v9 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
+    </div>
+  </div>
+
+  <section>
+    <h2>What it does</h2>
+    <ul>
+      <li>Holds the <b>script</b> &mdash; the pitch, the wind-up or stretch, the target spot and the situation &mdash; so every pitcher on your mound throws the same routine.</li>
+      <li>Records where each pitch actually finished, and works out whether he hit the spot, whether he was close, and whether it was a strike either way.</li>
+      <li>Tells you the <b>pattern in his misses</b>, not just the percentage.</li>
+      <li>Ranks the pitchers on your iPad against each other. Same script, same targets, so the numbers actually compare.</li>
+      <li>Exports a spreadsheet file that stacks with the other iPads' files.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Before you start</span>
+      <p>It holds <b>one session at a time</b>. Starting a new session erases the last one. Export before you start the next.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Getting it on the iPad</h2>
+    <p class="sub">Do this at home, on wifi. Once it is on the home screen it opens with no signal at all &mdash; which is the point, because the gym has none.</p>
+    <ul>
+      <li>Open <b>vaughnzj.github.io/titans-apps</b> in <b>Safari</b>. Not Chrome, and not the browser inside Messages or Mail &mdash; if it opens in one of those, tap the compass icon to send it to Safari.</li>
+      <li>Tap <b>Bullpen Chart</b>.</li>
+      <li><b>Wait for the green bar</b> that says &ldquo;Ready to use offline.&rdquo; That is the app telling you it has saved a copy. Don't skip it.</li>
+      <li>Share &rarr; <b>Add to Home Screen</b>. Name it <b>Bullpen</b>. You get the Titans zone icon.</li>
+      <li>Prove it: turn on Airplane Mode, close Safari, tap the new icon. It should open normally.</li>
+      <li>Settings &rarr; Display &amp; Brightness &rarr; Auto-Lock &rarr; <b>Never</b>.</li>
+      <li>Use it in <b>landscape</b>. The page scrolls up and down, never sideways.</li>
+      <li>Every iPad needs its own copy. <b>Four iPads, four sessions, four files at the end.</b></li>
+    </ul>
+    <div class="note">
+      <span class="lab">Which version am I on?</span>
+      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v8</b>. If it shows two numbers in amber, like <code>v8 &ne; v7</code>, that iPad downloaded an update but is still showing the old one &mdash; close the app fully from the app switcher and open it again.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Setting up, before anybody throws</h2>
+    <p class="sub">All of this lives on the <b>Setup</b> tab. It opens on a sample pitcher so you can see what a filled-in report looks like &mdash; tap <b>Start a clean session</b> to clear him. That keeps your script.</p>
+    <ul>
+      <li><b>Mound</b> &mdash; name it so it's different from the other iPads: Mound 1, Mound 2, and so on. This goes into every row of the export and is what keeps the four files apart when they're merged.</li>
+      <li><b>Date</b> and <b>Coach</b> &mdash; who's charting.</li>
+      <li><b>The script</b> &mdash; either <b>load a template</b> (see below) or build it by hand: <b>+ Add pitch</b>, then <b>+ Repeat last</b> to add four of the same call in a row quickly. Each row is a pitch type, W or S, a target spot, and an optional situation note like <code>0-2 bury it</code>.</li>
+      <li><b>Pitchers</b> &mdash; 4 or 5 per iPad. Name, jersey, hand, PitchSafe number 0&ndash;100, the stretch-only box, and under <b>Runs</b>, whether he follows the script or goes freeform.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Stretch only</span>
+      <p>Tick it for a pitcher who doesn't throw from the wind-up and every <code>W</code> in the script becomes an <code>S</code> for him. You don't need a second script.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Templates &mdash; and why the lock matters</h2>
+    <p class="sub">Four mounds only compare to each other if they threw the same routine. That is the whole reason the leaderboard means anything, so the app makes the matching script the easy path and tells on you when it drifts.</p>
+    <ul>
+      <li><b>Load template</b> on the Setup tab picks a named routine and <b>locks the script</b>. Every mound that loads the same one is charting the same thing.</li>
+      <li>The bar above the script always says where you stand: <i>Running: Winter Week 1</i>, with an <b>ID</b> next to it. <b>Two iPads showing the same ID ran the same routine.</b> That is the check, and it takes two seconds.</li>
+      <li><b>Unlock to edit</b> is one tap if you genuinely need to change a call. The bar then turns amber &mdash; <i>Modified from Winter Week 1</i> &mdash; and every row of that iPad's export is stamped <code>ScriptModified = Y</code>.</li>
+      <li>Building a script by hand is allowed. It just won't compare to the other mounds, and the bar says so plainly.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Adding a routine to the list</span>
+      <p>Build it on an iPad, tap <b>Save as template</b>, and it hands you a finished line of text. That line goes into the app's template file &mdash; a job for the laptop at home, not the gym. The list ships with the app, so once it is in, every iPad has it without anybody doing anything.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>The spots</h2>
+    <p class="sub">Same six the pitching coaches call off the paper chart, sitting on the same 5&times;5 grid the in-game app uses. The middle 9 boxes are the strike zone; the ring around them is off the plate. It's the catcher's view, so <b>In is on the left, Out on the right</b>.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Spot</th><th>Where</th><th>In the zone?</th></tr></thead>
+        <tbody>
+          <tr><td><span class="disc">0</span></td><td>Middle</td><td>Yes</td></tr>
+          <tr><td><span class="disc">1</span></td><td>Up, above the zone</td><td>No &mdash; climbing the ladder</td></tr>
+          <tr><td><span class="disc">2</span></td><td>Up &amp; in</td><td>Yes</td></tr>
+          <tr><td><span class="disc">3</span></td><td>Down &amp; in</td><td>Yes</td></tr>
+          <tr><td><span class="disc">4</span></td><td>Down &amp; away</td><td>Yes</td></tr>
+          <tr><td><span class="disc">5</span></td><td>Below &amp; away</td><td>No &mdash; the chase pitch</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul style="margin-top:14px">
+      <li>All six carry a <b>navy number</b> and a dashed outline, so you can see the whole target set at once.</li>
+      <li>The spot the script is calling <b>right now</b> turns orange with a ring around it.</li>
+      <li>Pitch types are the paper chart's numbers: <b>1</b> FB, <b>2</b> CB, <b>3</b> SL, <b>4</b> CH, <b>5</b> CT.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Charting a pitch</h2>
+    <p class="sub">One tap. The app already knows what was called, so all you're adding is where it finished.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="n">1</div>
+        <div class="body">
+          <h3>Read the call</h3>
+          <p>The navy card across the top says it: wind-up or stretch, the pitch, the spot number and what it means, plus the situation. Little map on the right shows the target.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">2</div>
+        <div class="body">
+          <h3>Tap where it finished</h3>
+          <p>One tap on the grid. The pitch is logged and the card rolls to the next one in the script. Nothing else to answer.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="n">3</div>
+        <div class="body">
+          <h3>Velo, if you got it</h3>
+          <p>Slide the number strip under the grid and tap the reading. It goes on the pitch you just logged. Skip it and nothing breaks &mdash; averages only use the pitches that have a number. Tapping the same number again clears it.</p>
+          <div class="keys"><span class="key">55</span><span class="key">&hellip;</span><span class="key">78</span><span class="key">&hellip;</span><span class="key">95</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="note">
+      <span class="lab">Late radar reading?</span>
+      <p>Tap that pitch in the <b>Pitch log</b> on the right to select it, then tap the velo. The label above the strip always names the pitch it's about to write to. Tap the same log chip again to let go and get back to live charting.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Reading the grid</h2>
+    <p class="sub">Every pitch leaves a numbered dot in the box where it finished. They stack instead of covering each other, so a finished pen shows you the whole session at a glance.</p>
+    <ul>
+      <li><span class="dot s"></span><b>Green</b> &mdash; on the spot. Exact box.</li>
+      <li><span class="dot c"></span><b>Amber</b> &mdash; one box off in any direction.</li>
+      <li><span class="dot m"></span><b>Red</b> &mdash; missed.</li>
+      <li>The number in the dot is the <b>pitch number</b>, so you can follow the order he lost it and whether he got the spot back.</li>
+      <li>Six dots fit in a box. Past that you get a <code>+3</code> chip; the detail is still in the export.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>When it doesn't go to script</h2>
+    <ul>
+      <li><b>He threw something else, or you changed your mind:</b> tap <b>Change the call</b>, set the pitch, W/S, spot and situation, then <b>Use this call</b>. It changes that one pitch for that one pitcher and marks it off-script in the export. <b>Back to the script</b> undoes it.</li>
+      <li><b>You want to change it for everybody:</b> go to Setup and edit the script row. Pitchers who haven't got there yet pick it up.</li>
+      <li><b>He's throwing extra:</b> tap <b>+ Extra pitch</b>. It adds a rep past the end of the script and opens the editor so you can say what it was.</li>
+      <li><b>Wrong box:</b> tap <b>&larr; Go back</b> to drop the last pitch, or tap that pitch in the log and tap the right box to move it.</li>
+      <li><b>Wrong pitcher:</b> tap the right one in the strip across the top. Everybody keeps his own place in the script, so you can bounce between mounds mid-routine.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Freeform pitchers</h2>
+    <p class="sub">Set a pitcher's <b>Runs</b> column to <b>Freeform</b> on Setup and the script gets out of his way. Everybody else on the iPad keeps running the routine &mdash; it's set per pitcher, not per session.</p>
+    <ul>
+      <li>His Chart screen grows a <b>Call it</b> panel: pitch, wind-up or stretch, and the spot. Tap what you just called, then tap where it finished.</li>
+      <li><b>Everything sticks.</b> Four sliders down and away in a row is one tap each &mdash; you only touch the call panel when something changes.</li>
+      <li>Situation is a free-text box that also sticks. Use it or don't.</li>
+      <li>The navy call card still reads the same, so the screen looks familiar and stays readable from the mound.</li>
+      <li>All the numbers still work. You're still calling a spot, so <b>on the spot</b>, <b>spot + close</b> and the miss read all mean exactly what they mean in scripted mode.</li>
+      <li>He's marked <b>freeform</b> on the pitcher strip and on his report card, and every one of his rows carries <code>Mode=Freeform</code> in the export so you can split them out later.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">When to use it</span>
+      <p>A kid coming back from an arm issue who just needs to get loose, a side session with a specific fix in mind, or a pen where you're reacting to what you're seeing instead of working a card. If you find yourself using <b>Change the call</b> on every pitch, that pitcher should be freeform.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the numbers mean</h2>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Number</th><th>What it counts</th></tr></thead>
+        <tbody>
+          <tr><td>On the spot</td><td>Landed in the exact box that was called. A hard standard on a 5&times;5 grid &mdash; expect it low.</td></tr>
+          <tr><td>Spot + close</td><td>Within one box of the call. This is the one that'll move week to week.</td></tr>
+          <tr><td>Strikes</td><td>Finished in the middle 9, whatever was called. A different question from hitting the spot &mdash; a guy can be 20% on the spot and 80% strikes, which tells you he's competitive but not fine.</td></tr>
+          <tr><td>Miss read</td><td>The direction of every miss added up: &ldquo;9 misses off the spot: 6 up, 4 to the arm side.&rdquo; That's the coachable part.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <span class="lab">Arm side</span>
+      <p>The miss read says <i>arm side</i> and <i>glove side</i> from a right-hander's point of view, because the grid is fixed. For a lefty, flip it in your head.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>End of the session</h2>
+    <ul>
+      <li>Type your notes into <b>Coach's comments</b> for each pitcher while you still remember what you told him. It's on the Chart tab, under the log.</li>
+      <li>Open the <b>Report</b> tab. The leaderboard at the top ranks everybody on your iPad; each pitcher's card below has his numbers, his miss read and a per-pitch-type breakdown with velo.</li>
+      <li>Tap <b>Export pitch log (.csv)</b>. The iPad asks where to put it &mdash; send it to Files or straight to the shared folder. That's the file that matters: one row per pitch, and it merges with the other mounds.</li>
+      <li><b>Export summary (.txt)</b> is the readable version, if you want to hand a pitcher a page.</li>
+      <li>Files are named <code>bullpen-2027-01-21-mound-1.csv</code>, so a winter's worth sorts itself.</li>
+      <li>Every row carries <code>Build</code>, <code>Template</code>, <code>ScriptID</code> and <code>ScriptModified</code> next to the pitch data. <b>Merge the four files and sort on ScriptID</b> &mdash; one value means all four mounds ran the same routine, and anything else shows you which one drifted.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Export before you leave</span>
+      <p>The session lives in the iPad's browser storage and the next session overwrites it. If the iPad gets wiped, cleared or handed to somebody else before you export, the pen is gone.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Things it doesn't do</h2>
+    <p class="sub">These are known. No need to write them up.</p>
+    <ul>
+      <li>No history between sessions. Each pen starts clean, so week-over-week trend happens in the spreadsheet, not in the app.</li>
+      <li>The four iPads don't talk to each other. Merging the files is a manual step in Excel.</li>
+      <li>In and Out are fixed to the grid, not flipped for left-handers.</li>
+      <li>PitchSafe is recorded, not enforced. Nothing warns you at a pitch count.</li>
+      <li>Nothing stops a coach unlocking a template and changing it. The app records that he did.</li>
+      <li>No warm-up / work / finish phases. The script is just an ordered list.</li>
+      <li>Freeform still expects a called spot. There's no way to log a pitch with no target at all.</li>
+    </ul>
+  </section>
+
+  <section class="ask">
+    <h2>What to send back</h2>
+    <p class="sub">Run one full session, then tell me:</p>
+    <ul>
+      <li>Whether one tap actually kept up, or whether you fell behind a quick pitcher.</li>
+      <li>Anything you tapped that didn't do what you expected.</li>
+      <li>Whether the call card is readable from where you stand.</li>
+      <li>How often you had to use <b>Change the call</b> &mdash; if it's constant, the script needs to be looser.</li>
+      <li>What you ended up writing on paper anyway. That one matters most.</li>
+    </ul>
+  </section>
+
+  <footer>Legend Titans Bullpen Chart · app v8 · Guide prepared for winter workouts</footer>
+
+</div>
+</body>
+</html>

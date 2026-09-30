@@ -109,6 +109,7 @@ input{font:inherit;color:inherit}
 .topbtn{padding:7px 12px;border-radius:var(--r);background:rgba(255,255,255,.12);color:#fff;
   font-family:var(--cond);font-weight:600;font-size:13px;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
 .topbtn.off{background:rgba(255,255,255,.28)}
+a.topbtn{display:inline-block;text-decoration:none;border:0}
 .pchip .kill{padding:0 6px;font-size:16px;line-height:1;opacity:.65;color:inherit}
 .addp{padding:5px 9px;border-radius:var(--r);background:rgba(255,255,255,.07);font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
 
@@ -451,6 +452,7 @@ input{font:inherit;color:inherit}
     <label class="gf"><span class="lbl">Opponent</span><input id="fOpp" placeholder="—"></label>
     <button class="topbtn" id="btnLeft" title="Show or hide the lineup column">◀ Lineup</button>
     <button class="topbtn" id="btnExport2">Export</button>
+    <a class="topbtn" href="./guide.html" target="_blank" rel="noopener">Guide</a>
   </div>
   <div class="pitchers" id="pitchers"></div>
   <div class="stats">
@@ -2346,7 +2348,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v2";
+var BUILD = "v3";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;
