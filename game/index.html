@@ -308,10 +308,10 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .zlegend i{width:7px;height:7px;border-radius:50%;display:block}
 
 .ttable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
-.ttable th{font-family:var(--cond);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);text-align:right;font-weight:600;padding:1px 3px}
+.ttable th{font-family:var(--cond);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);text-align:center;font-weight:600;padding:1px 3px}
 .ttable th:first-child,.ttable td:first-child{text-align:left;width:36px}
 .ttable th:last-child,.ttable td:last-child{text-align:left;padding-left:7px}
-.ttable td{padding:5px 4px;text-align:right;border-top:1px solid var(--line-soft)}
+.ttable td{padding:5px 4px;text-align:center;border-top:1px solid var(--line-soft)}
 .ttable td:first-child{font-weight:600}
 .ttable .read{font-family:var(--cond);font-weight:600;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
 .ttable .read.miss{color:var(--strike)}
@@ -2351,7 +2351,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v4";
+var BUILD = "v5";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;

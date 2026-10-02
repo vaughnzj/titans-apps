@@ -162,13 +162,14 @@ input[type=date]{
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 
 /* ---------- setup ---------- */
-table.grid{width:100%;border-collapse:collapse;font-size:14px}
+table.grid{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 table.grid th{
-  text-align:left;font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-size:12px;
+  text-align:center;font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-size:12px;
   text-transform:uppercase;letter-spacing:.09em;color:var(--ink-2);
-  padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;
+  padding:6px 8px;border-bottom:1px solid var(--line);
 }
-table.grid td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.grid td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align:middle;
+  text-align:center;overflow-wrap:break-word}
 table.grid tr:last-child td{border-bottom:0}
 .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .no{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;color:var(--ink-2);width:34px}
@@ -542,7 +543,7 @@ Add this page to your home screen and it works with no signal at all. Legend Tit
 
 /* ===================== model ===================== */
 var TYPES = [{k:"FB",n:1,l:"Fastball"},{k:"CB",n:2,l:"Curveball"},{k:"SL",n:3,l:"Slider"},
-             {k:"CH",n:4,l:"Change-up"},{k:"CT",n:5,l:"Cutter"}];
+             {k:"CH",n:4,l:"Change-up"},{k:"CT",n:5,l:"Cutter"},{k:"SP",n:6,l:"Splitter"}];
 var SPOTS = {
   0:{r:2,c:2,l:"Middle"},
   1:{r:0,c:2,l:"Up, above the zone"},
@@ -627,7 +628,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v9";
+var BUILD = "v10";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
