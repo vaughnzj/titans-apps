@@ -1,6 +1,6 @@
 /* Titans Bullpen Chart - offline cache
    Bump CACHE when you upload a new index.html, or iPads keep the old one. */
-var CACHE = "titans-bullpen-v17";
+var CACHE = "titans-bullpen-v18";
 var FILES = [
   "./",
   "./index.html",

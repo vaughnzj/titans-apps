@@ -365,12 +365,6 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
     <button class="btn sm pri" id="btnFinish">Finish &amp; file this session</button>
   </div>
 
-  <div class="notice" id="sampleBar" hidden>
-    <strong>Sample data loaded</strong>
-    <span>One pitcher is filled in so you can see how the report reads. Clear it before you chart for real.</span>
-    <button class="btn sm pri" id="clearSample">Start a clean session</button>
-  </div>
-
   <!-- ============ SETUP ============ -->
   <section id="v-setup" role="tabpanel" aria-labelledby="tab-setup">
     <div class="stack">
@@ -637,7 +631,6 @@ function pitchCount(st){
 }
 function unsentCount(){ var n=0; A.forEach(function(x){ if(!x.sent) n++; }); return n; }
 function finishAndFile(){
-  if(S.sample){ note("That is the sample \u2014 tap Start a clean session first"); return; }
   if(!pitchCount(S)){ note("Nothing charted yet."); return; }
   if(!confirm("File this session and start a clean one? It moves to History and stays "+
               "there \u2014 nothing is deleted.")) return;
@@ -647,7 +640,7 @@ function finishAndFile(){
   /* The script and the names carry forward: same routine, same four arms next week. */
   var keep = {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked, pad:S.pad, coach:S.coach};
   var names = S.pitchers.map(function(p){ return p.name; });
-  S = blank(); S.sample = false;
+  S = blank();
   S.script = keep.script; S.tpl = keep.tpl; S.tplId = keep.tplId; S.locked = keep.locked;
   S.pad = keep.pad; S.coach = keep.coach;
   names.forEach(function(n,i){ if(S.pitchers[i]) S.pitchers[i].name = n; });
@@ -662,18 +655,6 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 function today(){ var d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
 function pad2(n){ return (n<10?"0":"")+n; }
 
-function defaultScript(){
-  var s=[], add=function(t,w,sp,sit,n){ for(var i=0;i<n;i++) s.push({id:uid(),type:t,ws:w,spot:sp,sit:sit}); };
-  add("FB","W",0,"",4);
-  add("FB","W",3,"",4);
-  add("FB","W",2,"",2);
-  add("CB","W",5,"20",3);
-  add("CH","S",4,"R1",3);
-  add("FB","SS",4,"R2",4);
-  add("SL","S",5,"2K",3);
-  add("FB","S",1,"",2);
-  return s;
-}
 function newPitcher(nm){
   return {id:uid(),name:nm||"",num:"",hand:"R",safe:"",stretch:false,comments:"",
           mode:"script", free:{type:"FB",ws:"S",spot:0,sit:""}, pitches:[],over:{}};
@@ -685,27 +666,11 @@ function pfree(p){
   return p.free;
 }
 function blank(){
-  return {v:1,pad:"Mound 1",date:today(),coach:"",sample:false,
+  return {v:1,pad:"Mound 1",date:today(),coach:"",
           tpl:"", tplId:"", locked:false,
           script:[],
           pitchers:[newPitcher(""),newPitcher(""),newPitcher(""),newPitcher(""),newPitcher("")],
           cur:null};
-}
-function sampleState(){
-  var s = blank();
-  s.sample = true;
-  s.script = defaultScript();      /* the demo needs a script to demonstrate against */
-  s.pitchers[0].name = "SAMPLE — clear me";
-  s.pitchers[0].num = "17"; s.pitchers[0].safe = 78;
-  var seed = [[2,2,82],[2,1,null],[2,2,81],[1,2,83],[3,1,null],[3,2,82],[2,1,80],[3,1,null],
-              [1,1,null],[0,1,72],[2,2,null],[1,0,null],[3,1,71],[4,4,null],[3,3,null]];
-  for(var i=0;i<seed.length;i++){
-    var call = s.script[i];
-    s.pitchers[0].pitches.push({type:call.type,ws:call.ws,spot:call.spot,sit:call.sit,
-                                r:seed[i][0],c:seed[i][1],velo:seed[i][2],off:false});
-  }
-  s.pitchers[1].name = ""; s.cur = s.pitchers[0].id;
-  return s;
 }
 
 var S;
@@ -713,7 +678,11 @@ try{
   var raw = localStorage.getItem(KEY);
   S = raw ? JSON.parse(raw) : null;
 }catch(e){ S = null; }
-if(!S || !S.script || !S.pitchers){ S = sampleState(); }
+/* The demo pitcher is gone as of v18. An iPad that still has it saved would
+   otherwise be stuck with it forever, because the only reset lived in the
+   sample banner that no longer exists - the same trap the archive was built to
+   close. So drop it on sight. It was never real data. */
+if(!S || !S.script || !S.pitchers || S.sample === true){ S = blank(); }
 if(!S.cur || !byId(S.cur)) S.cur = S.pitchers.length ? S.pitchers[0].id : null;
 if(typeof S.locked !== "boolean") S.locked = false;
 if(typeof S.tpl !== "string") S.tpl = "";
@@ -729,7 +698,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v17";
+var BUILD = "v18";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
@@ -895,9 +864,8 @@ function wsOpts(sel){ var h=""; for(var i=0;i<WS.length;i++) h+=opt(WS[i].k, WS[
 
 function drawSetup(){
   el("s-pad").value = S.pad; el("s-date").value = S.date; el("s-coach").value = S.coach;
-  el("sampleBar").hidden = !S.sample;
   /* Only offer to file once something has actually been charted. */
-  el("finishBar").hidden = !!S.sample || !pitchCount(S);
+  el("finishBar").hidden = !pitchCount(S);
 
   var tb = el("scriptTbl").querySelector("tbody"), h="";
   var lk = S.locked ? " disabled" : "";
@@ -1061,13 +1029,6 @@ el("codeCopyBtn").onclick = function(){
 };
 
 el("btnFinish").onclick = finishAndFile;
-el("clearSample").onclick = function(){
-  /* Keep a template you deliberately loaded; drop the demo's routine. */
-  var t = S.tpl ? {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked} : null;
-  S = blank(); S.sample = false;
-  if(t){ S.script=t.script; S.tpl=t.tpl; S.tplId=t.tplId; S.locked=t.locked; }
-  S.cur = S.pitchers[0].id; save(); drawSetup(); show("setup");
-};
 
 /* ===================== chart ===================== */
 var pending = null; /* index being re-done, else null = next */

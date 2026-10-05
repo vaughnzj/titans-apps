@@ -114,6 +114,17 @@ const styled = sel =>
     ["tab: report",      "#tab-report",                   'document.getElementById("v-report").hidden+""'],
     ["tab: history",     "#tab-hist",                     'document.getElementById("v-hist").hidden+""'],
     ["back to setup",    "#tab-setup",                    'document.getElementById("v-setup").hidden+""'],
+    /* The demo pitcher was removed in v18. A fresh app opens EMPTY — no script,
+       no names — so these two guard against a seeded session creeping back in,
+       and every check below has to make its own row first. */
+    ["no sample banner",  null,
+       '(!document.getElementById("sampleBar") && !document.getElementById("clearSample"))+""',
+       null, "true"],
+    ["fresh start is empty", null,
+       n('#scriptTbl tbody [data-f="type"]'), null, 0],
+    /* count the row CONTROLS: an empty-state row is still one <tr>, so rows alone
+       cannot tell "no script" from "one pitch". */
+    ["add pitch",        "#addPitch",                     n('#scriptTbl tbody [data-f="type"]')],
     /* Delivery codes. SS is the slide step; SL is the Slider pitch type and must
        never leak into this list. */
     ["delivery options",  null,
@@ -131,10 +142,11 @@ const styled = sel =>
     ["column order",      null,
        '[].map.call(document.querySelectorAll(\'#scriptTbl tbody tr[data-i="0"] [data-f]\'),'+
        'function(o){return o.getAttribute("data-f")}).join("|")', null, "ws|type|spot|sit"],
-    ["clear sample",     "#clearSample",                  'document.getElementById("sampleBar").hidden+""'],
-    /* count the row CONTROLS: an empty-state row is still one <tr>, so rows alone
-       cannot tell "no script" from "one pitch". */
-    ["add pitch",        "#addPitch",                     n('#scriptTbl tbody [data-f="type"]')],
+    /* The four routines are the only scripts that ship now. */
+    ["templates listed",  null,
+       '[].map.call(document.querySelectorAll("#tplPick option"),'+
+       'function(o){return o.textContent.trim()}).slice(1).join(" / ")', null,
+       "Fastball Command / Breaking Ball & Stretch / Holding Runners / Hitter\'s Counts"],
   ]);
 
   await b.close();
