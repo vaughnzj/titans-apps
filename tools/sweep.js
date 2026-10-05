@@ -49,6 +49,18 @@ const n = s => `document.querySelectorAll(${JSON.stringify(s)}).length`;
    still worked, the sweep passed, and the page was unreadable. Appearance is not
    something the control checks can see, so assert it directly: the rules loaded,
    and the navy header bar is actually painted. */
+/* The published playground runs in a sandboxed iframe with no allow-modals, so
+   window.confirm() returns false instantly and alert() does nothing - silently.
+   Every guarded action was dead in the playground for weeks while working on the
+   iPad. Nothing may call a native dialog; everything asks through ask(). */
+const NO_NATIVE_DIALOGS =
+  '(function(){' +
+  ' var src = document.documentElement.innerHTML;' +
+  ' var bad = /[^.\\w](confirm|alert|prompt)\\s*\\(/.test(' +
+  '   src.replace(/\\/\\*[\\s\\S]*?\\*\\//g, "") );' +
+  ' return (!bad)+"";' +
+  '})()';
+
 const styled = sel =>
   '(function(){' +
   ' var n=[].slice.call(document.styleSheets).reduce(function(t,s){' +
@@ -63,6 +75,7 @@ const styled = sel =>
   const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium" });
 
   await sweep(b, "PITCH CHART", "/game/index.html", [
+    ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
     ["stylesheet",       null,                            styled('.top'), null, "true"],
     ["call pad cell",    "#callPad button:nth-child(3)",  t("#callHint")],
     ["call pad toggle",  "#callPad button:nth-child(3)",  t("#callHint")],
@@ -89,6 +102,7 @@ const styled = sel =>
   const freshPA = 'O.pas=[newPA(0,0)]; O.cur=O.pas.length-1; render();';
   const onePitch = freshPA + ' logPitch(2,2); render();';
   await sweep(b, "OFFENSE CHART", "/offense/index.html", [
+    ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
     ["stylesheet",       null,                            styled('.top'), null, "true"],
     /* presence, not change: these must always be on screen */
     ["fielder numbers",  null,                            n("#diamond text"), 'showTab("chart");', 9],
@@ -109,6 +123,7 @@ const styled = sel =>
   ]);
 
   await sweep(b, "BULLPEN CHART", "/bullpen/index.html", [
+    ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
     ["stylesheet",       null,                            styled('.bar'), null, "true"],
     ["tab: chart",       "#tab-chart",                    'document.getElementById("v-chart").hidden+""'],
     ["tab: report",      "#tab-report",                   'document.getElementById("v-report").hidden+""'],
@@ -143,6 +158,10 @@ const styled = sel =>
        '[].map.call(document.querySelectorAll(\'#scriptTbl tbody tr[data-i="0"] [data-f]\'),'+
        'function(o){return o.getAttribute("data-f")}).join("|")', null, "ws|type|spot|sit"],
     /* The four routines are the only scripts that ship now. */
+    /* The only control in the app that destroys data. It must exist, and it must
+       be the guarded kind - a bare click with no dialog would be the bug. */
+    ["reset button",      null,
+       '(!!document.getElementById("btnReset"))+""', null, "true"],
     ["templates listed",  null,
        '[].map.call(document.querySelectorAll("#tplPick option"),'+
        'function(o){return o.textContent.trim()}).slice(1).join(" / ")', null,

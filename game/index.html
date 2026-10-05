@@ -368,6 +368,18 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .histgrid{display:grid;grid-template-columns:minmax(0,124px) minmax(0,146px) minmax(0,1fr);gap:14px;align-items:start}
 @media (max-width:820px){.histgrid{grid-template-columns:minmax(0,124px) minmax(0,1fr)}}
 @media (max-width:560px){.histgrid{grid-template-columns:1fr}}
+/* In-page confirm. The published playground runs in a sandboxed iframe without
+   allow-modals, where window.confirm() returns false instantly and alert() does
+   nothing at all - no dialog, no error, no console warning. Every guarded action
+   was therefore DEAD in the playground while working perfectly on the iPad.
+   Nothing may use a native dialog. */
+.askwrap{position:fixed;inset:0;background:rgba(10,18,34,.62);z-index:120;
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.askbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  max-width:540px;width:100%;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.34)}
+.askbox p{margin:0 0 18px;font-size:15px;line-height:1.5;white-space:pre-line;color:var(--text)}
+.askrow{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
 .minizone{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;width:100%;max-width:124px;aspect-ratio:1;background:var(--line-soft);padding:1px;border-radius:4px}
 .mcell{background:var(--surface);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;padding:1px;border-radius:1px}
 .mcell.inzone{background:var(--zone-fill)}
@@ -940,12 +952,39 @@ function chartedAnything(g){
   return n;
 }
 function unsentCount(){ var n=0; A.forEach(function(g){ if(!g.sent) n++; }); return n; }
+/* onYes runs only on a real tap of the confirm button. Escape, Cancel and a tap
+   on the backdrop all close without doing anything. See the .askwrap note in the
+   stylesheet for why no native dialog may be used. */
+function ask(msg, yesLabel, onYes){
+  var w = document.createElement("div");
+  w.className = "askwrap";
+  w.innerHTML = '<div class="askbox"><p></p><div class="askrow">'+
+                '<button class="btn" data-no>Cancel</button>'+
+                '<button class="btn pri" data-yes></button></div></div>';
+  w.querySelector("p").textContent = msg;               /* names go in here - never innerHTML */
+  w.querySelector("[data-yes]").textContent = yesLabel;
+  function close(){
+    if(w.parentNode) w.parentNode.removeChild(w);
+    document.removeEventListener("keydown", key);
+  }
+  function key(e){ if(e.key === "Escape") close(); }
+  w.addEventListener("click", function(e){
+    if(e.target === w || e.target.hasAttribute("data-no")){ close(); return; }
+    if(e.target.hasAttribute("data-yes")){ close(); onYes(); }
+  });
+  document.addEventListener("keydown", key);
+  document.body.appendChild(w);
+  w.querySelector("[data-no]").focus();
+}
+
 function note2(msg){ var e=document.getElementById("saveNote"); if(e) e.textContent = msg; }
 function finishAndFile(){
   if(G.sample){ nudge("That is the sample game \u2014 tap Start real game first"); return; }
   if(!chartedAnything(G)){ nudge("Nothing charted yet"); return; }
-  if(!confirm("File this game and start a clean one? It moves to History and stays "+
-              "there \u2014 nothing is deleted.")) return;
+  ask("File this game and start a clean one?\n\nIt moves to History and stays there "+
+      "\u2014 nothing is deleted.", "Finish & file", doFile);
+}
+function doFile(){
   var filed = JSON.parse(JSON.stringify(G));
   filed.filed = Date.now(); filed.sent = false; filed.build = BUILD;
   A.push(filed); saveArch(A);
@@ -2767,7 +2806,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v14";
+var BUILD = "v15";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;

@@ -1,6 +1,6 @@
 /* Dugout Pitch Chart - offline cache
    Bump CACHE when you upload a new index.html, or iPads keep the old one. */
-var CACHE = "titans-game-v14";
+var CACHE = "titans-game-v15";
 var FILES = [
   "./",
   "./index.html",

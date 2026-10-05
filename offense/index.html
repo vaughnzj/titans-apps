@@ -246,6 +246,18 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
   text-transform:uppercase}
 .read{background:var(--surface-2);border-left:3px solid var(--navy-soft);padding:9px 12px;
   border-radius:0 6px 6px 0;font-size:14px}
+/* In-page confirm. The published playground runs in a sandboxed iframe without
+   allow-modals, where window.confirm() returns false instantly and alert() does
+   nothing at all - no dialog, no error, no console warning. Every guarded action
+   was therefore DEAD in the playground while working perfectly on the iPad.
+   Nothing may use a native dialog. */
+.askwrap{position:fixed;inset:0;background:rgba(10,18,34,.62);z-index:120;
+  display:flex;align-items:center;justify-content:center;padding:24px}
+.askbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+  max-width:540px;width:100%;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.34)}
+.askbox p{margin:0 0 18px;font-size:15px;line-height:1.5;white-space:pre-line;color:var(--text)}
+.askrow{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+
 .minizone{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;width:118px;
   aspect-ratio:1;background:var(--line-soft);padding:2px;border-radius:4px}
 .minizone.big{width:min(290px,100%);gap:3px;padding:3px;border-radius:7px}
@@ -565,7 +577,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v27";
+var BUILD = "v28";
 var KEY   = "titans-offense-v1";
 var RKEY  = "titans-offense-roster-v1";
 var AKEY  = "titans-offense-archive-v1";
@@ -1534,7 +1546,7 @@ function fallback(name, blob, text){
   }
 }
 function exportNow(){
-  if(!countPitches()){ alert("Nothing charted yet."); return; }
+  if(!countPitches()){ hint("Nothing charted yet", false); return; }
   deliver(fileNameOf(O), csvOf(O));
 }
 </script>
@@ -1628,16 +1640,44 @@ function drawHistory(){
     'the same pitcher, so you can see what the grid is worth after three meetings. They clear '+
     'themselves the moment you start a real game.</div>';
   el("hist").innerHTML = out;
-  if(el("histFile")) el("histFile").onclick = function(){ if(confirmFile()) archiveGame(); };
+  if(el("histFile")) el("histFile").onclick = function(){ askFile(function(){ archiveGame(); }); };
   if(el("histAll")) el("histAll").onclick = function(){
     var all = [COLS.join(",")];
     A.forEach(function(g){ all.push(csvOf(g).split("\n").slice(1).join("\n")); });
     deliver("offense-all-games.csv", all.filter(Boolean).join("\n"));
   };
 }
-function confirmFile(){
-  if(!countPitches()) return true;
-  return confirm("File this game and start a clean one?\n\nIt moves to History and stays there — nothing is deleted.");
+/* onYes runs only on a real tap of the confirm button. Escape, Cancel and a tap
+   on the backdrop all close without doing anything. See the .askwrap note in the
+   stylesheet for why no native dialog may be used. */
+function ask(msg, yesLabel, onYes){
+  var w = document.createElement("div");
+  w.className = "askwrap";
+  w.innerHTML = '<div class="askbox"><p></p><div class="askrow">'+
+                '<button class="btn" data-no>Cancel</button>'+
+                '<button class="btn pri" data-yes></button></div></div>';
+  w.querySelector("p").textContent = msg;
+  w.querySelector("[data-yes]").textContent = yesLabel;
+  function close(){
+    if(w.parentNode) w.parentNode.removeChild(w);
+    document.removeEventListener("keydown", key);
+  }
+  function key(e){ if(e.key === "Escape") close(); }
+  w.addEventListener("click", function(e){
+    if(e.target === w || e.target.hasAttribute("data-no")){ close(); return; }
+    if(e.target.hasAttribute("data-yes")){ close(); onYes(); }
+  });
+  document.addEventListener("keydown", key);
+  document.body.appendChild(w);
+  w.querySelector("[data-no]").focus();
+}
+
+/* Was a synchronous gate returning a boolean. In the sandbox that boolean was
+   always false, so Finish & file did nothing at all in the playground. */
+function askFile(onYes){
+  if(!countPitches()){ onYes(); return; }
+  ask("File this game and start a clean one?\n\nIt moves to History and stays there "+
+      "\u2014 nothing is deleted.", "Finish & file", onYes);
 }
 
 /* ===================== sample ===================== */
@@ -2096,11 +2136,15 @@ function wire(){
   el("umpFlip").onclick   = flipUmp;
   el("btnReal").onclick   = startReal;
   el("btnSample").onclick = function(){
-    if(countPitches() && !confirm("Load the sample? The game you have charted is filed first.")) return;
-    if(countPitches()) archiveGame(true);
-    O = sampleGame(); render();
+    function go(){ if(countPitches()) archiveGame(true); O = sampleGame(); render(); }
+    if(countPitches()){
+      ask("Load the sample?\n\nThe game you have charted is filed to History first "+
+          "\u2014 nothing is lost.", "Load sample", go);
+      return;
+    }
+    go();
   };
-  el("btnArchive").onclick = function(){ if(confirmFile()) archiveGame(); };
+  el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
   el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push({rid:""}); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };
   el("rosAdd").onclick  = function(){ R.push({id:uid(), name:"", jersey:"", hand:"R"}); saveRoster(); render(); };
@@ -2156,7 +2200,7 @@ function wire(){
     if(g("data-pdel")!==null && g("data-pdel")!==""){
       var pi = +g("data-pdel");
       var used = O.pas.some(function(a){ return a.p===pi && a.pitches.length; });
-      if(used){ alert("That pitcher already has pitches charted."); return; }
+      if(used){ hint("That pitcher already has pitches charted", false); return; }
       O.pitchers.splice(pi,1);
       if(O.cp>=O.pitchers.length) O.cp = O.pitchers.length-1;
       save(); render(); return;
@@ -2177,9 +2221,13 @@ function wire(){
       var gg = arch()[+g("data-hexp")]; deliver(fileNameOf(gg), csvOf(gg)); return;
     }
     if(g("data-hdel")!==null && g("data-hdel")!==""){
-      if(!confirm("Delete this filed game for good? Export it first if you have not.")) return;
-      if(arch() !== A){ alert("That one is sample data \u2014 it clears itself when you start a real game."); return; }
-      A.splice(+g("data-hdel"),1); saveArchive(); render(); return;
+      if(arch() !== A){ hint("That one is sample data \u2014 it clears itself when you start a real game", false); return; }
+      var di = +g("data-hdel");
+      ask("Delete this filed game for good?\n\nExport it first if you have not. "+
+          "This cannot be undone.", "Delete", function(){
+        A.splice(di,1); saveArchive(); render();
+      });
+      return;
     }
   });
 
