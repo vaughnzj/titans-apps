@@ -173,6 +173,30 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .phead .lbl{color:var(--text-2)}
 .pbody{padding:12px}
 
+/* ---------- pre-game lineup setup ----------
+   The lineup column is built for DISCOVERING a lineup mid-game: every row doubles
+   as the batter selector, so typing into it means guarding every field. When the
+   card is already in your hand before first pitch, that is the wrong shape. This
+   screen is plain inputs and nothing else. */
+#v-setup{padding:10px;max-width:980px;margin:0 auto}
+.sutbl{width:100%;border-collapse:collapse;font-size:14px}
+.sutbl th{font-family:var(--cond);font-weight:600;text-transform:uppercase;letter-spacing:.06em;
+  font-size:11px;color:var(--text-2);text-align:center;padding:4px 6px;border-bottom:1px solid var(--line)}
+.sutbl td{padding:4px 6px;border-bottom:1px solid var(--line-soft);text-align:center}
+.sutbl td.no{font-family:var(--mono);color:var(--text-3);width:28px}
+.sutbl input{width:100%;padding:7px 8px;font-size:15px;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--ground)}
+.sutbl .c-nm{text-align:left}
+.sutbl .c-j input,.sutbl .c-p input{width:52px;text-align:center;font-family:var(--mono)}
+.suhand{display:flex;gap:3px;justify-content:center}
+.suhand button{padding:5px 9px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);font-family:var(--cond);font-weight:600;font-size:12px}
+.suhand button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.supull{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+/* .lbl is uppercase condensed - right for a two-word heading, unreadable for a
+   sentence. Explanations get sentence case. */
+.sunote{font-size:12.5px;line-height:1.45;color:var(--text-2)}
+
 /* ---------- Lineup ---------- */
 .slot{display:grid;grid-template-columns:22px minmax(0,1fr) auto;column-gap:8px;row-gap:2px;
   align-items:center;padding:5px 9px;border-bottom:1px solid var(--line-soft);cursor:pointer}
@@ -196,6 +220,10 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .hand{font-family:var(--mono);font-size:11.5px;font-weight:600;padding:1px 5px;border-radius:3px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--line-soft)}
 .slot.on .hand{background:var(--surface)}
 .minitags{display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+/* A read carried in from the last meeting is a starting point, not something
+   observed today. Say so where the tags are set, and in the export. */
+.carriedbar{padding:6px 12px;font-size:12px;line-height:1.4;color:var(--text-2);
+  background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
 .mt{font-family:var(--cond);font-size:11px;font-weight:600;letter-spacing:.04em;padding:1px 4px;border-radius:2px;background:var(--navy);color:#fff}
 .abrow{display:flex;gap:3px}
 .abdot{width:20px;height:20px;border-radius:4px;display:grid;place-items:center;font-family:var(--mono);font-size:10px;font-weight:600;white-space:nowrap;letter-spacing:-.03em;background:var(--surface-2);color:var(--text-3);border:1px solid var(--line-soft)}
@@ -563,6 +591,7 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
   <div class="gamebar">
     <label class="gf"><span class="lbl">Date</span><input id="fDate" placeholder="—"></label>
     <label class="gf"><span class="lbl">Opponent</span><input id="fOpp" placeholder="—"></label>
+    <button class="topbtn" id="btnSetup" title="Enter the opposing lineup before the game">Setup</button>
     <button class="topbtn" id="btnLeft" title="Show or hide the lineup column">◀ Lineup</button>
     <button class="topbtn" id="btnExport2">Export</button>
     <a class="topbtn" href="./guide.html" target="_blank" rel="noopener">Guide</a>
@@ -583,6 +612,31 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
   <span id="sampleMsg">Two innings of example data so you can see it filled in. Nothing is saved while the sample is loaded.</span>
   <button id="btnNew">Start real game</button>
 </div>
+
+<section id="v-setup" hidden>
+  <div class="panel">
+    <div class="phead"><span class="lbl">Opposing lineup</span>
+      <span class="lbl" id="suCount" style="margin-left:auto">9 spots</span></div>
+    <div class="pbody">
+      <div class="lbl" style="margin-bottom:5px">Seen them before?</div>
+      <div class="supull" id="suPull"></div>
+      <div class="sunote" id="suPullNote" style="margin-bottom:12px"></div>
+
+      <table class="sutbl">
+        <thead><tr><th class="no">#</th><th class="c-nm">Hitter</th><th>Jersey</th><th>Pos</th><th>Bats</th></tr></thead>
+        <tbody id="suRows"></tbody>
+      </table>
+
+      <div class="rowsplit" style="margin-top:12px">
+        <button class="ghost" id="suMinus">&minus; Spot</button>
+        <button class="ghost" id="suPlus">+ Spot</button>
+        <button class="ghost" id="suDone">Done &mdash; start charting</button>
+      </div>
+      <div class="sunote" style="margin-top:8px">Names, numbers and positions only. Anything you
+        learn about a hitter gets charted during the game.</div>
+    </div>
+  </div>
+</section>
 
 <div class="wrap">
 
@@ -698,6 +752,7 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 
   <div class="panel">
     <div class="phead"><span class="lbl">Batter scouting</span><span class="lbl" id="scoutWho">—</span></div>
+    <div class="carriedbar hidden" id="carriedBar"></div>
     <div class="scoutpick" id="scoutPick"></div>
     <div class="scoutaway hidden" id="scoutAway"></div>
     <div class="pbody scoutbody">
@@ -993,14 +1048,14 @@ function doFile(){
      for the same reason - that one is ours. */
   var keepP = JSON.parse(JSON.stringify(G.pitchers)), spots = G.spots;
   G = emptyGame(); G.pitchers = keepP; G.spots = spots;
-  save(); render(); renderHistory();
+  save(); render(); renderFiled();
   note2("Filed. " + A.length + (A.length===1 ? " game in History." : " games in History."));
 }
 var G = null, confirmClear = false;
 
 /* ---------- model ---------- */
 function newAB(){ return {pitches:[], result:null, auto:false, spray:null, traj:null, hard:false}; }
-function newBatter(n){ return {num:n, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{}, abs:[newAB()], cur:0}; }
+function newBatter(n){ return {num:n, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{}, carried:null, abs:[newAB()], cur:0}; }
 function newSpot(n){ return {num:n, men:[newBatter(n)], cur:0}; }
 function emptyGame(){
   var l=[],i;
@@ -1662,6 +1717,138 @@ function resultClass(r){
   return "";
 }
 
+/* ===================== pre-game lineup setup ===================== */
+var setupOpen = false;
+function showSetup(on){
+  setupOpen = !!on;
+  var sec = document.getElementById("v-setup");
+  var wrap = document.querySelector(".wrap");
+  if(sec) sec.hidden = !setupOpen;
+  if(wrap) wrap.style.display = setupOpen ? "none" : "";
+  var b = document.getElementById("btnSetup");
+  if(b) b.textContent = setupOpen ? "Charting" : "Setup";
+  if(setupOpen) renderSetup();
+}
+/* Editing men[0] - the starter. A substitution is a game-time action and stays
+   on the charting screen where the Sub button lives. */
+function suStarter(i){ return spot(i).men[0]; }
+function renderSetup(){
+  var body = document.getElementById("suRows");
+  if(!body) return;
+  document.getElementById("suCount").textContent = spots() + " spots";
+  body.innerHTML = "";
+  for(var i=0;i<spots();i++){
+    (function(i){
+      var b = suStarter(i);
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td class="no">'+(i+1)+'</td>'+
+        '<td class="c-nm"><input data-su="name" placeholder="Batter '+(i+1)+'"></td>'+
+        '<td class="c-j"><input data-su="jersey" placeholder="#"></td>'+
+        '<td class="c-p"><input data-su="pos" placeholder="pos"></td>'+
+        '<td><span class="suhand">'+
+          '<button data-h="R">R</button><button data-h="L">L</button></span></td>';
+      tr.querySelector('[data-su="name"]').value   = b.name || "";
+      tr.querySelector('[data-su="jersey"]').value = b.jersey || "";
+      tr.querySelector('[data-su="pos"]').value    = b.pos || "";
+      var hb = tr.querySelectorAll("[data-h]");
+      for(var k=0;k<hb.length;k++){
+        hb[k].className = (hb[k].getAttribute("data-h") === (b.hand||"R")) ? "on" : "";
+        hb[k].addEventListener("click", function(){
+          b.hand = this.getAttribute("data-h");
+          save(); renderSetup(); render();
+        });
+      }
+      ["name","jersey","pos"].forEach(function(f){
+        tr.querySelector('[data-su="'+f+'"]').addEventListener("input", function(){
+          b[f] = this.value; save(); render();
+        });
+      });
+      body.appendChild(tr);
+    })(i);
+  }
+  renderPull();
+}
+/* We play most teams twice, so the second card is mostly the first card. Filed
+   games against the opponent currently typed in the header come first. */
+function renderPull(){
+  var host = document.getElementById("suPull");
+  var note = document.getElementById("suPullNote");
+  if(!host) return;
+  host.innerHTML = "";
+  var here = (G.opp || "").trim().toLowerCase();
+  var list = [];
+  A.forEach(function(g, i){
+    if(!g.lineup || !g.lineup.length) return;
+    var named = 0;
+    g.lineup.forEach(function(sp){ if(sp.men && sp.men[0] && sp.men[0].name) named++; });
+    if(!named) return;
+    list.push({i:i, opp:g.opp || "Unknown", date:g.date || "", named:named,
+               match: here && (g.opp||"").trim().toLowerCase() === here});
+  });
+  list.sort(function(a,b){ return (b.match?1:0)-(a.match?1:0) || b.i-a.i; });
+  if(!list.length){
+    note.textContent = "No filed game has a lineup in it yet. Type this one in and it will be here next time.";
+    return;
+  }
+  list.slice(0,6).forEach(function(x){
+    var b = document.createElement("button");
+    b.className = "ghost";
+    b.textContent = x.opp + (x.date ? " \u00b7 " + x.date : "") + " \u00b7 " + x.named;
+    b.addEventListener("click", function(){ pullLineup(x.i); });
+    host.appendChild(b);
+  });
+  note.textContent = "Pulls the names, numbers and positions. Edit anybody who changed, "+
+                     "and use + Spot for a kid who was not in the last one.";
+}
+function pullLineup(ai){
+  var src = A[ai];
+  if(!src || !src.lineup) return;
+  function go(){
+    /* lineup is padded to MAXSPOTS on load, so its length is not the batting
+       order - spots is. Fall back to counting the men who actually have names. */
+    var used = src.spots;
+    if(!used){
+      used = 0;
+      src.lineup.forEach(function(sp, k){
+        if(sp.men && sp.men[0] && sp.men[0].name) used = k+1;
+      });
+    }
+    var n = Math.min(MAXSPOTS, Math.max(1, used));
+    G.spots = n;
+    for(var i=0;i<n;i++){
+      var from = src.lineup[i] && src.lineup[i].men && src.lineup[i].men[0];
+      if(!from) continue;
+      var to = suStarter(i);
+      to.name = from.name || ""; to.jersey = from.jersey || "";
+      to.pos = from.pos || "";   to.hand = from.hand || "R";
+      /* The reads come too - that is most of the value of having faced him. Only
+         b.tags is copied, and b.tags holds ONLY what a coach set by hand; the
+         auto-detected tags are recomputed from THIS game's pitches by autoTags(),
+         so nothing is asserted that no pitch here supports. The batter is stamped
+         `carried` so the export can say where the standing read came from. */
+      var tg = {}, any = false, k;
+      for(k in from.tags){
+        if(Object.prototype.hasOwnProperty.call(from.tags, k)){ tg[k] = from.tags[k]; any = true; }
+      }
+      to.tags = tg;
+      to.play = from.play || null;
+      to.notes = from.notes || "";
+      to.carried = (any || to.play || to.notes)
+        ? ((src.opp || "a previous game") + (src.date ? ", " + src.date : ""))
+        : null;
+    }
+    save(); renderSetup(); render();
+    note2("Pulled " + (src.opp || "that lineup") + " \u2014 names, numbers and the reads. "+
+          "Check anybody who changed.");
+  }
+  if(chartedAnything(G)){
+    ask("Replace the lineup with " + (src.opp || "that game") + "'s?\n\nThis game already has "+
+        "pitches charted against these names.", "Replace", go);
+    return;
+  }
+  go();
+}
+
 function renderLineup(){
   var lc=document.getElementById("luCount");
   if(lc) lc.textContent="Up: "+(G.liveB+1);
@@ -2057,6 +2244,15 @@ function renderBatter(){
   });
   var sw=document.getElementById("scoutWho");
   if(sw) sw.textContent=sb.name||("Batter "+sb.num);
+  /* Tell the charter these tags did not come from today, so he knows to confirm
+     them rather than assume somebody watched this kid swing an hour ago. */
+  var cb=document.getElementById("carriedBar");
+  if(cb){
+    cb.classList.toggle("hidden", !sb.carried);
+    cb.textContent = sb.carried
+      ? "Reads carried in from " + sb.carried + ". Check them against what you see today."
+      : "";
+  }
   var fn=document.getElementById("fNotes");
   if(fn && document.activeElement!==fn) fn.value=sb.notes||"";
 }
@@ -2334,7 +2530,11 @@ function render(){
 }
 
 /* ---------- history ---------- */
-function renderHistory(){
+/* NOT renderHistory: that name already belongs to the batter's read panel above.
+   Two declarations with one name meant this one silently replaced it, and the
+   read line, the per-hitter mini zone and the history header went blank for
+   several releases while everything still looked fine. */
+function renderFiled(){
   var host = document.getElementById("histList"); if(!host) return;
   var nag = document.getElementById("histNag");
   host.innerHTML = "";
@@ -2369,7 +2569,7 @@ function exportFiled(i){
   G = A[i];
   try{ openExport(); }
   finally{ G = live; }
-  A[i].sent = true; saveArch(A); renderHistory();
+  A[i].sent = true; saveArch(A); renderFiled();
 }
 
 /* ---------- export ---------- */
@@ -2458,6 +2658,8 @@ function exportText(){
     L.push("  "+b.num+". "+(b.name||"Batter "+b.num)+" ("+b.hand+")"+(b.pos?" pos "+b.pos:"")+
            (b.play?"  position "+b.play:"")+(mi?"   [in for "+(sp.men[mi-1].name||("Batter "+sp.num))+"]":""));
     if(tg.length) L.push("      tags: "+tg.join(" ")+"   (* detected from the charted data)");
+    /* Provenance, so a season roll-up can tell a standing read from a fresh one. */
+    if(b.carried) L.push("      reads carried in from: "+b.carried);
     if(b.notes) L.push("      notes: "+b.notes);
     used.forEach(function(a,i){
       var seq=a.pitches.map(function(p){return (p.k||"FB")+":"+(p.t==="W"?"S*":p.t);}).join("  ");
@@ -2717,7 +2919,7 @@ function build(){
         var pane=document.getElementById("tab-"+n);
         pane.style.display = (n===name) ? "block" : "none";
       });
-      if(name==="hist") renderHistory();
+      if(name==="hist") renderFiled();
     });
   });
 
@@ -2731,6 +2933,14 @@ function build(){
     render(); save();
   });
 
+  document.getElementById("btnSetup").addEventListener("click",function(){ showSetup(!setupOpen); });
+  document.getElementById("suDone").addEventListener("click",function(){ showSetup(false); });
+  document.getElementById("suPlus").addEventListener("click",function(){
+    if(spots() < MAXSPOTS){ G.spots = spots()+1; save(); renderSetup(); render(); }
+  });
+  document.getElementById("suMinus").addEventListener("click",function(){
+    if(spots() > 1){ G.spots = spots()-1; save(); renderSetup(); render(); }
+  });
   document.getElementById("btnSub").addEventListener("click",function(){
     if(reviewing()) { nudge("Back to the plate before you make a substitution"); return; }
     substitute(G.curB);
@@ -2806,7 +3016,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v16";
+var BUILD = "v17";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;

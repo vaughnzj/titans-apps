@@ -135,13 +135,31 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
   gap:11px;align-items:start}
 /* A 10.2" iPad in landscape is 1080 wide. All three columns have to fit there,
    or the charter scrolls to reach the result buttons mid-inning. */
-@media (max-width:1000px){.cols{grid-template-columns:1fr 1fr}}
+/* Hiding the Order column hands its 170px to the zone and the result pad. The
+   charter does not need the order on screen during an at-bat - the batter strip
+   already says who is up - so it is the one column worth being able to drop. */
+.cols.narrow{grid-template-columns:minmax(286px,1fr) minmax(286px,1.05fr)}
+.cols.narrow .lu-col{display:none}
+@media (max-width:1000px){.cols{grid-template-columns:1fr 1fr}
+  .cols.narrow{grid-template-columns:1fr 1fr}}
 @media (max-width:760px){.cols{grid-template-columns:1fr}}
 .stack{display:flex;flex-direction:column;gap:12px}
 
 /* lineup */
-.luspot{display:flex;align-items:center;gap:8px;padding:7px 10px;border:0;width:100%;
+.luspot{display:block;padding:7px 10px;border:0;width:100%;
   background:transparent;border-bottom:1px solid var(--line-soft);text-align:left;border-radius:0}
+.luspot .lurow{display:flex;align-items:center;gap:8px}
+/* Each at-bat this hitter has had, in order. The count of PAs told you nothing;
+   0-for-3 and 3-for-3 looked identical. */
+.luspot .abrow{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0 0 24px}
+.abd{font-family:var(--mono);font-size:9px;line-height:1;padding:2px 3px;border-radius:3px;
+  border:1px solid var(--line);color:var(--text-2);background:var(--surface-2);min-width:16px;text-align:center}
+.abd.hit{background:var(--ball-bg);border-color:var(--ball);color:var(--ball)}
+.abd.on{background:var(--surface);border-color:var(--ball);color:var(--ball)}
+.abd.k{background:var(--strike-bg);border-color:var(--strike);color:var(--strike)}
+.abd.live{background:var(--inplay-bg);border-color:var(--inplay);color:var(--inplay)}
+.subtag{font-family:var(--mono);font-size:8.5px;letter-spacing:.04em;padding:1px 4px;border-radius:3px;
+  border:1px solid var(--line);color:var(--text-3)}
 .luspot .n{font-family:var(--mono);font-size:12px;color:var(--text-3);width:16px}
 .luspot .nm{font-weight:600;font-size:14.5px;flex:1;overflow:hidden;text-overflow:ellipsis}
 .luspot .hd{font-family:var(--mono);font-size:11px;color:var(--text-3)}
@@ -366,6 +384,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
   <div class="gamebar">
     <label class="gf"><span class="lbl">Date</span><input id="fDate" placeholder="&mdash;"></label>
     <label class="gf"><span class="lbl">Opponent</span><input id="fOpp" placeholder="&mdash;"></label>
+    <button class="topbtn" id="btnOrder" title="Show or hide the lineup column">&#9664; Lineup</button>
   </div>
   <div class="tabs" role="tablist">
     <button id="tab-setup" role="tab" aria-selected="false" aria-controls="v-setup">Setup</button>
@@ -466,9 +485,9 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
         <div class="pchips" id="pChips" style="margin-left:auto"></div></div>
     </div>
 
-    <div class="cols">
-      <div class="panel">
-        <div class="phead" style="flex-wrap:wrap"><span class="lbl">Order</span>
+    <div class="cols" id="chartCols">
+      <div class="panel lu-col">
+        <div class="phead" style="flex-wrap:wrap"><span class="lbl">Lineup</span>
           <span class="lbl" id="luThru" style="margin-left:auto;font-size:11px">&mdash;</span></div>
         <div id="luList"></div>
       </div>
@@ -480,6 +499,8 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
             <div class="bname" id="bName">Batter</div>
             <div class="bsub" id="bSub">&mdash;</div>
           </div>
+          <button class="btn sm" id="btnSub" style="margin-left:auto"
+            title="A pinch hitter takes this spot in the order">Sub</button>
           <div class="count"><span id="cnt">0&ndash;0</span><small id="cntLbl">Count</small></div>
         </div>
         <div class="pbody">
@@ -577,7 +598,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v29";
+var BUILD = "v31";
 var KEY   = "titans-offense-v1";
 var RKEY  = "titans-offense-roster-v1";
 var AKEY  = "titans-offense-archive-v1";
@@ -625,7 +646,13 @@ function newPitcher(name){
            types: TYPES.slice() };
 }
 function newPA(spot, pIdx){
-  return { spot:spot, p:pIdx, pitches:[], result:"", traj:"", spray:null, hard:false };
+  var a = { spot:spot, p:pIdx, pitches:[], result:"", traj:"", spray:null, hard:false };
+  /* Stamp WHO, now. See paHitter. O is not built yet on the very first call. */
+  if(typeof O !== "undefined" && O && O.lineup && O.lineup[spot]){
+    var h = hitterOf(spot);
+    a.hname = h.name; a.hhand = h.hand || ""; a.hrid = h.rid || "";
+  }
+  return a;
 }
 
 /* ===================== persistence ===================== */
@@ -634,7 +661,10 @@ function save(){ if(O && O.sample) return;
 function saveRoster(){ try{ localStorage.setItem(RKEY, JSON.stringify(R)); }catch(e){} }
 function saveArchive(){ try{ localStorage.setItem(AKEY, JSON.stringify(A)); }catch(e){} }
 function saveLineup(){
-  try{ localStorage.setItem(LKEY, JSON.stringify(O.lineup.map(function(h){ return h.rid; }))); }catch(e){}
+  /* The starters, not whoever finished - next game begins with the nine you picked. */
+  try{ localStorage.setItem(LKEY, JSON.stringify(O.lineup.map(function(sp){
+    return sp.men[0].rid || "";
+  }))); }catch(e){}
 }
 function loadAll(){
   try{ R = JSON.parse(localStorage.getItem(RKEY)) || []; }catch(e){ R = []; }
@@ -642,7 +672,7 @@ function loadAll(){
   if(!R.length) R = seedRoster();
   var g = null;
   try{ g = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
-  if(g && g.lineup && g.pas) { O = g; return; }
+  if(g && g.lineup && g.pas) { O = g; O.lineup = normLineup(O.lineup); return; }
   O = sampleGame();
 }
 
@@ -652,8 +682,9 @@ function archiveGame(silent){
   if(O && !O.sample && countPitches() > 0){
     var copy = JSON.parse(JSON.stringify(O));
     copy.pas.forEach(function(a){
+      if(a.hname != null) return;          /* already stamped at creation */
       var h = hitterOf(a.spot);
-      a.hname = h.name; a.hhand = h.hand || "";
+      a.hname = h.name; a.hhand = h.hand || ""; a.hrid = h.rid || "";
     });
     copy.filed = Date.now();
     copy.sent = false;              /* reserved for the auto-upload */
@@ -730,10 +761,24 @@ function drawLineupSetup(){
 }
 function hitterOf(spot){
   var sp = O.lineup[spot];
-  if(!sp) return {name:"—", hand:"R", jersey:"", rid:""};
-  if(sp.nm) return {name:sp.nm, hand:sp.hand||"R", jersey:"", rid:""};
-  var p = rosterById(sp.rid);
+  if(!sp) return {name:"\u2014", hand:"R", jersey:"", rid:""};
+  var p = manPerson(occupant(sp));
   return p ? p : {name:"Spot "+(spot+1), hand:"R", jersey:"", rid:""};
+}
+/* THE identity of a plate appearance. It is stamped when the PA is created, so a
+   substitution later in the game cannot reassign at-bats the starter already had.
+   Before this existed the live export resolved the hitter from whoever occupied
+   the spot at EXPORT time - one pinch hitter and the starter's whole line moved. */
+function paHitter(a){
+  if(a && a.hname != null) return {name:a.hname, hand:a.hhand||"R", rid:a.hrid||""};
+  var h = hitterOf(a ? a.spot : 0);
+  return {name:h.name, hand:h.hand||"R", rid:h.rid||""};
+}
+/* Same person? rid when both have one, otherwise the name they were charted under. */
+function samePerson(x, y){
+  if(!x || !y) return false;
+  if(x.rid && y.rid) return x.rid === y.rid;
+  return (x.name||"") === (y.name||"") && (x.name||"") !== "";
 }
 
 /* ===================== pitchers ===================== */
@@ -1034,18 +1079,30 @@ function drawResults(){
   el("trajLbl").classList.toggle("needed", asking);
   el("trajLbl").textContent = asking ? "How did we hit it?" : "How we hit it";
   el("hardBtn").className = "hardbtn" + (a.hard ? " on" : "");
-  el("paWho").textContent = hitterOf(a.spot).name || "—";
+  el("paWho").textContent = paHitter(a).name || "\u2014";
 }
 function drawLineupList(){
   var a = curPA();
-  var counts = {};
-  O.pas.forEach(function(x){ counts[x.spot] = (counts[x.spot]||0) + (x.pitches.length||x.result?1:0); });
   el("luList").innerHTML = O.lineup.map(function(sp,i){
-    var h = hitterOf(i);
+    var h = hitterOf(i), mine = [];
+    /* HIS at-bats, not the spot's - a pinch hitter's row shows only his own. */
+    O.pas.forEach(function(x){
+      if((x.pitches.length || x.result) && samePerson(paHitter(x), h)) mine.push(x);
+    });
+    var dots = mine.slice(0,7).map(function(x){
+      var lab = x.result || (countOf(x).b + "-" + countOf(x).s);
+      return '<span class="abd '+paDotClass(x)+'">'+esc(lab)+'</span>';
+    }).join("");
+    if(mine.length > 7) dots += '<span class="abd">+'+(mine.length-7)+'</span>';
     return '<button class="luspot'+(i===a.spot?" on":"")+'" data-spot="'+i+'">'+
-      '<span class="n">'+(i+1)+'</span>'+
-      '<span class="nm">'+esc(h.name||"—")+'</span>'+
-      '<span class="hd">'+esc(h.hand||"")+(counts[i]?" · "+counts[i]+"PA":"")+'</span></button>';
+      '<span class="lurow">'+
+        '<span class="n">'+(i+1)+'</span>'+
+        '<span class="nm">'+esc(h.name||"\u2014")+'</span>'+
+        (sp.men.length>1 ? '<span class="subtag">'+(sp.cur===0?"RE":"SUB")+'</span>' : '')+
+        '<span class="hd">'+esc(h.hand||"")+'</span>'+
+      '</span>'+
+      (dots ? '<span class="abrow">'+dots+'</span>' : '')+
+    '</button>';
   }).join("");
   var thru = O.lineup.length ? Math.floor(O.pas.length / O.lineup.length) + 1 : 1;
   el("luThru").textContent = O.pas.length ? thru + nth(thru) + " thru" : "—";
@@ -1053,11 +1110,13 @@ function drawLineupList(){
 function nth(n){ return n===1?"st":n===2?"nd":n===3?"rd":"th"; }
 
 function drawBatStrip(){
-  var a = curPA(), h = hitterOf(a.spot), c = countOf(a);
+  var a = curPA(), h = paHitter(a), c = countOf(a);
   el("bNum").textContent = a.spot+1;
   el("bName").textContent = h.name || "Spot "+(a.spot+1);
   var seen = 0;
-  O.pas.forEach(function(x,i){ if(x.spot===a.spot && i<=O.cur) seen++; });
+  /* His at-bats, not the spot's. A pinch hitter comes up for the first time even
+     though the spot is on its fourth trip through the order. */
+  O.pas.forEach(function(x,i){ if(i<=O.cur && samePerson(paHitter(x), h)) seen++; });
   el("bSub").textContent = (h.hand||"R") + "HH · PA " + seen + " · " +
     (a.pitches.length) + (a.pitches.length===1?" pitch":" pitches") +
     (a.result ? " · " + a.result : "");
@@ -1071,6 +1130,108 @@ function drawBatStrip(){
     el("backLive").onclick = function(){ O.cur = O.pas.length-1; render(); };
   }
 }
+/* Colour says what happened; the text in the dot says it too, because colour on
+   its own never carries identity (see the conventions doc). */
+function paDotClass(a){
+  if(!a.result) return a.pitches.length ? "live" : "";
+  if(HITS[a.result]) return "hit";
+  if(a.result==="BB" || a.result==="HBP" || a.result==="E") return "on";
+  if(a.result==="K" || a.result==="Kc") return "k";
+  return "out";
+}
+
+/* Put somebody else in this spot. Two different things wear one button:
+   a PINCH HITTER (a man who has not been in this spot before) and a RE-ENTRY
+   (a man who has - NFHS lets a starter come back once, in his own spot). The
+   difference matters in the data: re-entry must move `cur` back to the man who
+   is already there, never append him again, or his line splits in two.
+   The app records what happened; it does not police the once-only rule. */
+function subOpen(){
+  if(reviewing()){ hint("Go back to the plate first", false); return; }
+  var a = curPA(), si = a.spot, sp = O.lineup[si];
+  if(!sp) return;
+  var herePerson = manPerson(occupant(sp)) || {name:"Spot "+(si+1)};
+
+  var back = [], mi;
+  for(mi=0; mi<sp.men.length; mi++){
+    if(mi === sp.cur) continue;
+    var bp = manPerson(sp.men[mi]);
+    if(bp) back.push({idx:mi, name:bp.name});
+  }
+  var inGame = {};
+  O.lineup.forEach(function(s){
+    var pp = manPerson(occupant(s));
+    if(pp && pp.rid) inGame[pp.rid] = 1;
+  });
+  var free = [];
+  R.forEach(function(pl){ if(!inGame[pl.id]) free.push(pl); });
+
+  var started = a.pitches.length > 0;
+  var w = document.createElement("div");
+  w.className = "askwrap";
+  var h = '<div class="askbox"><p></p>';
+  if(back.length){
+    h += '<div class="lbl" style="margin-bottom:6px">Back in</div>'+
+         '<div class="askrow" style="justify-content:flex-start;margin-bottom:14px">';
+    back.forEach(function(b){
+      h += '<button class="btn sm" data-back="'+b.idx+'">'+esc(b.name)+'</button>';
+    });
+    h += '</div>';
+  }
+  h += '<div class="lbl" style="margin-bottom:6px">From the roster</div>';
+  if(free.length){
+    h += '<div class="askrow" style="justify-content:flex-start;margin-bottom:14px">';
+    free.forEach(function(pl){
+      h += '<button class="btn sm" data-rid="'+esc(pl.id)+'">'+
+           esc(pl.name || "(no name)")+(pl.jersey?" #"+esc(pl.jersey):"")+'</button>';
+    });
+    h += '</div>';
+  } else {
+    h += '<div class="read" style="margin-bottom:14px">Everybody on the roster is already in '+
+         'the lineup. Add him on the Setup tab first.</div>';
+  }
+  h += '<div class="askrow"><button class="btn" data-no>Cancel</button></div></div>';
+  w.innerHTML = h;
+  w.querySelector("p").textContent =
+    "Spot " + (si+1) + " \u2014 " + (herePerson.name || "") + " is out.\n\n" +
+    (started
+      ? "This at-bat is already under way, so it stays with him. The new hitter starts next time this spot comes up."
+      : "The new hitter takes this at-bat.");
+
+  function close(){
+    if(w.parentNode) w.parentNode.removeChild(w);
+    document.removeEventListener("keydown", key);
+  }
+  function key(e){ if(e.key === "Escape") close(); }
+  function put(idx){
+    sp.cur = idx;
+    /* Only an at-bat that has not started may be re-stamped. Rewriting one that
+       already has pitches would move somebody else's work onto this man. */
+    if(!started && !a.result){
+      var nh = hitterOf(si);
+      a.hname = nh.name; a.hhand = nh.hand || ""; a.hrid = nh.rid || "";
+    }
+    close(); save(); render();
+    hint(((manPerson(occupant(sp)) || {}).name || "He") + " is in at spot " + (si+1), true);
+  }
+  w.addEventListener("click", function(e){
+    var el2 = e.target;
+    if(el2 === w || el2.hasAttribute("data-no")){ close(); return; }
+    var b = el2.getAttribute("data-back");
+    if(b !== null && b !== ""){ put(+b); return; }
+    var rid = el2.getAttribute("data-rid");
+    if(rid){
+      for(var m2=0; m2<sp.men.length; m2++){        /* already been here = re-entry */
+        if(sp.men[m2].rid === rid){ put(m2); return; }
+      }
+      sp.men.push(newMan(rid));
+      put(sp.men.length-1);
+    }
+  });
+  document.addEventListener("keydown", key);
+  document.body.appendChild(w);
+}
+
 function drawPChips(){
   el("pChips").innerHTML = O.pitchers.map(function(p,i){
     var n = 0;
@@ -1092,7 +1253,7 @@ function wasHit(a){ return !!HITS[a.result]; }
    from the hitter's hand. */
 function pullSide(a){
   if(!a.spray) return null;
-  var h = (a.hname != null) ? (a.hhand || "R") : (hitterOf(a.spot).hand || "R");
+  var h = paHitter(a).hand || "R";
   var off = (h === "L") ? (a.spray.x - HOME_X) : (HOME_X - a.spray.x);
   if(Math.abs(off) < 14) return "center";
   return off > 0 ? "pull" : "oppo";
@@ -1238,7 +1399,7 @@ function hitterRows(game){
   var by = {};
   game.pas.forEach(function(a){
     if(!a.pitches.length && !a.result) return;
-    var h = (game===O) ? hitterOf(a.spot) : (a.hname ? {name:a.hname,hand:a.hhand} : {name:"Spot "+(a.spot+1),hand:""});
+    var h = paHitter(a);
     var k = h.name;
     var o = by[k] = by[k] || {name:k, hand:h.hand, pa:0, n:0, fps:0, fp:0, sw:0, wh:0,
                               oz:0, ozsw:0, k:0, bb:0, hit:0, hard:0, ip:0};
@@ -1322,7 +1483,7 @@ function umpBlock(game){
     if(x.ov) bad++;
 
     var pit = game.pitchers[pitcherOf(r.a, x)] || {hand:"R"};
-    var hh  = (game === O) ? (hitterOf(r.a.spot).hand || "R") : (r.a.hhand || "R");
+    var hh  = paHitter(r.a).hand || "R";
     var ai  = awayIdx(x.c, batsAs(hh, pit.hand || "R"));
 
     /* Which edge a pitch belongs to is the axis it is furthest out on, not
@@ -1497,7 +1658,7 @@ function csvOf(game){
   var lines = [COLS.join(",")];
   function q(v){ v = String(v==null?"":v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   game.pas.forEach(function(a, ai){
-    var h = (game===O) ? hitterOf(a.spot) : {name:a.hname||("Spot "+(a.spot+1)), hand:a.hhand||""};
+    var h = paHitter(a);
     if(!a.pitches.length) return;
     a.pitches.forEach(function(x, i){
       var p = game.pitchers[pitcherOf(a,x)] || {name:"",hand:""};
@@ -1789,7 +1950,7 @@ var SAMPLE_P2 = [[0,0,"K","",0,[["FB",3,1,"W","",0],["SL",3,1,"F","",0],["FB",1,
 function buildSample(rows, date, opp, home){
   var g = emptyGame();
   g.date = date; g.opp = opp; g.home = home; g.who = "Coach V";
-  g.lineup = SAMPLE_LU.map(function(x){ return {rid:"", nm:x[0], hand:x[1]}; });
+  g.lineup = SAMPLE_LU.map(function(x){ return {men:[newMan("", x[0], x[1])], cur:0}; });
   g.pitchers = SAMPLE_PI.map(function(x){
     var p = newPitcher(x[0]); p.jersey = x[1]; p.hand = x[2]; return p;
   });
@@ -1833,17 +1994,48 @@ function startReal(){
   var keep = [];
   try{ keep = JSON.parse(localStorage.getItem(LKEY)) || []; }catch(e){}
   var g = emptyGame();
-  g.lineup = keep.length ? keep.map(function(id){ return {rid:id}; })
+  g.lineup = keep.length ? keep.map(function(id){ return {men:[newMan(id)], cur:0}; })
                          : blankLineup(9);
   g.pitchers = [newPitcher("")];
   g.pas = [newPA(0,0)];
   O = g; save(); render();
   showTab("setup");
 }
+/* A lineup SPOT is not a hitter. A pinch hitter takes the spot and keeps his own
+   at-bats; NFHS lets a starter re-enter once, in his own spot, so the men who
+   have occupied a spot are a LIST and `cur` points at whoever is in it now.
+   Re-entry moves `cur` back - it never appends the same man twice, or his line
+   would be split across two people. Same model as the Pitch Chart. */
+function newMan(rid, nm, hand){ return {rid:rid||"", nm:nm||"", hand:hand||""}; }
+function newLineupSpot(){ return {men:[newMan("")], cur:0}; }
 function blankLineup(n){
   var out = [];
-  for(var i=0;i<n;i++) out.push({rid:""});
+  for(var i=0;i<n;i++) out.push(newLineupSpot());
   return out;
+}
+/* Games charted before subs existed stored one hitter per spot. */
+function normSpot(sp){
+  if(sp && Object.prototype.toString.call(sp.men) === "[object Array]" && sp.men.length){
+    if(typeof sp.cur !== "number" || sp.cur < 0 || sp.cur >= sp.men.length) sp.cur = 0;
+    return sp;
+  }
+  return {men:[newMan(sp && sp.rid, sp && sp.nm, sp && sp.hand)], cur:0};
+}
+function normLineup(l){
+  if(!l || !l.length) return blankLineup(9);
+  for(var i=0;i<l.length;i++) l[i] = normSpot(l[i]);
+  return l;
+}
+function occupant(sp){ return sp.men[Math.min(sp.cur, sp.men.length-1)]; }
+/* A man is either a roster pick (rid) or a typed name (the sample uses those). */
+function manPerson(m){
+  if(!m) return {name:"\u2014", hand:"R", jersey:"", rid:""};
+  if(m.nm) return {name:m.nm, hand:m.hand||"R", jersey:"", rid:""};
+  var p = rosterById(m.rid);
+  /* A roster entry keys its id as `id`; everything downstream matches people on
+     `rid`. Returning the raw roster object left rid undefined, so every hitter
+     looked like every other hitter to samePerson. Normalise here, once. */
+  return p ? {name:p.name, hand:p.hand||"R", jersey:p.jersey||"", rid:p.id} : null;
 }
 </script>
 
@@ -1883,7 +2075,7 @@ function expectRecords(games, pitcherKey, onlyIdx){
       if(onlyIdx != null){ if(pi !== onlyIdx) return; }
       else if(pitcherKey && normName(p.name) !== pitcherKey) return;
       g.pas.forEach(function(a){
-        var hh = (g === O) ? (hitterOf(a.spot).hand || "R") : (a.hhand || "R");
+        var hh = paHitter(a).hand || "R";
         var bats = batsAs(hh, p.hand || "R");
         a.pitches.forEach(function(x, i){
           if(pitcherOf(a, x) !== pi) return;
@@ -2099,11 +2291,14 @@ function render(){
     if(tab==="chart"){
       drawPChips(); drawTypes(); drawZone(); drawSeq(); drawMods();
       drawResults(); drawLineupList(); drawBatStrip(); drawPredict();
+      el("chartCols").className = "cols" + (O.hideLU ? " narrow" : "");
+      el("btnOrder").textContent = (O.hideLU ? "\u25b6 Lineup" : "\u25c0 Lineup");
       var here = curPA();
       /* The panel is headed with one hitter's name, so by default it shows HIS
          balls in play. The team view lives on the Report tab. */
+      var whoHere = paHitter(here);
       var hit = (sel.spray === "H")
-        ? O.pas.filter(function(a){ return a.spray && a.spray.x != null && a.spot === here.spot; })
+        ? O.pas.filter(function(a){ return a.spray && a.spray.x != null && samePerson(paHitter(a), whoHere); })
         : O.pas.filter(function(a){ return a.spray && a.spray.x != null; });
       drawField(el("diamond"), hit, here, false, true);   /* the one you tap */
       var tog = document.querySelectorAll("[data-spray] [data-sv]");
@@ -2111,7 +2306,7 @@ function render(){
         tog[ti].className = (tog[ti].getAttribute("data-sv") === sel.spray) ? "on" : "";
       }
       el("sprayNote").textContent = (sel.spray === "H")
-        ? (hitterOf(here.spot).name || "This hitter") + " \u00b7 " +
+        ? (whoHere.name || "This hitter") + " \u00b7 " +
           hit.length + (hit.length===1 ? " ball in play" : " balls in play")
         : "Everybody \u00b7 " + hit.length + " balls in play";
     }
@@ -2133,6 +2328,8 @@ function wire(){
   el("btnUndo").onclick   = undoPitch;
   el("hardBtn").onclick   = toggleHard;
   el("btnNextPA").onclick = nextPA;
+  el("btnSub").onclick    = subOpen;
+  el("btnOrder").onclick  = function(){ O.hideLU = !O.hideLU; save(); render(); };
   el("umpFlip").onclick   = flipUmp;
   el("btnReal").onclick   = startReal;
   el("btnSample").onclick = function(){
@@ -2145,7 +2342,7 @@ function wire(){
     go();
   };
   el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
-  el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push({rid:""}); save(); render(); } };
+  el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push(newLineupSpot()); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };
   el("rosAdd").onclick  = function(){ R.push({id:uid(), name:"", jersey:"", hand:"R"}); saveRoster(); render(); };
   el("pAdd").onclick    = function(){ O.pitchers.push(newPitcher("")); save(); render(); };
@@ -2240,7 +2437,9 @@ function wire(){
     }
     if(t.getAttribute("data-lf")){
       row = t.closest("[data-li]");
-      O.lineup[+row.getAttribute("data-li")] = {rid:t.value};
+      /* Setup edits the STARTER. A sub is a game-time action on the Chart tab. */
+      var lsp = O.lineup[+row.getAttribute("data-li")];
+      lsp.men[0] = newMan(t.value); lsp.cur = 0;
       save(); saveLineup(); drawLineupSetup(); return;
     }
     if(t.getAttribute("data-pf")){
@@ -2394,7 +2593,7 @@ function unsentCheck(){
 el("noJs").hidden = true;
 stampBuild();
 loadAll();
-if(!O.lineup || !O.lineup.length) O.lineup = blankLineup(9);
+O.lineup = normLineup(O.lineup);
 if(!O.pitchers || !O.pitchers.length) O.pitchers = [newPitcher("")];
 if(!O.pas || !O.pas.length) O.pas = [newPA(0,0)];
 if(O.cur == null || O.cur >= O.pas.length) O.cur = O.pas.length-1;

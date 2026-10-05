@@ -53,6 +53,19 @@ const n = s => `document.querySelectorAll(${JSON.stringify(s)}).length`;
    window.confirm() returns false instantly and alert() does nothing - silently.
    Every guarded action was dead in the playground for weeks while working on the
    iPad. Nothing may call a native dialog; everything asks through ask(). */
+/* Two top-level `function renderHistory()` declarations lived in the game app for
+   several releases. The later one silently replaced the earlier, so the batter's
+   read panel stopped rendering while every control still worked and every test
+   passed. Only TOP-LEVEL declarations are compared - a nested helper named the
+   same thing in two closures is fine and common. */
+const NO_DUPLICATE_FUNCTIONS =
+  '(function(){' +
+  ' var src = document.documentElement.innerHTML.replace(/\\/\\*[\\s\\S]*?\\*\\//g, "");' +
+  ' var re = /\\nfunction\\s+(\\w+)\\s*\\(/g, seen = {}, dup = [], m;' +
+  ' while((m = re.exec(src))){ if(seen[m[1]]) { if(dup.indexOf(m[1])<0) dup.push(m[1]); } else seen[m[1]]=1; }' +
+  ' return dup.join(",");' +
+  '})()';
+
 const NO_NATIVE_DIALOGS =
   '(function(){' +
   ' var src = document.documentElement.innerHTML;' +
@@ -75,6 +88,7 @@ const styled = sel =>
   const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium" });
 
   await sweep(b, "PITCH CHART", "/game/index.html", [
+    ["no duplicate fns",  null,              NO_DUPLICATE_FUNCTIONS, null, ""],
     ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
     ["stylesheet",       null,                            styled('.top'), null, "true"],
     ["call pad cell",    "#callPad button:nth-child(3)",  t("#callHint")],
@@ -94,6 +108,16 @@ const styled = sel =>
     ["colour key",       null,                            n(".zonekey span"), null, 4],
     ["finish & file",    null,                            n("#btnFinish"), null, 1],
     ["history pane",     null,                            n("#tab-hist"), null, 1],
+    /* LAST: the read panel must be checked before Setup hides the charting
+       screen, and Setup must be last because it hides it. */
+    ["batter read panel", null,
+       '((document.getElementById("readLine")||{}).textContent||"").length > 0 ? "filled" : "EMPTY"',
+       null, "filled"],
+    ["setup screen",      "#btnSetup",                     'document.getElementById("v-setup").hidden+""'],
+    ["setup rows",        null,                            n("#suRows tr"), null, 9],
+    /* Carried reads have to be visibly marked as carried, or the charter treats
+       a read from six weeks ago as something somebody saw this afternoon. */
+    ["carried-read bar",  null,                            '(!!document.getElementById("carriedBar"))+""', null, "true"],
   ]);
 
   /* Several of these refuse once the at-bat is closed, which is correct - so each
@@ -102,7 +126,13 @@ const styled = sel =>
   const freshPA = 'O.pas=[newPA(0,0)]; O.cur=O.pas.length-1; render();';
   const onePitch = freshPA + ' logPitch(2,2); render();';
   await sweep(b, "OFFENSE CHART", "/offense/index.html", [
+    ["no duplicate fns",  null,              NO_DUPLICATE_FUNCTIONS, null, ""],
     ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
+    /* Subs: a lineup spot holds every man who has occupied it, so a pinch hitter
+       cannot inherit the starter's at-bats and a re-entry is not a second person. */
+    ["sub + order buttons", null,
+       '(!!document.getElementById("btnSub") && !!document.getElementById("btnOrder"))+""',
+       null, "true"],
     ["stylesheet",       null,                            styled('.top'), null, "true"],
     /* presence, not change: these must always be on screen */
     ["fielder numbers",  null,                            n("#diamond text"), 'showTab("chart");', 9],
@@ -120,9 +150,13 @@ const styled = sel =>
     ["mound chip",       "#pChips [data-cp='1']",         t("#pChips .pchip.on"), 'O.cp=0; render();'],
     ["tab: report",      "#tab-report",                   'document.getElementById("v-report").hidden+""'],
     ["tab: history",     "#tab-history",                  'document.getElementById("v-history").hidden+""'],
+    /* LAST in this list on purpose: it leaves the Order column hidden, which
+       would break any check below it that clicks a lineup spot. */
+    ["order collapses",  "#btnOrder",                     c("#chartCols"), 'showTab("chart");'],
   ]);
 
   await sweep(b, "BULLPEN CHART", "/bullpen/index.html", [
+    ["no duplicate fns",  null,              NO_DUPLICATE_FUNCTIONS, null, ""],
     ["no native dialogs", null,              NO_NATIVE_DIALOGS, null, "true"],
     ["stylesheet",       null,                            styled('.bar'), null, "true"],
     ["tab: chart",       "#tab-chart",                    'document.getElementById("v-chart").hidden+""'],
