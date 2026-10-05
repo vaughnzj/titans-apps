@@ -77,6 +77,16 @@ button{cursor:pointer}
 .bar img{height:30px;width:auto;display:block;background:#fff;padding:4px 7px;border-radius:7px}
 .bar h1{margin:0;font-size:21px;text-transform:uppercase;letter-spacing:.06em;line-height:1}
 .bar .sub{font-size:12px;color:#9fb6da;letter-spacing:.09em;text-transform:uppercase;font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif}
+.hrow{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--line);
+  flex-wrap:wrap;font-size:13.5px}
+.hrow .when{color:var(--ink-2);font-family:ui-monospace,Menlo,monospace;font-size:11.5px}
+.hrow .pill{font-family:var(--cond);font-weight:700;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--ink-2)}
+.hrow .pill.unsent{border-color:var(--close);color:var(--close)}
+.hrow button{margin-left:auto;font-family:var(--cond);font-weight:600;font-size:11.5px;
+  letter-spacing:.07em;text-transform:uppercase;padding:5px 11px;border-radius:6px;
+  border:1px solid var(--line);color:var(--ink);background:var(--card)}
+.histnag{color:var(--close)}
 .tabs{display:flex;gap:4px;margin-left:auto;background:rgba(255,255,255,.09);padding:3px;border-radius:8px}
 .tabs button{
   border:0;background:transparent;color:var(--bar-ink);opacity:.72;
@@ -172,7 +182,7 @@ table.grid td{padding:4px 8px;border-bottom:1px solid var(--line);vertical-align
   text-align:center;overflow-wrap:break-word}
 table.grid tr:last-child td{border-bottom:0}
 .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.no{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;color:var(--ink-2);width:34px}
+.no{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;color:var(--ink-2);width:38px;white-space:nowrap}
 select.mini{padding:5px 8px;font-size:14px;width:auto}
 /* every control inside a grid table is the same height, whatever kind it is */
 table.grid select,table.grid input[type=text],table.grid input[type=number]{
@@ -259,7 +269,11 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
 
 .pickrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 .pickrow .lb{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-size:12px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ink-2);width:52px;flex:0 0 auto}
+  text-transform:uppercase;color:var(--ink-2);width:84px;flex:0 0 auto;
+  /* Wide enough for LOCATION even when the condensed face is missing and a
+     wider system font is substituted. nowrap so it can never stack two lines
+     and shove the button row down. */
+  white-space:nowrap}
 .pick{
   border:1px solid var(--line);background:var(--card-2);border-radius:8px;padding:6px 12px;
   font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;font-size:16px;letter-spacing:.04em;
@@ -328,6 +342,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
     <button id="tab-setup" role="tab" aria-selected="true" aria-controls="v-setup">Setup</button>
     <button id="tab-chart" role="tab" aria-selected="false" aria-controls="v-chart">Chart</button>
     <button id="tab-report" role="tab" aria-selected="false" aria-controls="v-report">Report</button>
+    <button id="tab-hist" role="tab" aria-selected="false" aria-controls="v-hist">History</button>
   </div>
   <a class="barlink" href="./guide.html" target="_blank" rel="noopener">Guide</a>
   <button class="btn pri" id="expNow" style="margin-left:8px">Export now</button>
@@ -342,6 +357,13 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
   <div class="notice" id="netBar" hidden></div>
 
   <div class="notice" id="storeBar" hidden></div>
+
+  <div class="notice" id="finishBar" hidden>
+    <strong>Done for today?</strong>
+    <span>Filing moves this session to History and starts a clean one with the same
+      script and the same names. Nothing is deleted.</span>
+    <button class="btn sm pri" id="btnFinish">Finish &amp; file this session</button>
+  </div>
 
   <div class="notice" id="sampleBar" hidden>
     <strong>Sample data loaded</strong>
@@ -376,7 +398,7 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
           <div class="tplbar" id="tplBar"></div>
           <div class="scroller">
             <table class="grid" id="scriptTbl">
-              <thead><tr><th class="no">#</th><th>Pitch</th><th>W/S</th><th>Spot</th><th>Situation</th><th></th></tr></thead>
+              <thead><tr><th class="no">#</th><th>W/S/SS</th><th>Pitch</th><th>Location</th><th>Situation</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -440,12 +462,12 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
           <h2>Call it</h2>
           <div class="body">
             <div class="pickrow">
-              <div class="pickrow" id="f-type" style="margin:0"><span class="lb">Pitch</span></div>
               <div class="pickrow" id="f-ws" style="margin:0"></div>
+              <div class="pickrow" id="f-type" style="margin:0"><span class="lb">Pitch</span></div>
             </div>
-            <div class="pickrow" id="f-spot"><span class="lb">Spot</span></div>
+            <div class="pickrow" id="f-spot"><span class="lb">Location</span></div>
             <label class="fld" style="margin-top:4px">Situation &mdash; optional, sticks until you change it
-              <input type="text" id="f-sit" placeholder="e.g. 1-2 put-away">
+              <select id="f-sit"></select>
             </label>
           </div>
         </div>
@@ -479,10 +501,10 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
 
             <div id="editRow" hidden style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
               <div class="row">
+                <label class="fld">W/S/SS <select id="e-ws" class="mini"></select></label>
                 <label class="fld">Pitch <select id="e-type" class="mini"></select></label>
-                <label class="fld">W/S <select id="e-ws" class="mini"></select></label>
-                <label class="fld">Spot <select id="e-spot" class="mini"></select></label>
-                <label class="fld">Situation <input type="text" id="e-sit"></label>
+                <label class="fld">Location <select id="e-spot" class="mini"></select></label>
+                <label class="fld">Situation <select id="e-sit" class="mini"></select></label>
               </div>
               <div class="row" style="margin-top:10px">
                 <button class="btn pri sm" id="e-save" style="flex:0 0 auto">Use this call</button>
@@ -531,6 +553,19 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
       <div class="rpt" id="rpt"></div>
     </div>
   </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="v-hist" role="tabpanel" aria-labelledby="tab-hist" hidden>
+    <div class="stack">
+      <div class="panel">
+        <h2>Filed sessions</h2>
+        <div class="body">
+          <div class="tiny histnag" id="histNag" style="margin-bottom:8px"></div>
+          <div id="histList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <footer>Data lives on this iPad only, one session at a time. Export before you start the next one.<br>
@@ -544,6 +579,38 @@ Add this page to your home screen and it works with no signal at all. Legend Tit
 /* ===================== model ===================== */
 var TYPES = [{k:"FB",n:1,l:"Fastball"},{k:"CB",n:2,l:"Curveball"},{k:"SL",n:3,l:"Slider"},
              {k:"CH",n:4,l:"Change-up"},{k:"CT",n:5,l:"Cutter"},{k:"SP",n:6,l:"Splitter"}];
+/* Delivery. SS is the slide step, not SL — SL is already the Slider above, and the
+   two would sit one column apart in the export. A slide step comes out of the
+   stretch, so a "stretch only" pitcher can throw one; only a wind-up call gets
+   rewritten for him. */
+var WS = [{k:"W",l:"Wind-up"},{k:"S",l:"Stretch"},{k:"SS",l:"Slide step"}];
+function wsLabel(k){ for(var i=0;i<WS.length;i++) if(WS[i].k===k) return WS[i].l; return k; }
+function wsOK(k){ return k==="W" || k==="S" || k==="SS"; }
+
+/* Tracked situations. A fixed list, not free text: the point of recording a
+   situation is to be able to group on it later, and typed notes never group —
+   "2 strikes chase", "2K chase" and "chase 2 strikes" are three things to Excel.
+   The code is stored and exported; the label is what anybody reads. Both go in
+   the CSV so renaming a label can never orphan an old file. */
+var SITS = [{k:"R1",l:"Runner on 1B"},{k:"R2",l:"Runner on 2B"},
+            {k:"2K",l:"2 strikes, chase"},{k:"20",l:"2-0 O/S strike"}];
+function sitLabel(k){
+  if(!k) return "";
+  for(var i=0;i<SITS.length;i++) if(SITS[i].k===k) return SITS[i].l;
+  return k;              /* free text from a script written before v13 */
+}
+function sitOpts(sel){
+  sel = sel || "";
+  var known = !sel, h = "";
+  for(var i=0;i<SITS.length;i++) if(SITS[i].k===sel) known = true;
+  /* An old free-text note stays selectable until the coach changes it, rather
+     than being silently dropped the first time the row is redrawn. */
+  if(!known) h += opt(sel, sel+"  (old note)", true);
+  h += opt("", "\u2014 none \u2014", !sel);
+  for(var j=0;j<SITS.length;j++) h += opt(SITS[j].k, SITS[j].l, SITS[j].k===sel);
+  return h;
+}
+
 var SPOTS = {
   0:{r:2,c:2,l:"Middle"},
   1:{r:0,c:2,l:"Up, above the zone"},
@@ -553,7 +620,41 @@ var SPOTS = {
   5:{r:4,c:4,l:"Below & away"}
 };
 var SPOTKEYS = [0,1,2,3,4,5];
-var KEY = "titans-bullpen-v1";
+var KEY  = "titans-bullpen-v1";
+/* Filed sessions. Until this existed there was no way to start a SECOND real
+   session at all - the only reset lived inside the sample banner, and that
+   banner hides the moment the sample is cleared. So this is not only the E-004
+   data guard, it is what makes the app usable across a winter. */
+var AKEY = "titans-bullpen-archive-v1";
+function loadArch(){
+  try{ var a = JSON.parse(localStorage.getItem(AKEY)); return (a && a.length) ? a : []; }
+  catch(e){ return []; }
+}
+function saveArch(a){ try{ localStorage.setItem(AKEY, JSON.stringify(a)); }catch(e){} }
+var A = loadArch();
+function pitchCount(st){
+  var n = 0; (st.pitchers||[]).forEach(function(p){ n += (p.pitches||[]).length; }); return n;
+}
+function unsentCount(){ var n=0; A.forEach(function(x){ if(!x.sent) n++; }); return n; }
+function finishAndFile(){
+  if(S.sample){ note("That is the sample \u2014 tap Start a clean session first"); return; }
+  if(!pitchCount(S)){ note("Nothing charted yet."); return; }
+  if(!confirm("File this session and start a clean one? It moves to History and stays "+
+              "there \u2014 nothing is deleted.")) return;
+  var filed = JSON.parse(JSON.stringify(S));
+  filed.filed = Date.now(); filed.sent = false; filed.build = BUILD;
+  A.push(filed); saveArch(A);
+  /* The script and the names carry forward: same routine, same four arms next week. */
+  var keep = {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked, pad:S.pad, coach:S.coach};
+  var names = S.pitchers.map(function(p){ return p.name; });
+  S = blank(); S.sample = false;
+  S.script = keep.script; S.tpl = keep.tpl; S.tplId = keep.tplId; S.locked = keep.locked;
+  S.pad = keep.pad; S.coach = keep.coach;
+  names.forEach(function(n,i){ if(S.pitchers[i]) S.pitchers[i].name = n; });
+  S.cur = S.pitchers[0].id;
+  save(); drawSetup(); drawHistory(); show("setup");
+  note("Filed. " + A.length + (A.length===1 ? " session in History." : " sessions in History."));
+}
 var DL = null;
 
 function typeLabel(k){ for(var i=0;i<TYPES.length;i++) if(TYPES[i].k===k) return TYPES[i].l; return k; }
@@ -563,14 +664,14 @@ function pad2(n){ return (n<10?"0":"")+n; }
 
 function defaultScript(){
   var s=[], add=function(t,w,sp,sit,n){ for(var i=0;i<n;i++) s.push({id:uid(),type:t,ws:w,spot:sp,sit:sit}); };
-  add("FB","W",0,"Get loose",4);
-  add("FB","W",3,"0-0 strike one",4);
-  add("FB","W",2,"Up & in",2);
-  add("CB","W",5,"0-2 bury it",3);
-  add("CH","S",4,"1-1 change",3);
-  add("FB","S",4,"Runner on, away",4);
-  add("SL","S",5,"2 strikes, chase",3);
-  add("FB","S",1,"Climb the ladder",2);
+  add("FB","W",0,"",4);
+  add("FB","W",3,"",4);
+  add("FB","W",2,"",2);
+  add("CB","W",5,"20",3);
+  add("CH","S",4,"R1",3);
+  add("FB","SS",4,"R2",4);
+  add("SL","S",5,"2K",3);
+  add("FB","S",1,"",2);
   return s;
 }
 function newPitcher(nm){
@@ -628,7 +729,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v10";
+var BUILD = "v17";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
@@ -673,7 +774,7 @@ function unrle(groups){
   var out=[];
   groups.forEach(function(g){
     var n=Math.max(1, Math.min(200, g[0]|0));
-    for(var i=0;i<n;i++) out.push({id:uid(), type:String(g[1]), ws:(g[2]==="W"?"W":"S"),
+    for(var i=0;i<n;i++) out.push({id:uid(), type:String(g[1]), ws:(wsOK(String(g[2])) ? String(g[2]) : "S"),
                                    spot:Math.max(0,Math.min(5,+g[3]||0)), sit:String(g[4]||"")});
   });
   return out;
@@ -710,7 +811,7 @@ function call(p, i){
     var rec = (pending!==null && pending===i) ? p.pitches[i] : null;
     var src = rec || pfree(p);
     var fc = {type:src.type, ws:src.ws, spot:src.spot, sit:src.sit, off:false, free:true};
-    if(p.stretch) fc.ws = "S";
+    if(p.stretch && fc.ws === "W") fc.ws = "S";
     return fc;
   }
   var base = S.script[i] || null;
@@ -719,7 +820,7 @@ function call(p, i){
   if(ov) c = {type:ov.type,ws:ov.ws,spot:ov.spot,sit:ov.sit,off:true};
   else if(base) c = {type:base.type,ws:base.ws,spot:base.spot,sit:base.sit,off:false};
   else return null;
-  if(p.stretch) c.ws = "S";
+  if(p.stretch && c.ws === "W") c.ws = "S";
   return c;
 }
 function inZone(r,c){ return r>=1 && r<=3 && c>=1 && c<=3; }
@@ -763,20 +864,26 @@ function missRead(o){
 }
 
 /* ===================== view switching ===================== */
-var views = {setup:"v-setup", chart:"v-chart", report:"v-report"};
+var views = {setup:"v-setup", chart:"v-chart", report:"v-report", hist:"v-hist"};
 var el = function(id){ return document.getElementById(id); };
 function show(which){
   for(var k in views){
     el(views[k]).hidden = (k!==which);
     el("tab-"+k).setAttribute("aria-selected", k===which ? "true" : "false");
   }
+  /* Setup was the one view that never redrew on return, so anything that depends
+     on charting state - the new Finish bar above all - stayed stale until some
+     other edit happened to redraw it. */
+  if(which==="setup")  drawSetup();
   if(which==="chart") drawChart();
   if(which==="report") drawReport();
+  if(which==="hist")   drawHistory();
   window.scrollTo(0,0);
 }
 el("tab-setup").onclick=function(){show("setup");};
 el("tab-chart").onclick=function(){show("chart");};
 el("tab-report").onclick=function(){show("report");};
+el("tab-hist").onclick=function(){show("hist");};
 
 /* ===================== setup ===================== */
 function opt(v,l,sel){ return '<option value="'+v+'"'+(sel?' selected':'')+'>'+esc(l)+'</option>'; }
@@ -784,11 +891,13 @@ function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,
 
 function typeOpts(sel){ var h=""; for(var i=0;i<TYPES.length;i++) h+=opt(TYPES[i].k, TYPES[i].n+"  "+TYPES[i].k, TYPES[i].k===sel); return h; }
 function spotOpts(sel){ var h=""; for(var i=0;i<SPOTKEYS.length;i++){ var k=SPOTKEYS[i]; h+=opt(k, k+"  "+SPOTS[k].l, k===sel); } return h; }
-function wsOpts(sel){ return opt("W","W  Wind-up",sel==="W")+opt("S","S  Stretch",sel==="S"); }
+function wsOpts(sel){ var h=""; for(var i=0;i<WS.length;i++) h+=opt(WS[i].k, WS[i].k+"  "+WS[i].l, WS[i].k===sel); return h; }
 
 function drawSetup(){
   el("s-pad").value = S.pad; el("s-date").value = S.date; el("s-coach").value = S.coach;
   el("sampleBar").hidden = !S.sample;
+  /* Only offer to file once something has actually been charted. */
+  el("finishBar").hidden = !!S.sample || !pitchCount(S);
 
   var tb = el("scriptTbl").querySelector("tbody"), h="";
   var lk = S.locked ? " disabled" : "";
@@ -796,10 +905,10 @@ function drawSetup(){
     var r = S.script[i];
     h += '<tr data-i="'+i+'">'+
       '<td class="no">'+(i+1)+'</td>'+
-      '<td><select class="mini" data-f="type"'+lk+'>'+typeOpts(r.type)+'</select></td>'+
       '<td><select class="mini" data-f="ws"'+lk+'>'+wsOpts(r.ws)+'</select></td>'+
+      '<td><select class="mini" data-f="type"'+lk+'>'+typeOpts(r.type)+'</select></td>'+
       '<td><select class="mini" data-f="spot"'+lk+'>'+spotOpts(r.spot)+'</select></td>'+
-      '<td><input type="text" data-f="sit" value="'+esc(r.sit)+'"'+lk+'></td>'+
+      '<td><select class="mini" data-f="sit"'+lk+'>'+sitOpts(r.sit)+'</select></td>'+
       '<td>'+(S.locked?'':'<button class="btn sm" data-del="1">&times;</button>')+'</td></tr>';
   }
   tb.innerHTML = h || '<tr><td colspan="6" class="empty">No script yet &mdash; load a template below, or add pitches one at a time.</td></tr>';
@@ -951,6 +1060,7 @@ el("codeCopyBtn").onclick = function(){
   } else codeNote(done ? "Copied." : "Select it and copy by hand.");
 };
 
+el("btnFinish").onclick = finishAndFile;
 el("clearSample").onclick = function(){
   /* Keep a template you deliberately loaded; drop the demo's routine. */
   var t = S.tpl ? {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked} : null;
@@ -1005,12 +1115,12 @@ function drawCall(){
         (c.free ? ' &middot; freeform' : ' of '+Math.max(S.script.length,i+1))+
         (pending!==null?' &middot; redoing':'')+(c.off?' &middot; off-script':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:12px;margin-top:4px">'+
-        '<span class="ws">'+(c.ws==="W"?"Wind-up":"Stretch")+'</span>'+
+        '<span class="ws">'+esc(wsLabel(c.ws))+'</span>'+
         '<span class="big">'+esc(c.type)+'</span>'+
         '<span class="big" style="color:var(--accent)">'+c.spot+'</span>'+
       '</div>'+
       '<div class="spotname">'+esc(typeLabel(c.type))+' &mdash; '+esc(t.l)+'</div>'+
-      (c.sit ? '<div class="sit">'+esc(c.sit)+'</div>' : '')+
+      (c.sit ? '<div class="sit">'+esc(sitLabel(c.sit))+'</div>' : '')+
     '</div>'+
     '<div class="mini"><div class="minizone">'+mini+'</div></div>';
 }
@@ -1142,13 +1252,18 @@ function drawFree(){
          '<small>'+TYPES[i].n+'</small></button>';
   el("f-type").innerHTML = h;
 
-  h = '';
-  h += '<button class="pick'+(f.ws==="W"&&!p.stretch?" on":"")+'" data-w="W"'+(p.stretch?' disabled':'')+'>Wind-up</button>';
-  h += '<button class="pick'+(f.ws==="S"||p.stretch?" on":"")+'" data-w="S">Stretch</button>';
+  h = '<span class="lb">W/S/SS</span>';
+  /* A stretch-only pitcher cannot be asked for a wind-up, so that one button is
+     disabled and a wind-up selection reads as Stretch. Slide step stays available. */
+  for(var w=0;w<WS.length;w++){
+    var wk = WS[w].k, off = (wk === "W" && p.stretch);
+    var on = (f.ws === wk) || (p.stretch && wk === "S" && f.ws === "W");
+    h += '<button class="pick'+(on?" on":"")+'" data-w="'+wk+'"'+(off?' disabled':'')+'>'+WS[w].l+'</button>';
+  }
   if(p.stretch) h += '<span class="tiny" style="margin-left:6px">stretch only</span>';
   el("f-ws").innerHTML = h;
 
-  h = '<span class="lb">Spot</span>';
+  h = '<span class="lb">Location</span>';
   for(var k=0;k<SPOTKEYS.length;k++){
     var sk = SPOTKEYS[k];
     h += '<button class="pick'+(f.spot===sk?" on":"")+'" data-s="'+sk+'">'+sk+
@@ -1156,7 +1271,7 @@ function drawFree(){
   }
   el("f-spot").innerHTML = h;
 
-  if(document.activeElement !== el("f-sit")) el("f-sit").value = f.sit || "";
+  el("f-sit").innerHTML = sitOpts(f.sit);
 }
 el("f-type").addEventListener("click", function(e){
   var b = e.target.closest("button[data-t]"); if(!b) return;
@@ -1200,7 +1315,7 @@ function openEdit(){
   el("e-type").innerHTML = typeOpts(c.type);
   el("e-ws").innerHTML = wsOpts(c.ws);
   el("e-spot").innerHTML = spotOpts(c.spot);
-  el("e-sit").value = c.sit || "";
+  el("e-sit").innerHTML = sitOpts(c.sit);
   el("editRow").hidden = false;
 }
 el("changeCall").onclick = openEdit;
@@ -1283,7 +1398,7 @@ function slug(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").
 function csv(){
   var head = ["Mound","Date","Coach","Build","Template","ScriptID","ScriptModified",
               "Pitcher","Jersey","Hand","PitchSafe","StretchOnly","Mode","PitchNo",
-              "CalledType","CalledWS","CalledSpot","SpotName","Situation","OffScript",
+              "CalledType","CalledWS","CalledSpot","SpotName","Situation","SituationName","OffScript",
               "ActualRow","ActualCol","Strike","Result","MissVert","MissHoriz","Velo"];
   var lines = [head.join(",")], sid = scriptId(S.script);
   function q(v){ v = (v==null?"":String(v)); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
@@ -1296,7 +1411,7 @@ function csv(){
       lines.push([S.pad,S.date,S.coach,BUILD,S.tpl||"",sid,tplModified()?"Y":"N",
         p.name,p.num,p.hand,p.safe,p.stretch?"Y":"N",
         x.free?"Freeform":"Script",j+1,
-        x.type,x.ws,x.spot,t?t.l:"",x.sit,x.off?"Y":"N",
+        x.type,x.ws,x.spot,t?t.l:"",x.sit,sitLabel(x.sit),x.off?"Y":"N",
         x.r+1,x.c+1,inZone(x.r,x.c)?"Y":"N",
         g==="hit"?"Spot":(g==="near"?"Close":"Miss"),mv,mh,x.velo==null?"":x.velo].map(q).join(","));
     }
@@ -1312,7 +1427,7 @@ function txt(){
          (S.tpl ? "   template: "+S.tpl+(tplModified()?"  [MODIFIED — this mound does not match the template]":"") : "   [no template]"));
   for(var i=0;i<S.script.length;i++){
     var r = S.script[i];
-    L.push("  "+(i+1)+".  "+r.ws+"  "+r.type+"  spot "+r.spot+" ("+SPOTS[r.spot].l+")"+(r.sit?"   — "+r.sit:""));
+    L.push("  "+(i+1)+".  "+r.ws+"  "+r.type+"  spot "+r.spot+" ("+SPOTS[r.spot].l+")"+(r.sit?"   \u2014 "+sitLabel(r.sit):""));
   }
   L.push("");
   for(var j=0;j<S.pitchers.length;j++){
@@ -1378,6 +1493,47 @@ function offlineSave(name, data, mime){
   /* 3 — copy and paste */
   note("Select the text below and paste it into an email.");
 }
+function drawHistory(){
+  var host = el("histList"), nag = el("histNag");
+  if(!host) return;
+  host.innerHTML = "";
+  if(!A.length){
+    nag.textContent = "";
+    host.innerHTML = '<div class="tiny">Nothing filed yet. Finish a session and it lands here.</div>';
+    return;
+  }
+  var u = unsentCount();
+  /* One unsent session is the normal state walking out of the gym; a backlog is not. */
+  nag.textContent = u > 1
+    ? u + " filed sessions have not been sent yet. Export them and pass them on."
+    : "";
+  var h = "";
+  A.slice().reverse().forEach(function(x, idx){
+    var i = A.length - 1 - idx;
+    var named = (x.pitchers||[]).filter(function(p){ return p.name; })
+                                .map(function(p){ return p.name; }).join(", ");
+    h += '<div class="hrow">'+
+         '<b>'+esc(x.pad || "Mound")+'</b>'+
+         '<span class="when">'+esc(x.date||"")+' \u00b7 '+pitchCount(x)+'P'+
+           (named ? ' \u00b7 '+esc(named) : '')+'</span>'+
+         '<span class="pill'+(x.sent?"":" unsent")+'">'+(x.sent?"sent":"not sent")+'</span>'+
+         '<button data-exp="'+i+'">Export .csv</button>'+
+         '</div>';
+  });
+  host.innerHTML = h;
+  host.querySelectorAll("[data-exp]").forEach(function(b){
+    b.onclick = function(){ exportFiled(+b.getAttribute("data-exp")); };
+  });
+}
+/* A filed session stays recoverable - History always has an Export beside it. */
+function exportFiled(i){
+  var live = S;
+  S = A[i];
+  try{ doExport("csv"); }
+  finally{ S = live; }
+  A[i].sent = true; saveArch(A); drawHistory();
+}
+
 function doExport(kind){
   var name = filename(kind==="csv"?"csv":"txt");
   var data = kind==="csv" ? csv() : txt();

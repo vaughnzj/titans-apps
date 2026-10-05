@@ -37,7 +37,9 @@ img{max-width:100%}
   --ball-bg:#E6F2EC;
   --inplay:#B07C2A;
   --inplay-bg:#FAF0DC;
-  --zone-fill:#DCE5F1;
+  --zone-fill:#DCE5F1;  --call-zone:#D6D9DF;
+  --accent:#C85C1C; --accent-ink:#FFFFFF;
+  --pr0:#16325C; --pr1:#2F5E96; --pr2:#5B86BC; --pr3:#89A6CE;
   --shadow:0 1px 2px rgba(14,23,38,.06), 0 4px 14px rgba(14,23,38,.07);
   --r:6px;
   --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
@@ -53,7 +55,9 @@ img{max-width:100%}
     --strike:#F2647C; --strike-bg:#3A1621;
     --ball:#5BC195; --ball-bg:#123024;
     --inplay:#E0AC55; --inplay-bg:#3A2C11;
-    --zone-fill:#22304A;
+    --zone-fill:#22304A;  --call-zone:#363B45;
+    --accent:#E8873F; --accent-ink:#FFFFFF;
+    --pr0:#5A8AD6; --pr1:#4571B4; --pr2:#345A92; --pr3:#27466F;
     --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
   }
 }
@@ -65,7 +69,9 @@ img{max-width:100%}
   --strike:#F2647C; --strike-bg:#3A1621;
   --ball:#5BC195; --ball-bg:#123024;
   --inplay:#E0AC55; --inplay-bg:#3A2C11;
-  --zone-fill:#22304A;
+  --zone-fill:#22304A;  --call-zone:#363B45;
+  --accent:#E8873F; --accent-ink:#FFFFFF;
+  --pr0:#5A8AD6; --pr1:#4571B4; --pr2:#345A92; --pr3:#27466F;
   --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
 }
 
@@ -246,20 +252,87 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .abflow{display:flex;flex-direction:column;gap:8px;padding:13px}
 .lbl.step em{font-style:normal;opacity:.6;font-size:11px;margin-left:6px;letter-spacing:.06em}
 .lbl.step{color:var(--text-2)}
-.zonecol{width:min(300px,100%);margin:0 auto}
-.zone{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:3px;width:100%;aspect-ratio:1;background:var(--line-soft);padding:2px;border-radius:var(--r)}
+.zonecol{width:min(300px,100%);margin:0 auto}  /* retired: the zone is now half of .gridpair */
+/* The two grids share a row and a size: what was asked for on the left, what the
+   pitcher did on the right. Side by side also buys back the vertical space the
+   call pad costs - stacked, this column ran well past one screen on a 10.2".
+   Below 560px of column there is no honest way to keep both, so they stack. */
+.gridpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.gridcell{display:flex;flex-direction:column;gap:5px;min-width:0}
+/* In a half-width column the one-line ellipsis from the full-width days just
+   eats the text. Let it wrap; two short lines beat "CATCHER'S VIEW - TAP WH...". */
+/* One row, four items, in as little as 174px of column. Everything here is
+   sized to that: 9px type, 6px gaps, 6px swatches, and nowrap so "In play"
+   cannot break across lines. */
+.zlegend.zonekey{display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;
+  gap:6px;margin-top:5px;font-size:9px;letter-spacing:.03em}
+.zlegend.zonekey span{white-space:nowrap;gap:3px}
+.zlegend.zonekey i{width:6px;height:6px}
+.gridcell .zonehint{margin-top:0;white-space:normal;overflow:visible;text-overflow:clip;line-height:1.3}
+@media (max-width:1000px){.gridpair{grid-template-columns:1fr}}
+/* Quieter than the location grid on purpose: no cell fill, no zone shading, a
+   dashed frame. One side is what we asked for, the other is what happened, and
+   they should not read as two of the same thing. */
+.callpad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));
+  gap:3px;width:100%;aspect-ratio:1;background:transparent;
+  border:1px dashed var(--line);padding:2px;border-radius:var(--r);min-height:0;overflow:hidden}
+.callpad button{border:1px solid var(--line-soft);background:var(--surface);border-radius:2px;
+  padding:2px;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;min-height:0;overflow:hidden}
+/* Both grids are the same shape now, so the zone tint is what tells them apart
+   at a glance: green you asked for, blue you got. */
+.callpad button.inzone{background:var(--call-zone)}
+.callpad button:active{transform:scale(.95)}
+@media (hover:hover){.callpad button:hover{border-color:var(--navy-soft)}}
+.callpad.locked{opacity:.4}
+/* Hollow: a call is a plan, not a record. Same numbers as the location grid. */
+.cmk{font-family:var(--mono);font-weight:600;pointer-events:none;height:22px;
+  padding:0 5px;border-radius:11px;display:inline-flex;align-items:center;gap:3px;line-height:1;
+  color:var(--navy-soft);background:var(--surface);border:1.5px solid var(--navy-soft)}
+.cmk b{font-size:12.5px;font-weight:700}
+.cmk i{font-style:normal;font-size:10px;font-weight:600;opacity:.85;letter-spacing:.02em}
+.cmk.more{color:var(--text-3);border-color:var(--text-3);font-weight:700}
+/* Identical cells to the location grid now, so identical shrink steps. */
+.callpad button[data-n="2"] .cmk{height:20px;padding:0 4px}
+.callpad button[data-n="2"] .cmk b{font-size:11.5px}
+.callpad button[data-n="2"] .cmk i{font-size:9px}
+.callpad button[data-n="3"],.callpad button[data-n="4"]{padding:1px;gap:1px}
+.callpad button[data-n="3"] .cmk,.callpad button[data-n="4"] .cmk{height:13px;min-width:13px;
+  padding:0 1px;gap:0;justify-content:center}
+.callpad button[data-n="3"] .cmk b,.callpad button[data-n="4"] .cmk b{font-size:9px}
+.callpad button[data-n="3"] .cmk.more,.callpad button[data-n="4"] .cmk.more{font-size:8px;padding:0;min-width:13px}
+.callpad button[data-n="3"] .cmk i,.callpad button[data-n="4"] .cmk i{display:none}
+
+.cmk.pend{border-style:dashed;color:var(--navy);border-color:var(--navy)}
+.zone{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(5,minmax(0,1fr));gap:3px;width:100%;aspect-ratio:1;background:transparent;border:1px solid var(--line);padding:2px;border-radius:var(--r);min-height:0;overflow:hidden}
 .zone.locked{opacity:.4}
-.cell{background:var(--surface);border-radius:2px;transition:transform .07s;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;padding:2px}
+/* min-height:0 so a cell full of markers cannot out-vote the grid's 1fr rows -
+   without it, six pitches in one box stretched the whole zone out of square.
+   overflow:hidden keeps the worst case tidy rather than ragged. */
+.cell{background:var(--surface);border:1px solid var(--line-soft);border-radius:2px;transition:transform .07s;display:flex;align-items:center;justify-content:center;gap:2px;flex-wrap:wrap;padding:2px;min-height:0;overflow:hidden}
 .cell.inzone{background:var(--zone-fill)}
 .cell:active{transform:scale(.93)}
 @media (hover:hover){.cell:hover{box-shadow:inset 0 0 0 2px var(--navy-soft)}}
-.mk{font-family:var(--mono);font-size:13px;font-weight:600;pointer-events:none;min-width:24px;height:24px;
-  padding:0 2px;border-radius:12px;display:grid;place-items:center;color:#fff;
-  box-shadow:0 0 0 1.5px var(--surface)}
-/* stacked pitches shrink so every one stays countable */
-.cell[data-n="2"] .mk{min-width:21px;height:21px;font-size:12px}
-.cell[data-n="3"] .mk,.cell[data-n="4"] .mk{min-width:19px;height:19px;font-size:11px}
-.cell[data-n="5"] .mk,.cell[data-n="6"] .mk{min-width:16px;height:16px;font-size:9.5px;box-shadow:0 0 0 1px var(--surface)}
+/* A pill, not a dot: the number links this pitch to the same number on the other
+   grid and to the sequence chip; the type is the thing you could not see before
+   without reading the chips. Colour still means only one thing - what the pitch
+   did - and the type rides along in text. */
+.mk{font-family:var(--mono);font-weight:600;pointer-events:none;height:22px;
+  padding:0 5px;border-radius:11px;display:inline-flex;align-items:center;gap:3px;
+  color:#fff;box-shadow:0 0 0 1.5px var(--surface);line-height:1}
+.mk b{font-size:12.5px;font-weight:700}
+.mk i{font-style:normal;font-size:10px;font-weight:600;opacity:.82;letter-spacing:.02em}
+/* Stacked pitches shrink, and past three the type is dropped before the number -
+   a cell with five pitches in it is a count, not a reading. */
+.mk.more{background:var(--text-3);font-weight:700}
+.cell[data-n="2"] .mk{height:20px;padding:0 4px}
+.cell[data-n="2"] .mk b{font-size:11.5px} .cell[data-n="2"] .mk i{font-size:9px}
+.cell[data-n="3"],.cell[data-n="4"]{padding:1px;gap:1px}
+.cell[data-n="3"] .mk,.cell[data-n="4"] .mk{height:13px;min-width:13px;padding:0 1px;gap:0;
+  justify-content:center;box-shadow:0 0 0 1px var(--surface)}
+.cell[data-n="3"] .mk b,.cell[data-n="4"] .mk b{font-size:9px}
+.cell[data-n="3"] .mk.more,.cell[data-n="4"] .mk.more{font-size:8px;padding:0;min-width:13px}
+.cell[data-n="3"] .mk i,.cell[data-n="4"] .mk i{display:none}
+
 .mk.pend{outline:2px dashed var(--navy-soft);outline-offset:1px}
 .mk.S{background:var(--strike)}
 .mk.B{background:var(--ball)}
@@ -278,7 +351,7 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .pchipx.X{background:var(--inplay-bg);color:var(--inplay);border-color:transparent}
 .pchipx.N{background:var(--navy);color:#fff;border-color:transparent}
 
-.mods{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.mods{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .mods button{padding:15px 4px;border-radius:var(--r);background:var(--surface-2);border:1px solid var(--line-soft);font-family:var(--cond);font-weight:600;font-size:15px;letter-spacing:.03em;line-height:1.15;text-transform:uppercase}
 .mods button:disabled{opacity:.32;border-style:dashed;cursor:default}
 @media (hover:hover){.mods button:not(:disabled):hover{border-color:var(--navy-soft)}}
@@ -391,15 +464,37 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 @media (hover:hover){
   .rgrid button:hover{border-color:var(--navy-soft)}
 }
-.rgrid button.nextbtn{grid-column:1/-1;background:var(--navy);color:#fff;border-color:var(--navy);padding:15px;font-family:var(--cond);font-weight:700;letter-spacing:.12em;font-size:17px;text-transform:uppercase}
-.rgrid button.nextbtn.ready{background:var(--inplay);border-color:var(--inplay);color:var(--ink)}
-.rgrid button.nextbtn.warn{background:var(--strike);border-color:var(--strike);color:#fff}
+/* Out of the results grid and down to the bottom of the panel, where the
+   Offense Chart has always had it. */
+.nextbtn{width:100%;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);
+  border-radius:var(--r);padding:14px;font-family:var(--cond);font-weight:700;letter-spacing:.12em;
+  font-size:17px;text-transform:uppercase}
+.nextbtn.warn{background:var(--strike);border-color:var(--strike);color:#fff}
+.finishbtn{width:100%;padding:13px;border:1px solid var(--navy);border-radius:var(--r);
+  background:var(--navy);color:#fff;font-family:var(--cond);font-weight:700;font-size:15px;
+  letter-spacing:.09em;text-transform:uppercase}
+.hrow{display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--line-soft);
+  flex-wrap:wrap;font-size:13px}
+.hrow .when{color:var(--text-3);font-family:var(--mono);font-size:11.5px}
+.hrow .pill{font-family:var(--cond);font-weight:700;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;padding:2px 7px;border-radius:10px;border:1px solid var(--line);color:var(--text-3)}
+.hrow .pill.unsent{border-color:var(--inplay);color:var(--inplay)}
+.hrow button{margin-left:auto;font-family:var(--cond);font-weight:600;font-size:11.5px;
+  letter-spacing:.07em;text-transform:uppercase;padding:5px 11px;border-radius:var(--r);
+  border:1px solid var(--line);color:var(--text-2);background:var(--surface)}
+.histnag{color:var(--inplay)}
+/* armed: the at-bat is closed and the app is waiting on you */
+.nextbtn.ready{box-shadow:0 0 0 3px var(--inplay-bg), 0 0 0 4px var(--inplay)}
 
 .diamond{width:100%;height:auto;display:block;border-radius:var(--r);cursor:crosshair;background:var(--surface);border:1px solid var(--line-soft)}
 .trajrow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .trajrow button{padding:13px 3px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);font-family:var(--cond);font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-2)}
 .trajrow button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .trajrow.needed button{border-color:var(--inplay);color:var(--inplay)}
+.hardbtn{width:100%;padding:11px 6px;border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface);color:var(--text-2);font-family:var(--cond);font-weight:600;
+  font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+.hardbtn.on{background:var(--navy-soft);border-color:var(--navy-soft);color:#fff}
 #trajLbl.needed{color:var(--inplay)}
 .histspray{width:100%;max-width:146px;height:auto;display:block;border-radius:var(--r);background:var(--surface);border:1px solid var(--line-soft)}
 .traj-key{display:flex;flex-wrap:wrap;gap:9px;margin-top:7px;font-family:var(--cond);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
@@ -409,8 +504,11 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .scoutpick{display:flex;gap:4px;padding:8px 12px 0;flex-wrap:wrap}
 .scoutpick button{flex:1;min-width:28px;padding:6px 0;border-radius:var(--r);border:1px solid var(--line);
   background:var(--surface);font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text-2)}
-.scoutpick button.at{background:var(--navy);color:#fff;border-color:var(--navy)}
-.scoutpick button.on{background:var(--inplay);color:var(--ink);border-color:var(--inplay)}
+.scoutpick button.at,.scoutpick button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* Away from the plate: same selected fill, marked by an underline rather than a
+   second colour. Amber here was a reserved status colour doing duty as a second
+   "selected", which is the one thing colour on a control must never mean. */
+.scoutpick button.on{box-shadow:inset 0 -3px 0 var(--inplay)}
 .scoutaway{margin:8px 12px 0;padding:7px 10px;border-radius:var(--r);background:var(--inplay-bg);color:var(--inplay);
   font-size:12.5px;display:flex;align-items:center;gap:10px}
 .scoutaway button{margin-left:auto;font-family:var(--cond);font-weight:700;text-transform:uppercase;
@@ -520,19 +618,44 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
       <span class="lbl step">1 · Pitch type <em>stays set</em></span>
       <div class="types" id="types"></div>
 
-      <span class="lbl step" id="locLbl">2 · Location</span>
-      <div class="zonecol">
-        <div class="zone" id="zone"></div>
-        <div class="zonehint" id="zoneHint">Catcher's view · tap where it crossed</div>
+      <!-- Called spot and actual location, side by side and the same size: what
+           you asked for and what the pitcher did, read left to right. The call is
+           3x3 on purpose - nobody calls "row 2, column 4", they call fastball
+           away - and it is optional; a pitch with no call simply sits out of the
+           execution numbers rather than being guessed at. -->
+      <div class="gridpair">
+        <div class="gridcell">
+          <span class="lbl step" id="callLbl">2 &middot; Called spot</span>
+          <div class="callpad" id="callPad"></div>
+          <div class="zonehint" id="callHint">Tap what you called</div>
+        </div>
+        <div class="gridcell">
+          <span class="lbl step" id="locLbl">3 &middot; Location</span>
+          <div class="zone" id="zone"></div>
+          <div class="zonehint" id="zoneHint">Catcher's view &middot; tap where it crossed</div>
+          <!-- The history panel has had this key since the start; the grid you
+               actually tap during a game did not, so the colours meant nothing
+               unless somebody told you. One row - it has to survive a 174px
+               column on a 10.2" with the lineup showing, so it is tuned tight. -->
+          <div class="zlegend zonekey">
+            <span><i style="background:var(--strike)"></i>Strike</span>
+            <span><i style="background:var(--ball)"></i>Ball</span>
+            <span><i style="background:var(--navy-soft)"></i>Foul</span>
+            <span><i style="background:var(--inplay)"></i>In play</span>
+          </div>
+        </div>
       </div>
 
-      <span class="lbl step" id="step2Lbl">3 · What happened</span>
+      <span class="lbl step" id="step2Lbl">4 · What happened</span>
+      <!-- Only the three that KEEP THE AT-BAT GOING. In play used to live here,
+           but setResult() already promotes the last pitch on any batted result,
+           so the button asked for the same fact twice. Same change as Offense v22. -->
       <div class="mods" id="mods">
         <button data-mod="T">Took It</button>
         <button data-mod="F">Foul</button>
         <button data-mod="W">Swing &amp; Miss</button>
-        <button data-mod="X">In Play</button>
       </div>
+      <div class="zonehint" style="margin-top:-2px">Ball in play, or hit by pitch? Skip this &mdash; tap the result.</div>
       <button class="undo" id="btnUndo" data-mod="UNDO">Undo last pitch</button>
 
       <span class="lbl">This at-bat</span>
@@ -545,14 +668,19 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
     <div class="phead"><span class="lbl">End the at-bat</span><span class="lbl" id="sprayWho">—</span></div>
     <div class="pbody" style="display:flex;flex-direction:column;gap:11px">
       <div class="rgrid" id="results"></div>
-      <div id="trajWrap" class="hidden">
+      <div id="trajWrap">
         <span class="lbl" id="trajLbl">How it was hit</span>
         <div class="trajrow" id="trajRow"></div>
       </div>
+      <!-- Orthogonal to trajectory on purpose: a grounder can be scorched and a
+           fly ball can be lazy. Nothing infers it - a hard grounder at the third
+           baseman sits where a roller sits, so only the person watching can tell. -->
+      <button class="hardbtn" id="hardBtn">Hard contact</button>
       <div class="sprayblock">
-        <span class="lbl">Spray Chart</span>
+        <span class="lbl">Where it went</span>
         <svg class="diamond" id="diamond" viewBox="-10 -20 220 196" role="img" aria-label="Spray chart — tap to mark where the ball was hit"></svg>
       </div>
+      <button class="nextbtn" id="nextBtn">Next batter &rarr;</button>
     </div>
   </div>
 
@@ -589,6 +717,7 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
       <button data-tab="ao3" class="on">AO3+</button>
       <button data-tab="mix">Mix</button>
       <button data-tab="game">Game</button>
+      <button data-tab="hist">History</button>
     </div>
 
     <div class="pbody tabpane" id="tab-ao3" style="display:block">
@@ -622,13 +751,21 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
       <div id="ipRows"></div>
       <label class="field" style="margin:9px 0 10px"><span class="lbl">Game note</span>
         <input id="fNotes2" placeholder="e.g. all 4 BB in the first"></label>
+      <button class="finishbtn" id="btnFinish">Finish &amp; file this game</button>
+      <div class="lbl" style="margin:4px 0 10px;text-transform:none;letter-spacing:0;font-size:11.5px">
+        Moves it to History and starts a clean one. Nothing is deleted.</div>
       <div class="rowsplit" style="margin-bottom:8px">
         <button class="ghost" id="btnExport">Export game</button>
-        <button class="ghost danger" id="btnClear">Clear game</button>
+        <button class="ghost danger" id="btnClear">Discard this game</button>
       </div>
       <div class="lbl" id="saveNote">Saved automatically</div>
       <div class="lbl" id="wakeNote" style="margin-top:4px">Screen lock: —</div>
       <p class="foot">Each pitch is three taps at most: pitch type only when it changes, then location, then what happened. Nothing moves on its own — the at-bat ends when you tap a result, the hitter changes when you tap Next Batter, and once an at-bat is closed the Step 2 buttons go dead so a stray tap can't rewrite a settled pitch. Any earlier at-bat is still reachable: Go back stays on screen through the next hitter, and a batter who has hit more than once gets numbered chips beside his name. While you're looking at one of those, the panel dims and nothing you tap logs a pitch. Trajectory is drawn the way you'd draw it on paper — grounders dashed, liners straight, flies arced, pop ups arced higher — and the result fills it in wherever it can, so only hits and errors need the four-button tap. Pitch type stays set between pitches, so a fastball-heavy inning doesn't need touching. First pitch swinger, chase, bad-on-breaking-balls, two-strike battler and sacrifice work themselves out from the pitches; late, speed, pull, bunt-for-hit, steal, aggressive and do-not-walk stay judgment calls. The export now carries every pitch location and spray point, so a game survives outside the app.</p>
+    </div>
+
+    <div class="pbody tabpane" id="tab-hist" style="display:none">
+      <div class="lbl histnag" id="histNag" style="margin-bottom:8px"></div>
+      <div id="histList"></div>
     </div>
   </div>
 
@@ -729,8 +866,8 @@ var BATTED = {"1B":1,"2B":1,"3B":1,"HR":1,"GO":1,"FO":1,"LO":1,"PO":1,"FC":1,"E"
 
 /* How the ball was hit. Most results name it themselves; hits and errors don't. */
 var TRAJ = [
-  {k:"GB", n:"Ground ball"}, {k:"LD", n:"Line drive"},
-  {k:"FB", n:"Fly ball"},    {k:"PU", n:"Pop up"}
+  {k:"GB", n:"Ground ball", s:"Ground"}, {k:"LD", n:"Line drive", s:"Line"},
+  {k:"FB", n:"Fly ball",    s:"Fly"},    {k:"PU", n:"Pop up",     s:"Pop"}
 ];
 var TRAJ_FROM_RESULT = {GO:"GB", FC:"GB", DP:"GB", SAC:"GB", LO:"LD", FO:"FB", HR:"FB", PO:"PU"};
 function trajOf(a){ return a.traj || TRAJ_FROM_RESULT[a.result] || null; }
@@ -785,11 +922,45 @@ function ao3Stats(scope){
 function pct(v){ return v==null ? "—" : Math.round(v*100)+"%"; }
 var ROLES = ["Starter","Relief 1","Relief 2","Relief 3","Relief 4"];
 var MAXSPOTS = 12;
-var KEY = "dugout-pitch-chart-v2";
+var KEY  = "dugout-pitch-chart-v2";
+/* Filed games. Nothing here is ever overwritten - "Finish & file" MOVES the game
+   in, it does not save-and-discard. Same shape and same ritual as the Offense
+   Chart, so a coach who learns one has learned all three. */
+var AKEY = "dugout-pitch-chart-archive-v1";
+function loadArch(){
+  try{ var a = JSON.parse(localStorage.getItem(AKEY)); return (a && a.length) ? a : []; }
+  catch(e){ return []; }
+}
+function saveArch(a){ try{ localStorage.setItem(AKEY, JSON.stringify(a)); }catch(e){} }
+var A = [];
+function chartedAnything(g){
+  var n = 0;
+  (g.lineup||[]).forEach(function(sp){ (sp.men||[]).forEach(function(b){
+    (b.abs||[]).forEach(function(a){ n += (a.pitches||[]).length; }); }); });
+  return n;
+}
+function unsentCount(){ var n=0; A.forEach(function(g){ if(!g.sent) n++; }); return n; }
+function note2(msg){ var e=document.getElementById("saveNote"); if(e) e.textContent = msg; }
+function finishAndFile(){
+  if(G.sample){ nudge("That is the sample game \u2014 tap Start real game first"); return; }
+  if(!chartedAnything(G)){ nudge("Nothing charted yet"); return; }
+  if(!confirm("File this game and start a clean one? It moves to History and stays "+
+              "there \u2014 nothing is deleted.")) return;
+  var filed = JSON.parse(JSON.stringify(G));
+  filed.filed = Date.now(); filed.sent = false; filed.build = BUILD;
+  A.push(filed); saveArch(A);
+  /* The STAFF carries forward, not the lineup: our pitchers are the same next
+     week, the other team's hitters are not. The Offense Chart carries ITS lineup
+     for the same reason - that one is ours. */
+  var keepP = JSON.parse(JSON.stringify(G.pitchers)), spots = G.spots;
+  G = emptyGame(); G.pitchers = keepP; G.spots = spots;
+  save(); render(); renderHistory();
+  note2("Filed. " + A.length + (A.length===1 ? " game in History." : " games in History."));
+}
 var G = null, confirmClear = false;
 
 /* ---------- model ---------- */
-function newAB(){ return {pitches:[], result:null, auto:false, spray:null, traj:null}; }
+function newAB(){ return {pitches:[], result:null, auto:false, spray:null, traj:null, hard:false}; }
 function newBatter(n){ return {num:n, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{}, abs:[newAB()], cur:0}; }
 function newSpot(n){ return {num:n, men:[newBatter(n)], cur:0}; }
 function emptyGame(){
@@ -964,6 +1135,23 @@ function liveCount(a){
   return {b:Math.min(c.b,4), s:Math.min(c.s,3), b4:c.b>=4, s3:c.s>=3};
 }
 
+/* The count closes the at-bat; the charter does not tap what the scoreboard
+   already knows. Mirrors the Offense Chart, including the one subtlety: this
+   only ever fires on a SETTLED pitch, because until Step 2 is answered we do
+   not know whether strike three was taken or swung at - which is the entire
+   difference between Kc and K.
+
+   a.auto marks the result as the app's rather than the charter's. That flag and
+   the logic that clears it on a reclassify were already here, wired to nothing. */
+function autoClose(a){
+  if(a.result) return;
+  var last = a.pitches[a.pitches.length-1];
+  if(!last || last.q) return;                 // Step 2 still outstanding
+  var c = countOf(a);
+  if(c.s >= 3){ a.result = (last.t === "S") ? "Kc" : "K"; a.auto = true; }
+  else if(c.b >= 4){ a.result = "BB"; a.auto = true; }
+}
+
 function pendingPitch(a){
   var last = a.pitches[a.pitches.length-1];
   return (last && last.q) ? last : null;
@@ -975,11 +1163,58 @@ function logPitch(t, r, c){
   var a = curAB();
   if(a.result) return false;
   var pend = pendingPitch(a);
-  if(pend) delete pend.q;                 // previous pitch never got Step 2 — treat it as taken
-  a.pitches.push({r:(r==null?-1:r), c:(c==null?-1:c), t:t, k:G.nextType||"FB", p:G.curP, q:1});
+  if(pend){
+    delete pend.q;                        // previous pitch never got Step 2 — treat it as taken
+    /* Settling it may itself have ended the at-bat; don't let a fourth strike
+       land on a strikeout. */
+    autoClose(a);
+    if(a.result){ nudge("That at-bat just closed — undo the result to add a pitch"); render(); save(); return false; }
+  }
+  var np = {r:(r==null?-1:r), c:(c==null?-1:c), t:t, k:G.nextType||"FB", p:G.curP, q:1};
+  /* The call was set before the pitch; it belongs to this pitch and nothing after it. */
+  if(G.call){ np.cr = G.call.r; np.cc = G.call.c; G.call = null; }
+  a.pitches.push(np);
   if(G.sample) G.sampleTouched = (G.sampleTouched||0) + 1;   // charting onto the demo saves nothing
   render(); save(); return true;
 }
+/* The call is graded exactly the way the BULLPEN grades it - Chebyshev distance
+   on the same 5x5 coordinates, 0 = spot, 1 = close, 2+ = miss. Matching it is the
+   whole point of this feature: it is the one dimension the two charts can finally
+   share, so January and April become comparable. Do not "improve" this rule in
+   one app without the other. */
+function gradeCall(p){
+  if(p.cr == null || p.r < 0) return null;
+  var d = Math.max(Math.abs(p.r - p.cr), Math.abs(p.c - p.cc));
+  return d === 0 ? "spot" : (d === 1 ? "close" : "miss");
+}
+/* pi omitted = the whole staff; eachPitch takes no filter of its own. */
+function callStats(pi){
+  var o = {called:0, spot:0, close:0, miss:0, up:0, down:0, inn:0, out:0};
+  eachPitch(function(p){
+    if(pi != null && p.p !== pi) return;
+    var g = gradeCall(p); if(!g) return;
+    o.called++; o[g]++;
+    if(g !== "spot"){
+      if(p.r < p.cr) o.up++; else if(p.r > p.cr) o.down++;
+      if(p.c < p.cc) o.inn++; else if(p.c > p.cc) o.out++;
+    }
+  });
+  return o;
+}
+/* Wording matches the bullpen's miss read for the same reason. */
+function callRead(o){
+  if(!o.called) return "No pitches charted against a call yet.";
+  var hit = o.spot + o.close;
+  var line = hit + " of " + o.called + " landed on the spot or next to it.";
+  if(!o.miss) return line;
+  var bits = [];
+  if(o.up > o.down) bits.push(o.up + " up");
+  else if(o.down > o.up) bits.push(o.down + " down");
+  if(o.inn > o.out) bits.push(o.inn + " to the arm side (in)");
+  else if(o.out > o.inn) bits.push(o.out + " to the glove side (away)");
+  return line + (bits.length ? " Missing " + bits.join(" and ") + "." : "");
+}
+
 function addPitch(r,c){
   if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
   if(curAB().result){ nudge("At-bat already closed — undo the result to add a pitch"); return; }
@@ -1013,10 +1248,15 @@ function closeAndAdvance(){
 }
 
 function reclass(mod){
+  /* Undo and every mod button ran unguarded here while the rest of the panel
+     refused, so an at-bat you were only LOOKING at could lose a pitch with
+     nothing able to put it back. */
+  if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
   var a = curAB();
   if(mod==="UNDO"){
     if(a.result){ a.result=null; a.auto=false; render(); save(); return; }  // step 1: reopen
     a.pitches.pop();                                                        // step 2: drop pitch
+    autoClose(a);
     render(); save(); return;
   }
   if(!a.pitches.length) return;
@@ -1030,10 +1270,50 @@ function reclass(mod){
   else if(mod==="X") last.t="X";
   else if(mod==="T") last.t = (last.r<0) ? "S" : (inZone(last.r,last.c) ? "S" : "B");
   delete last.q;                                    // Step 2 done — the at-bat may now close
+  autoClose(a);
+  render(); save();
+}
+
+/* Picking how the ball was hit implies the ball was hit, so this promotes the
+   last pitch rather than making the charter back out and re-tap Step 2. An
+   auto-assigned K / Kc / BB is stale the moment that pitch stops being a taken
+   strike or a ball; a result the charter tapped by hand stands. */
+/* Same promotion as setTraj: saying the ball was hit hard says it was hit. */
+function toggleHard(){
+  if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
+  var a = curAB();
+  if(!a.pitches.length){ nudge("Plot the pitch on the grid first"); return; }
+  a.hard = !a.hard;
+  if(a.hard){
+    var last = a.pitches[a.pitches.length-1];
+    if(last.t !== "X"){
+      last.t = "X"; delete last.q;
+      if(a.auto){ a.result = null; a.auto = false; }
+      autoClose(a);
+    }
+  }
+  render(); save();
+}
+
+function setTraj(k){
+  if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
+  var a = curAB();
+  if(!a.pitches.length){ nudge("Plot the pitch on the grid first"); return; }
+  var turningOff = (a.traj === k);
+  a.traj = turningOff ? null : k;
+  if(!turningOff){
+    var last = a.pitches[a.pitches.length-1];
+    if(last.t !== "X"){
+      last.t = "X"; delete last.q;
+      if(a.auto){ a.result = null; a.auto = false; }
+      autoClose(a);
+    }
+  }
   render(); save();
 }
 
 function setResult(k){
+  if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
   var a = curAB();
   if(BATTED[k] && a.pitches.length){                // a batted ball implies the last pitch was hit
     var last = a.pitches[a.pitches.length-1];
@@ -1076,7 +1356,7 @@ function flashNext(){
   if(!n) return;
   n.classList.add("warn");
   n.textContent = "Pick a result first";
-  setTimeout(function(){ n.classList.remove("warn"); n.textContent="Next batter ▸"; }, 1400);
+  setTimeout(function(){ n.classList.remove("warn"); n.textContent="Next batter \u2192"; }, 1400);
 }
 
 /* ---------- stats ---------- */
@@ -1411,6 +1691,70 @@ function renderLineup(){
   });
 }
 
+/* The pad shows the call waiting to be used, or - once a pitch is logged - the
+   call that pitch went out with, so the charter can see what the last one was
+   graded against. */
+/* Numbered the same way the location grid is, so pitch 3 on the left and pitch 3
+   on the right are obviously the same pitch - asked for, then delivered. The
+   markers are HOLLOW here and solid over there: a call is a plan, a location is
+   a fact, and the eye should not have to read a label to tell them apart. */
+function renderCallPad(){
+  var pad = document.getElementById("callPad"); pad.innerHTML = "";
+  var a = curAB(), rev = reviewing(), locked = !!a.result || rev;
+  pad.classList.toggle("locked", locked);
+  var marks = {};
+  a.pitches.forEach(function(p,i){
+    if(p.cr == null) return;
+    var k = p.cr + "-" + p.cc;
+    (marks[k] = marks[k] || []).push({n:i+1, k:p.k||"FB", pend:false});
+  });
+  /* The call that is set but has no pitch against it yet gets the next number, and
+     the pitch type currently selected - which is what you are about to throw. */
+  if(G.call) (marks[G.call.r+"-"+G.call.c] = marks[G.call.r+"-"+G.call.c] || [])
+    .push({n:a.pitches.length+1, k:G.nextType||"FB", pend:true});
+  /* The full 5x5, same coordinates as the location grid - a called waste pitch
+     or a ball buried off the plate is a real call and could not be entered on a
+     3x3. The grading rule is untouched: both sides were always measured in this
+     coordinate space, the pad just could not reach the outer ring. */
+  for(var r=0;r<5;r++){
+    for(var c=0;c<5;c++){
+      (function(r,c){
+        var b = el("button", inZone(r,c) ? "inzone" : null);
+        var here = marks[r+"-"+c] || [];
+        if(here.length) b.setAttribute("data-n", Math.min(here.length,4));
+        var more = 0;
+        if(here.length > 3){ more = here.length - 3; here = here.slice(0,3); }
+        here.forEach(function(m){
+          var mk = el("span","cmk"+(m.pend?" pend":""));
+          mk.appendChild(el("b",null,String(m.n)));
+          mk.appendChild(el("i",null,m.k));
+          mk.title = m.pend ? "Called "+m.k+", pitch not thrown yet"
+                            : "Pitch "+m.n+" \u00b7 "+m.k+" was called here";
+          b.appendChild(mk);
+        });
+        if(more){
+          var ov = el("span","cmk more", "+"+more);
+          ov.title = more + " more call" + (more===1?"":"s") + " in this box";
+          b.appendChild(ov);
+        }
+        b.setAttribute("aria-label","Call row "+(r+1)+" column "+(c+1)+
+                       (inZone(r,c)?", in zone":", off the plate"));
+        b.addEventListener("click", function(){ setCall(r,c); });
+        pad.appendChild(b);
+      })(r,c);
+    }
+  }
+  var h = document.getElementById("callHint");
+  h.textContent = rev ? "Reviewing \u00b7 read-only"
+    : G.call ? "Called \u00b7 now tap where it crossed"
+    : "Tap what you called";
+}
+function setCall(r,c){
+  if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
+  G.call = (G.call && G.call.r===r && G.call.c===c) ? null : {r:r, c:c};
+  render(); save();
+}
+
 function renderZone(){
   var z=document.getElementById("zone"); z.innerHTML="";
   var a=curAB();
@@ -1420,7 +1764,7 @@ function renderZone(){
   a.pitches.forEach(function(p,i){
     if(p.r<0) return;
     var k=p.r+"-"+p.c;
-    (marks[k]=marks[k]||[]).push({n:i+1,t:p.t});
+    (marks[k]=marks[k]||[]).push({n:i+1,t:p.t,k:p.k||"FB",q:p.q});
   });
   for(var r=0;r<5;r++){
     for(var c=0;c<5;c++){
@@ -1428,17 +1772,30 @@ function renderZone(){
         var cell=el("button","cell"+(inZone(r,c)?" inzone":""));
         cell.setAttribute("aria-label","Log pitch, row "+(r+1)+" column "+(c+1)+(inZone(r,c)?", in zone":", outside zone"));
         var here = marks[r+"-"+c]||[];
-        if(here.length) cell.setAttribute("data-n", Math.min(here.length,6));
+        if(here.length) cell.setAttribute("data-n", Math.min(here.length,4));
+        /* A cell this small cannot show six pitches legibly, and hiding the
+           overflow would lose them silently. Show three and count the rest -
+           the full list is in the sequence chips a few inches below. */
+        var more = 0;
+        if(here.length > 3){ more = here.length - 3; here = here.slice(0,3); }
         here.forEach(function(m){
-          var mk=el("span","mk "+(m.t==="W"?"S":m.t)+(m.q?" pend":""), String(m.n));
-          mk.title="Pitch "+m.n;
+          var mk=el("span","mk "+(m.t==="W"?"S":m.t)+(m.q?" pend":""));
+          mk.appendChild(el("b",null,String(m.n)));
+          mk.appendChild(el("i",null,m.k));
+          mk.title="Pitch "+m.n+" \u00b7 "+m.k+" \u00b7 "+(CALLNAME[m.t]||m.t);
           cell.appendChild(mk);
         });
+        if(more){
+          var ov = el("span","mk more", "+"+more);
+          ov.title = more + " more pitch" + (more===1?"":"es") + " in this box";
+          cell.appendChild(ov);
+        }
         cell.addEventListener("click",function(){ addPitch(r,c); });
         z.appendChild(cell);
       })(r,c);
     }
   }
+  renderCallPad();
   var zh=document.getElementById("zoneHint");
   zh.classList.remove("nope");
   zh.textContent = rev ? "Reviewing · this at-bat is read-only"
@@ -1488,13 +1845,13 @@ function renderBackBar(){
     txt.appendChild(document.createTextNode("Reviewing an earlier at-bat — no pitch will log here. "));
     txt.appendChild(el("b",null,(live.name||("Batter "+live.num))+" is up."));
     btn.textContent="Back to the plate ▸";
-    if(nb){ nb.classList.remove("ready"); nb.textContent="Back to the plate ▸"; }
+    if(nb){ nb.classList.remove("ready"); nb.textContent="Back to the plate \u2192"; }
     return;
   }
   var closed = !!curAB().result;
   if(nb){
     nb.classList.toggle("ready", closed);         // armed: the app is waiting on you
-    if(!nb.classList.contains("warn")) nb.textContent = "Next batter ▸";
+    if(!nb.classList.contains("warn")) nb.textContent = "Next batter \u2192";
   }
 
   /* The last at-bat stays one tap away for the whole of the next one — a mis-tapped
@@ -1639,17 +1996,20 @@ function renderBatter(){
   /* trajectory row: only for a ball in play, and it prompts when the result can't imply one */
   var tw=document.getElementById("trajWrap"), tr=document.getElementById("trajRow"),
       tl=document.getElementById("trajLbl");
-  var batted = !!(a.result && BATTED[a.result]);
-  tw.classList.toggle("hidden", !batted);
-  if(batted){
-    var cur=trajOf(a), needs=!cur;
-    tr.classList.toggle("needed", needs);
-    tl.classList.toggle("needed", needs);
-    tl.textContent = needs ? "How was it hit?" : "How it was hit";
-    tr.querySelectorAll("button").forEach(function(x){
-      x.classList.toggle("on", x.getAttribute("data-traj")===cur);
-    });
-  }
+  /* Always on screen, like Offense: tapping one of these is itself a statement
+     that the ball was put in play, so it does not wait for a batted result. */
+  tw.classList.remove("hidden");
+  var cur = trajOf(a);
+  var inPlay = a.pitches.length && a.pitches[a.pitches.length-1].t === "X";
+  var needs = !!(inPlay && !cur);
+  tr.classList.toggle("needed", needs);
+  tl.classList.toggle("needed", needs);
+  tl.textContent = needs ? "How was it hit?" : "How it was hit";
+  tr.querySelectorAll("button").forEach(function(x){
+    x.classList.toggle("on", x.getAttribute("data-traj")===cur);
+  });
+  var hb=document.getElementById("hardBtn");
+  if(hb) hb.className = "hardbtn" + (a.hard ? " on" : "");
   document.querySelectorAll("#posSeg button").forEach(function(t){
     t.classList.toggle("on", sb.play===t.getAttribute("data-pos"));
   });
@@ -1698,8 +2058,10 @@ function drawField(svg, abs, active, showFielders){
   }
   function draw(a, on){
     if(!a.spray) return;
-    var t=trajOf(a), col = on ? "var(--inplay)" : "var(--navy-soft)",
-        w = on ? 2 : 1.4, op = on ? 1 : .5;
+    /* Colour carries HARD CONTACT - the signal that repeats - exactly as it does
+       on the Offense Chart, so one mark means one thing across both apps. */
+    var t=trajOf(a), col = on ? "var(--inplay)" : (a.hard ? "var(--pr0)" : "var(--pr3)"),
+        w = on ? 2 : 1.4, op = on ? 1 : .62;
     var g=sprayPath(a.spray.x, a.spray.y, t);
     if(g){
       p.push('<path d="'+g.d+'" style="fill:none;stroke:'+col+';stroke-width:'+w+
@@ -1924,9 +2286,51 @@ function render(){
       ? "Sample game — nothing is being saved"
       : storageOK ? "Saved automatically — survives a refresh" : "Storage blocked here — export before closing";
   }catch(e){
-    G = emptyGame();
-    document.getElementById("saveNote").textContent="Recovered from a bad save — game reset";
+    /* This used to reset G on ANY render exception - one bad draw and the game
+       was gone. Report it and leave the data alone; it is still on disk. */
+    var n = document.getElementById("saveNote");
+    if(n) n.textContent = "Display error (" + (e && e.message ? e.message : "unknown") +
+                          ") — your game is still saved. Reload the page.";
   }
+}
+
+/* ---------- history ---------- */
+function renderHistory(){
+  var host = document.getElementById("histList"); if(!host) return;
+  var nag = document.getElementById("histNag");
+  host.innerHTML = "";
+  if(!A.length){
+    nag.textContent = "";
+    host.appendChild(el("div","lbl","Nothing filed yet. Finish a game and it lands here."));
+    return;
+  }
+  var u = unsentCount();
+  /* The nag only speaks when there is a real backlog - one unsent game is the
+     normal state on the drive home. */
+  nag.textContent = u > 1
+    ? u + " filed games have not been sent yet. Export them and pass them on."
+    : "";
+  A.slice().reverse().forEach(function(g, idx){
+    var i = A.length - 1 - idx;
+    var row = el("div","hrow");
+    var when = new Date(g.filed||Date.now());
+    row.appendChild(el("b", null, (g.opp || "Unknown opponent")));
+    row.appendChild(el("span","when", (g.date || when.toLocaleDateString()) +
+        " \u00b7 " + chartedAnything(g) + "P"));
+    row.appendChild(el("span","pill"+(g.sent?"":" unsent"), g.sent ? "sent" : "not sent"));
+    var b = el("button", null, "Export");
+    b.addEventListener("click", function(){ exportFiled(i); });
+    row.appendChild(b);
+    host.appendChild(row);
+  });
+}
+/* A filed game stays recoverable: History always has an Export beside it. */
+function exportFiled(i){
+  var live = G;
+  G = A[i];
+  try{ openExport(); }
+  finally{ G = live; }
+  A[i].sent = true; saveArch(A); renderHistory();
 }
 
 /* ---------- export ---------- */
@@ -1953,6 +2357,13 @@ function exportText(){
     L.push("    Strikes            S% "+(st.tot?Math.round(st.str/st.tot*100)+"%":"—").padEnd(7)+
            "("+st.str+"/"+st.tot+")".padEnd(4)+
            "   FPS% "+(st.fp?Math.round(st.fps/st.fp*100)+"%":"—")+" ("+st.fps+"/"+st.fp+")");
+    var cs = callStats(i);
+    if(cs.called){
+      L.push("    Execution          Spot "+String(cs.spot).padEnd(5)+
+             "Close "+String(cs.close).padEnd(5)+"Miss "+String(cs.miss).padEnd(5)+
+             "on "+cs.called+" called pitch"+(cs.called===1?"":"es")+" of "+st.tot);
+      L.push("                       "+callRead(cs));
+    }
     L.push("    Quick at-bats      <3 pitches "+st.lt3+" ("+(st.bf?Math.round(st.lt3/st.bf*100)+"%":"—")+")"+
            "    <=3 pitches "+st.le3+" ("+(st.bf?Math.round(st.le3/st.bf*100)+"%":"—")+")");
     if(a3.tot){
@@ -2031,7 +2442,8 @@ function exportText(){
   L.push("PITCH LOG — tab separated, one row per pitch (the zone and spray data)");
   L.push("");
   L.push(["Spot","Batter","Hand","AB","Pitch","Type","Call","ZoneRow","ZoneCol","InZone",
-          "Pitcher","ABResult","Traj","SprayX","SprayY"].join("\t"));
+          "CalledRow","CalledCol","Execution","MissV","MissH",
+          "Pitcher","ABResult","Traj","HardContact","SprayX","SprayY"].join("\t"));
   G.lineup.slice(0, spots()).forEach(function(sp){
    sp.men.forEach(function(b){
     b.abs.forEach(function(a,ai){
@@ -2040,9 +2452,15 @@ function exportText(){
       a.pitches.forEach(function(p,pi){
         var loc = (p.r<0) ? ["","",""] :
           [p.r+1, p.c+1, inZone(p.r,p.c)?"Y":"N"];
+        var g = gradeCall(p);
+        var cal = (p.cr == null) ? ["","","","",""] : [
+          p.cr+1, p.cc+1, g ? g.toUpperCase() : "",
+          (p.r<0||g==="spot") ? "" : (p.r<p.cr ? "UP" : p.r>p.cr ? "DOWN" : ""),
+          (p.r<0||g==="spot") ? "" : (p.c<p.cc ? "IN"  : p.c>p.cc ? "OUT"  : "")];
         L.push([b.num, (b.name||"Batter "+b.num), b.hand, ai+1, pi+1,
                 (p.k||"FB"), CALLNAME[p.t]||p.t, loc[0], loc[1], loc[2],
-                pitcherName(p.p), (a.result||""), tj,
+                cal[0], cal[1], cal[2], cal[3], cal[4],
+                pitcherName(p.p), (a.result||""), tj, (a.hard?"Y":""),
                 pt?Math.round(pt.x):"", pt?Math.round(pt.y):""].join("\t"));
       });
     });
@@ -2187,10 +2605,6 @@ function build(){
     b.addEventListener("click",function(){ setResult(r.k); });
     rp.appendChild(b);
   });
-  var nx=el("button","nextbtn","Next batter ▸");
-  nx.id="nextBtn";
-  nx.addEventListener("click", nextAB);
-  rp.appendChild(nx);
 
   var ty=document.getElementById("types");
   TYPES.forEach(function(t){
@@ -2203,14 +2617,10 @@ function build(){
 
   var tj=document.getElementById("trajRow");
   TRAJ.forEach(function(t){
-    var b=el("button",null,t.k);
+    var b=el("button",null,t.s);
     b.setAttribute("data-traj",t.k);
     b.title=t.n;
-    b.addEventListener("click",function(){
-      var a=curAB();
-      a.traj = (trajOf(a)===t.k && a.traj===t.k) ? null : t.k;
-      render(); save();
-    });
+    b.addEventListener("click",function(){ setTraj(t.k); });
     tj.appendChild(b);
   });
 
@@ -2245,12 +2655,15 @@ function build(){
   document.querySelectorAll(".handtog button").forEach(function(b){
     b.addEventListener("click",function(){ batter().hand=b.getAttribute("data-hand"); render(); save(); });
   });
+  document.getElementById("hardBtn").addEventListener("click", toggleHard);
+  document.getElementById("nextBtn").addEventListener("click", nextAB);
   document.querySelectorAll(".mods button, #btnUndo").forEach(function(b){
     b.addEventListener("click",function(){ reclass(b.getAttribute("data-mod")); });
   });
 
   var svg=document.getElementById("diamond");
   svg.addEventListener("click",function(ev){
+    if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
     var r=svg.getBoundingClientRect();                    // viewBox is "-10 -20 220 196"
     curAB().spray={x:Math.round((-10 + (ev.clientX-r.left)/r.width*220)*10)/10,
                    y:Math.round((-20 + (ev.clientY-r.top)/r.height*196)*10)/10};
@@ -2261,10 +2674,11 @@ function build(){
     t.addEventListener("click",function(){
       var name=t.getAttribute("data-tab");
       document.querySelectorAll("#tabs button").forEach(function(x){ x.classList.toggle("on", x===t); });
-      ["mix","ao3","game"].forEach(function(n){
+      ["mix","ao3","game","hist"].forEach(function(n){
         var pane=document.getElementById("tab-"+n);
         pane.style.display = (n===name) ? "block" : "none";
       });
+      if(name==="hist") renderHistory();
     });
   });
 
@@ -2331,14 +2745,16 @@ function build(){
   clearBtn.addEventListener("click",function(){
     if(!confirmClear){
       confirmClear=true;
-      clearBtn.textContent="Tap again to erase";
-      setTimeout(function(){ confirmClear=false; clearBtn.textContent="Clear game"; },3000);
+      clearBtn.textContent="Tap again to discard \u2014 this one is NOT filed";
+      setTimeout(function(){ confirmClear=false; clearBtn.textContent="Discard this game"; },3000);
       return;
     }
-    confirmClear=false; clearBtn.textContent="Clear game";
+    confirmClear=false; clearBtn.textContent="Discard this game";
     G=emptyGame(); render(); save();
+    note2("Discarded. Filed games in History are untouched.");
   });
 
+  document.getElementById("btnFinish").addEventListener("click", finishAndFile);
   document.getElementById("btnExport").addEventListener("click", openExport);
   document.getElementById("btnSaveFile").addEventListener("click", saveExportFile);
   document.getElementById("btnShareFile").addEventListener("click", shareExportFile);
@@ -2351,7 +2767,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v5";
+var BUILD = "v14";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;
@@ -2394,10 +2810,14 @@ function initOffline(){
   offlineBanner(navigator.serviceWorker.controller ? "ready" : "caching");
   navigator.serviceWorker.register("sw.js").then(function(reg){
     navigator.serviceWorker.ready.then(function(){ offlineBanner("ready"); });
-    if(reg.active) offlineBanner("ready");
+    /* reg comes back undefined where the browser allows register() but blocks
+       workers - a managed iPad, a private window, or anything with site data
+       switched off. Reading .active there threw and killed the rest of startup. */
+    if(reg && reg.active) offlineBanner("ready");
   }, function(){ offlineBanner("no"); });
 }
 
+A = loadArch();
 G = load() || sampleGame();
 build();
 render();

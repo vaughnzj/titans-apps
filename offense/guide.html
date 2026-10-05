@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Offense Chart Coach's Guide</h1>
       <p>How to chart the other team's pitcher while we hit. Read it once before you go, then keep it open on your phone for the first inning.</p>
-      <div class="meta">App v18 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
+      <div class="meta">App v27 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
     </div>
   </div>
 
@@ -227,7 +227,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, right after &ldquo;Offense Chart.&rdquo; This guide describes <b>v18</b>. If it shows two numbers in amber, like <code>v19 &ne; v18</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, right after &ldquo;Offense Chart.&rdquo; This guide describes <b>v27</b>. If it shows two numbers in amber, like <code>v28 &ne; v27</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -268,7 +268,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
 
   <section>
     <h2>Charting a pitch</h2>
-    <p class="sub">Two taps for most pitches. Three when we swing, six when we put it in play.</p>
+    <p class="sub">Two taps for most pitches. Three when we swing and miss, four when we put it in play.</p>
 
     <h3>1 &middot; Pitch type</h3>
     <p>Tap what he threw. <b>It stays set</b>, so a pitcher working off his fastball is one tap per pitch.</p>
@@ -295,7 +295,8 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <p>That tap logs the pitch as <b>taken</b> &mdash; ball or strike by where you put it. For a pitch our hitter watched go by, you're done in two taps.</p>
 
     <h3>3 &middot; What happened</h3>
-    <p>If he swung, tap it: <b>Foul</b>, <b>Swing &amp; miss</b>, or <b>In play</b>. <b>Hit by pitch</b> ends the at-bat on the spot.</p>
+    <p>Three buttons, and they are the three things that <i>keep the at-bat going</i>: <b>Took it</b>, <b>Foul</b>, <b>Swing &amp; miss</b>.</p>
+    <p><b>If the at-bat is over, skip this step entirely.</b> A ball in play and a hit batter both end it, and both are already in the result list below &mdash; so tap the result and the app works out the rest. There is no <b>In play</b> button any more and there doesn't need to be: anything that isn't a K, a walk or a hit batter <i>is</i> a ball in play.</p>
     <div class="note">
       <span class="lab">The default is &ldquo;took it&rdquo;</span>
       <p>If you plot a pitch and tap nothing else, it records as taken. That's deliberate &mdash; most pitches are. But it means a missed tap shows up as a take, so glance at the pitch strip under the grid: every pitch is listed with the count it came in and what it did.</p>
@@ -327,12 +328,19 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li><b>Strikeouts and walks close themselves.</b> Three strikes and it's K, or Kc if he took it. Four balls and it's BB.</li>
       <li>Everything else: tap the result &mdash; <b>1B, 2B, GO, FO</b> and the rest.</li>
       <li>On a ball in play, tap <b>how we hit it</b> (ground, line, fly, pop) and then <b>tap the field</b> where it went. The line that draws tells you the direction and how far.</li>
+      <li><b>The diamond has the fielding positions printed on it</b> &mdash; 1 through 9, scorer's numbering. They are there to aim at: "the shortstop fielded it" is far easier to place than eyeballing a blank wedge, and it keeps two charters marking the same ball in the same spot. The Report tab's team spray leaves them off, since nobody taps that one.</li>
+      <li><b>How we hit it is always on screen</b>, and tapping it also tells the app the ball was put in play. So does tapping the result. Either order works &mdash; result first or trajectory first.</li>
+      <li><b>Most results fill it in for you.</b> GO, FO, LO, PO, FC, SAC, DP and HR each say how the ball was hit, so the app ticks the box and you move on. The four it cannot work out &mdash; <b>1B, 2B, 3B</b> and <b>E</b> &mdash; could be any of the four, so it asks: the heading turns amber and reads <b>How did we hit it?</b> until you answer. If you never do, the ball still counts and still plots on the field; it just sits out of the ground/line/fly mix.</li>
+      <li><b>Hard contact is a separate tap, and it is yours to make.</b> The app never guesses it &mdash; a scorched grounder at the third baseman sits in the same spot on the field as a roller, so only the person watching can tell. Tap <b>Hard contact</b> when we squared one up; leave it alone for everything from weak to normal. It is what colours the spray chart, so <i>what we did to the ball</i> leads rather than whether it happened to find grass.</li>
+      <li><b>Reached on an error</b> is a ball in play like any other. Tap <b>E</b>, tap how we hit it, tap the field. It counts in the contact and direction numbers but not as a hit &mdash; on the field diagram it draws as an open circle, the same as an out.</li>
       <li>The field diagram shows <b>this hitter's</b> balls in play. Flip it to <b>Whole team</b> if you want the whole game at once &mdash; the Report tab always shows the team.</li>
       <li>Tap <b>Next hitter</b>. The order advances on its own and wraps around.</li>
     </ul>
     <div class="note">
       <span class="lab">Fixing something</span>
-      <p><b>Undo last pitch</b> backs out one pitch. To look at an earlier at-bat, tap that spot in the order on the left &mdash; the app says <b>Reviewing</b> in amber and nothing you tap changes the live at-bat until you tap <b>Back to the plate</b>.</p>
+      <p><b>Undo last pitch</b> backs out one pitch, and it works after the app has closed the at-bat. Three strikes and it says K &mdash; undo, and the count goes back to 0&ndash;2 with the K gone, ready for you to plot the pitch again.</p>
+      <p>If the only thing wrong is <i>what the pitch did</i>, you don't need undo at all. Tap the result, or tap how we hit it, and the app re-reads the count from there &mdash; the pitch's type and location stay as you charted them.</p>
+      <p>To look at an earlier at-bat, tap that spot in the order on the left. The app says <b>Reviewing</b> in amber, and nothing you tap &mdash; undo included &mdash; changes anything until you tap <b>Back to the plate</b>. <b>An at-bat is frozen once you tap Next hitter</b>, so fix it before you move on.</p>
     </div>
   </section>
 
@@ -398,7 +406,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
   </section>
 
-  <footer>Legend Titans Offense Chart &middot; app v18 &middot; Guide prepared for game day</footer>
+  <footer>Legend Titans Offense Chart &middot; app v27 &middot; Guide prepared for game day</footer>
 
 </div>
 </body>

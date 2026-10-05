@@ -1,6 +1,6 @@
 /* Titans Offense Chart - offline cache
    Bump CACHE when you upload a new index.html, or iPads keep the old one. */
-var CACHE = "titans-offense-v18";
+var CACHE = "titans-offense-v27";
 var FILES = [
   "./",
   "./index.html",

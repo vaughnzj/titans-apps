@@ -181,11 +181,13 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
 .mods{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
 .mods button{padding:11px 6px;font-family:var(--cond);font-weight:600;font-size:14px;
   letter-spacing:.04em;text-transform:uppercase}
-.mods button.x{background:var(--inplay-bg);border-color:var(--inplay);color:var(--inplay)}
+/* No resting tint on any of these. Colour in this row means ONE thing - the
+   navy fill drawMods() paints on whichever mod is actually set. An amber "In
+   play" sitting there unselected read as the active choice. */
 .zonecol{width:min(310px,100%);margin:10px auto 0}
 .zone{display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);
-  gap:3px;width:100%;aspect-ratio:1;background:var(--line-soft);padding:2px;border-radius:var(--r)}
-.cell{background:var(--surface);border-radius:2px;border:0;display:flex;align-items:center;
+  gap:3px;width:100%;aspect-ratio:1;background:transparent;border:1px solid var(--line);padding:2px;border-radius:var(--r)}
+.cell{background:var(--surface);border-radius:2px;border:1px solid var(--line-soft);display:flex;align-items:center;
   justify-content:center;gap:2px;flex-wrap:wrap;padding:2px;transition:transform .07s}
 .cell.inzone{background:var(--zone-fill)}
 .cell:active{transform:scale(.93)}
@@ -194,6 +196,13 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
   height:22px;padding:0 2px;border-radius:11px;display:grid;place-items:center;color:#fff;
   box-shadow:0 0 0 1.5px var(--surface)}
 .mk.s{background:var(--strike)} .mk.b{background:var(--ball)} .mk.x{background:var(--inplay)}
+/* The key the charting grid never had - without it the colours mean nothing
+   unless somebody tells you. Matches the Pitch Chart's: one row, under the hint. */
+.zonekey{display:flex;flex-wrap:nowrap;justify-content:center;align-items:center;gap:9px;
+  margin-top:5px;font-family:var(--cond);font-weight:600;font-size:9.5px;letter-spacing:.04em;
+  text-transform:uppercase;color:var(--text-3)}
+.zonekey span{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.zonekey i{width:6px;height:6px;border-radius:50%;display:inline-block}
 .zonehint{text-align:center;font-size:11.5px;color:var(--text-3);margin-top:5px;
   font-family:var(--cond);letter-spacing:.06em;text-transform:uppercase}
 .seq{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;min-height:26px}
@@ -214,7 +223,18 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
 .trajrow{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .trajrow button{padding:8px 4px;font-family:var(--cond);font-weight:600;font-size:13px;
   text-transform:uppercase}
-.trajrow button.on{background:var(--inplay);border-color:var(--inplay);color:#fff}
+/* Selected is navy here like every other control in the app (convention 17) -
+   it used to be amber, which is a status colour and now means something else in
+   this very row. Amber is reserved for the unanswered-question outline, which
+   is worn by all four at once so none of them can read as the chosen one. */
+.trajrow button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.trajrow.needed button{border-color:var(--inplay);color:var(--inplay)}
+.hardbtn{width:100%;margin-top:5px;padding:9px 6px;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--surface);color:var(--text-2);
+  font-family:var(--cond);font-weight:600;font-size:13px;text-transform:uppercase;
+  letter-spacing:.04em}
+.hardbtn.on{background:var(--pr0);border-color:var(--pr0);color:#fff}
+.lbl.needed{color:var(--inplay)}
 .diamond{width:100%;max-width:330px;margin:0 auto;display:block;aspect-ratio:220/196;
   background:var(--surface-2);border-radius:var(--r);border:1px solid var(--line-soft)}
 
@@ -251,6 +271,7 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
 .mixkey i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:4px}
 .spraykey{display:flex;gap:14px;font-size:12.5px;color:var(--text-2);margin-top:6px;
   justify-content:center;flex-wrap:wrap}
+.spraykey i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px}
 .mz{border-radius:1px;display:grid;place-items:center;font-family:var(--mono);font-size:9px;
   color:var(--text-2);background:var(--surface)}
 .mz.inzone{background:var(--zone-fill)}
@@ -459,16 +480,25 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
           <div class="zonecol">
             <div class="zone" id="zone"></div>
             <div class="zonehint" id="zoneHint">Tap where it crossed</div>
+            <!-- Three, not four: a foul is coloured as a strike in this app, so
+                 there is no fourth thing to name. -->
+            <div class="zonekey">
+              <span><i style="background:var(--strike)"></i>Strike</span>
+              <span><i style="background:var(--ball)"></i>Ball</span>
+              <span><i style="background:var(--inplay)"></i>In play</span>
+            </div>
           </div>
 
           <span class="lbl step">3 &middot; What happened</span>
           <div class="mods" id="mods">
+            <!-- Only the three that do NOT end the at-bat. In play and Hit by
+                 pitch used to live here too, but both are implied by the result
+                 the charter taps a second later - see MOD_FOR_RESULT(). -->
             <button data-mod="T">Took it</button>
             <button data-mod="F">Foul</button>
             <button data-mod="W">Swing &amp; miss</button>
-            <button data-mod="X" class="x">In play</button>
-            <button data-mod="H">Hit by pitch</button>
           </div>
+          <div class="zonehint" style="margin-top:5px">Ball in play, or hit by pitch? Skip this &mdash; tap the result instead.</div>
 
           <div class="umprow" id="umpRow" hidden>
             <span class="lbl">Umpire called it</span>
@@ -490,8 +520,13 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
           <div class="pbody stack">
             <div class="rgrid" id="results"></div>
             <div id="trajWrap" hidden>
-              <span class="lbl">How we hit it</span>
+              <span class="lbl" id="trajLbl">How we hit it</span>
               <div class="trajrow" id="trajRow" style="margin-top:5px"></div>
+              <!-- Orthogonal to trajectory on purpose: a grounder can be
+                   scorched and a fly ball can be lazy, so the two questions do
+                   not belong in one control. Nothing infers this - the charter
+                   watched the ball, the app did not. -->
+              <button class="hardbtn" id="hardBtn">Hard contact</button>
             </div>
             <div>
               <div class="row" style="align-items:center;margin-bottom:6px">
@@ -530,7 +565,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v18";
+var BUILD = "v27";
 var KEY   = "titans-offense-v1";
 var RKEY  = "titans-offense-roster-v1";
 var AKEY  = "titans-offense-archive-v1";
@@ -550,6 +585,9 @@ var TRAJ = [{k:"GB",n:"Ground"},{k:"LD",n:"Line"},{k:"FB",n:"Fly"},{k:"PU",n:"Po
 var TRAJ_FROM_RESULT = {GO:"GB",FC:"GB",DP:"GB",SAC:"GB",LO:"LD",FO:"FB",HR:"FB",PO:"PU"};
 var HOME_X = 100, HOME_Y = 162;
 var ENDERS = {X:1,H:1};
+/* Results autoClose() assigns from the count, as opposed to the ones a charter
+   taps. Only these are safe to discard when the last pitch is reclassified. */
+var AUTO_RESULT = {K:1, Kc:1, BB:1, HBP:1};
 
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){
@@ -575,7 +613,7 @@ function newPitcher(name){
            types: TYPES.slice() };
 }
 function newPA(spot, pIdx){
-  return { spot:spot, p:pIdx, pitches:[], result:"", traj:"", spray:null };
+  return { spot:spot, p:pIdx, pitches:[], result:"", traj:"", spray:null, hard:false };
 }
 
 /* ===================== persistence ===================== */
@@ -652,9 +690,15 @@ function drawRoster(){
 }
 
 /* ===================== lineup ===================== */
+/* A hitter can only occupy one spot, so every name already placed somewhere
+   else drops out of this spot's list. The name picked in THIS spot stays in,
+   or the select would have nothing to show as selected. */
 function lineupOptions(sel){
+  var used = {};
+  (O.lineup || []).forEach(function(s){ if(s && s.rid && s.rid !== sel) used[s.rid] = 1; });
   var o = '<option value="">— pick —</option>';
   R.forEach(function(p){
+    if(used[p.id]) return;
     o += '<option value="'+esc(p.id)+'"'+(p.id===sel?" selected":"")+'>'+
          esc(p.name || "(no name)")+(p.jersey?" #"+esc(p.jersey):"")+'</option>';
   });
@@ -784,19 +828,84 @@ function flipUmp(){
   render(); save();
 }
 function undoPitch(){
+  /* Every other editing control refuses while an earlier at-bat is on screen,
+     and the review bar promises as much. Undo used to be the exception: it
+     deleted a pitch from the at-bat being REVIEWED, which nothing else could
+     then put back. */
+  if(reviewing()){ hint("Reviewing an earlier at-bat — tap Back to the plate"); return; }
   var a = curPA();
   if(!a.pitches.length){ hint("Nothing to undo"); return; }
   a.pitches.pop(); a.result=""; a.traj=""; a.spray=null;
   autoClose(a);
   render(); save();
 }
+/* How an at-bat ended already says what the last pitch did, so the charter does
+   not say it twice. Everything outside K / Kc / BB / HBP means the ball was put
+   in play, and HBP means the pitch hit him - there is no third possibility. The
+   mod is still stored per pitch (the count, swing rate, chase rate and the CSV
+   all read it); it is just inferred here instead of tapped.
+
+   This also closes a quiet data bug. A charter who plotted the pitch and went
+   straight to "1B" left that pitch on "took it", so a ball the hitter hit was
+   counted as one he watched - understating swing and chase rate by one pitch per
+   batted ball, which is most at-bats. */
+function MOD_FOR_RESULT(k){
+  if(!k || k==="K" || k==="Kc" || k==="BB") return null;
+  return k==="HBP" ? "H" : "X";
+}
 function setResult(k){
+  if(reviewing()){ hint("Reviewing an earlier at-bat — tap Back to the plate"); return; }
   var a = curPA();
   a.result = (a.result===k) ? "" : k;
+  var want = MOD_FOR_RESULT(a.result);
+  if(want && a.pitches.length){
+    var p = a.pitches[a.pitches.length-1];
+    if(p.m !== want){ p.m = want; p.ov = false; }
+  }
   if(a.result && TRAJ_FROM_RESULT[a.result] && !a.traj) a.traj = TRAJ_FROM_RESULT[a.result];
   render(); save();
 }
-function setTraj(k){ var a=curPA(); a.traj = (a.traj===k)?"":k; render(); save(); }
+/* Same promotion as setTraj: saying the ball was hit hard says it was hit. */
+function toggleHard(){
+  if(reviewing()){ hint("Reviewing an earlier at-bat — tap Back to the plate"); return; }
+  var a = curPA();
+  if(!a.pitches.length){ hint("Plot the pitch on the grid first"); return; }
+  a.hard = !a.hard;
+  if(a.hard){
+    var p = a.pitches[a.pitches.length-1];
+    if(p.m !== "X"){
+      p.m = "X"; p.ov = false;
+      if(AUTO_RESULT[a.result]) a.result = "";
+      autoClose(a);
+    }
+  }
+  render(); save();
+}
+
+/* Picking how the ball was hit implies the ball was hit. If the last pitch is
+   still sitting on taken/foul/miss, this promotes it to in-play rather than
+   making the charter back out and re-tap the mod. The at-bat result is left
+   alone - a charter who already tapped 1B and is now adding "Line" should keep
+   the 1B. */
+function setTraj(k){
+  if(reviewing()){ hint("Reviewing an earlier at-bat — tap Back to the plate"); return; }
+  var a = curPA();
+  if(!a.pitches.length){ hint("Plot the pitch on the grid first"); return; }
+  var turningOff = (a.traj === k);
+  a.traj = turningOff ? "" : k;
+  if(!turningOff){
+    var p = a.pitches[a.pitches.length-1];
+    if(p.m !== "X"){
+      p.m = "X"; p.ov = false;
+      /* K / Kc / BB / HBP are assigned by autoClose from the count, so they are
+         stale the moment the last pitch stops being a taken strike or a ball.
+         A batted-ball result the charter picked by hand is left standing. */
+      if(AUTO_RESULT[a.result]) a.result = "";
+      autoClose(a);
+    }
+  }
+  render(); save();
+}
 
 function nextPA(){
   if(reviewing()){ O.cur = O.pas.length-1; render(); return; }
@@ -895,11 +1004,24 @@ function drawResults(){
   el("results").innerHTML = RESULTS.map(function(k){
     return '<button data-res="'+k+'"'+(a.result===k?' class="on"':'')+'>'+k+'</button>';
   }).join("");
-  var ip = a.pitches.length && a.pitches[a.pitches.length-1].m==="X";
-  el("trajWrap").hidden = !ip;
+  /* Always on screen. Tapping one of these is itself a statement that the ball
+     was put in play, so the buttons do not wait for the X mod to be set first -
+     see setTraj(). */
+  el("trajWrap").hidden = false;
   el("trajRow").innerHTML = TRAJ.map(function(t){
     return '<button data-tr="'+t.k+'"'+(a.traj===t.k?' class="on"':'')+'>'+t.n+'</button>';
   }).join("");
+  /* GO, FO, LO, PO, FC, SAC, DP and HR say how the ball was hit, so setResult()
+     fills this in and there is nothing left to tap. A single, double, triple or
+     an error does NOT - a 1B is as likely a grounder as a liner - so the app
+     asks instead of guessing. Outlining the whole group (never one button) marks
+     the question as open without any one of them looking chosen. */
+  var inPlay = a.pitches.length && a.pitches[a.pitches.length-1].m === "X";
+  var asking = !!(inPlay && !trajOf(a));
+  el("trajRow").classList.toggle("needed", asking);
+  el("trajLbl").classList.toggle("needed", asking);
+  el("trajLbl").textContent = asking ? "How did we hit it?" : "How we hit it";
+  el("hardBtn").className = "hardbtn" + (a.hard ? " on" : "");
   el("paWho").textContent = hitterOf(a.spot).name || "—";
 }
 function drawLineupList(){
@@ -963,15 +1085,27 @@ function pullSide(a){
   if(Math.abs(off) < 14) return "center";
   return off > 0 ? "pull" : "oppo";
 }
+/* The whole point of the hard-contact mark is the gap between how we hit the
+   ball and what the scoreboard says, so the read puts those two numbers beside
+   each other. No rate is quoted off a dozen balls - raw counts only. */
+function hardRead(cs){
+  if(!cs.n) return "Nothing in play yet.";
+  if(!cs.hard) return cs.hits + " of " + cs.n + " balls in play went for a hit. " +
+                      "Nothing marked hard contact yet.";
+  return "Squared up <b>" + cs.hard + " of " + cs.n + "</b>, and " + cs.hardHits +
+         " of those fell in. " + cs.hits + " hit" + (cs.hits===1?"":"s") + " in all.";
+}
 function contactSummary(list){
-  var dir = {pull:0, center:0, oppo:0}, tr = {GB:0, LD:0, FB:0, PU:0}, n = 0, hits = 0;
+  var dir = {pull:0, center:0, oppo:0}, tr = {GB:0, LD:0, FB:0, PU:0},
+      n = 0, hits = 0, hard = 0, hardHits = 0;
   list.forEach(function(a){
     var d = pullSide(a); if(!d) return;
     dir[d]++; n++;
     var t = trajOf(a); if(t && tr[t] != null) tr[t]++;
     if(wasHit(a)) hits++;
+    if(a.hard){ hard++; if(wasHit(a)) hardHits++; }
   });
-  return {dir:dir, tr:tr, n:n, hits:hits};
+  return {dir:dir, tr:tr, n:n, hits:hits, hard:hard, hardHits:hardHits};
 }
 function mixBar(obj, order, colors, total){
   if(!total) return "";
@@ -998,17 +1132,35 @@ function sprayPath(sx, sy, traj){
   }
   return {d:"M"+HOME_X+" "+HOME_Y+" L"+sx+" "+sy, dash:(traj==="GB" ? "5 4" : null)};
 }
-function drawField(svg, list, active, byOutcome){
+function drawField(svg, list, active, byOutcome, showFielders){
   var p = [];
   p.push('<path d="M100 162 L56 118 L100 74 L144 118 Z" style="fill:var(--zone-fill);stroke:var(--line);stroke-width:1.5"/>');
   p.push('<line x1="100" y1="162" x2="30" y2="92" style="stroke:var(--text-3);stroke-width:1;stroke-dasharray:3 3"/>');
   p.push('<line x1="100" y1="162" x2="170" y2="92" style="stroke:var(--text-3);stroke-width:1;stroke-dasharray:3 3"/>');
   p.push('<path d="M22 84 A104 104 0 0 1 178 84" style="fill:none;stroke:var(--line);stroke-width:1"/>');
+  /* Landmarks for the tap, not a defensive diagram - "it was fielded by the
+     shortstop" is far easier to place than eyeballing a blank wedge, and two
+     charters aiming at the same 6 keep the pull/center/oppo split honest. Only
+     on the diamond you tap; the report's team spray already carries four
+     channels and does not need nine more glyphs.
+     Scorer's orientation: 3 at first base (right), 5 at third (left). */
+  if(showFielders){
+    [[100,126,"1"],[100,157,"2"],[133,131,"3"],[124,108,"4"],[67,131,"5"],
+     [78,106,"6"],[46,62,"7"],[100,44,"8"],[154,62,"9"]].forEach(function(q){
+      p.push('<text x="'+q[0]+'" y="'+q[1]+'" style="fill:var(--text-3)" font-size="9" '+
+             'font-family="ui-monospace, Menlo, monospace" text-anchor="middle">'+q[2]+'</text>');
+    });
+  }
   function one(a, on){
     if(!a.spray) return;
     var hit = byOutcome && wasHit(a);
     var t = trajOf(a);
-    var col = on ? "var(--inplay)" : (byOutcome && hit ? "var(--inplay)" : "var(--navy-soft)");
+    /* Colour carries HARD CONTACT, the signal that repeats - not hit-or-out,
+       which at these sample sizes is mostly where their fielders were standing.
+       Hit and out keep the fill/open ring below, so nothing is lost. Two steps
+       of the one ordinal ramp, never a status colour. */
+    var col = on ? "var(--inplay)"
+                 : (a.hard ? "var(--pr0)" : "var(--pr3)");
     var w = on ? 2 : 1.4, op = on ? 1 : (byOutcome ? .75 : .5);
     var g = sprayPath(a.spray.x, a.spray.y, t);
     if(g) p.push('<path d="'+g.d+'" style="fill:none;stroke:'+col+';stroke-width:'+w+
@@ -1090,7 +1242,8 @@ function hitterRows(game){
     if(a.result==="K"||a.result==="Kc") o.k++;
     if(a.result==="BB") o.bb++;
     if(["1B","2B","3B","HR"].indexOf(a.result)>=0) o.hit++;
-    if(a.traj){ o.ip++; if(a.traj==="LD") o.hard++; }
+    var tj = trajOf(a);
+    if(tj){ o.ip++; if(tj==="LD") o.hard++; }
   });
   var rows = [];
   for(var k in by) rows.push(by[k]);
@@ -1298,7 +1451,10 @@ function drawReport(){
     '<div class="pbody sprayrow">'+
       '<div class="sv">'+
         '<svg class="diamond" id="rptField" viewBox="-10 -20 220 196"></svg>'+
-        '<div class="spraykey"><span>\u25cf hit</span><span>\u25cb out</span>'+
+        '<div class="spraykey">'+
+        '<span><i style="background:var(--pr0)"></i>hit hard</span>'+
+        '<span><i style="background:var(--pr3)"></i>not hard</span>'+
+        '<span>\u25cf hit</span><span>\u25cb out</span>'+
         '<span>\u2013\u2013 ground ball</span><span>\u2312 in the air</span></div>'+
       '</div>'+
       '<div class="sn">'+
@@ -1310,8 +1466,7 @@ function drawReport(){
           '<span class="lbl" style="display:block;margin-top:12px">How we hit it</span>'+
           mixBar(cs.tr, ["GB","LD","FB","PU"],
                  {GB:"var(--pr0)", LD:"var(--pr1)", FB:"var(--pr2)", PU:"var(--pr3)"}, cs.n)+
-          '<div class="read" style="margin-top:12px">'+cs.hits+' of '+cs.n+
-          ' balls in play went for a hit.</div>'
+          '<div class="read" style="margin-top:12px">'+hardRead(cs)+'</div>'
         : '<div class="read">Nothing in play yet.</div>')+
       '</div></div></div>';
     out += '</div>';
@@ -1325,7 +1480,7 @@ function drawReport(){
 var COLS = ["Date","Opponent","HomeAway","Charting","Build","Pitcher","PitcherHand",
   "PA","Spot","Hitter","Bats","PitchNo","CountB","CountS","Situation","Pitch",
   "Row","Col","InZone","What","Call","UmpOverride","Swing","Chase",
-  "PAResult","Traj","SprayDir","SprayDepth"];
+  "PAResult","Traj","HardContact","SprayDir","SprayDepth"];
 function csvOf(game){
   var lines = [COLS.join(",")];
   function q(v){ v = String(v==null?"":v); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
@@ -1342,6 +1497,7 @@ function csvOf(game){
         isSwing(x)?"Y":"", (!iz && isSwing(x))?"Y":"",
         (i===a.pitches.length-1 ? a.result : ""),
         (i===a.pitches.length-1 ? (a.traj||"") : ""),
+        (i===a.pitches.length-1 ? (a.hard ? "Y" : "") : ""),
         (i===a.pitches.length-1 && a.spray ? sprayDir(a.spray.x) : ""),
         (i===a.pitches.length-1 && a.spray ? sprayDepth(a.spray.x,a.spray.y) : "")
       ].map(q).join(","));
@@ -1496,14 +1652,14 @@ var SAMPLE_LU = [["Alvarez","L"],["Brandt","R"],["Chavez","R"],["Doyle","L"],
                  ["Ellis","R"],["Fisher","R"],["Grant","L"],["Hale","R"],["Ibarra","R"]];
 var SAMPLE_PI = [["Keller","17","R"],["Vance","9","L"]];
 var SAMPLE_CUR = [[0,0,"GO","GB",[97.3,124.5],[["SL",4,1,"T","B",0],["FB",3,3,"T","S",0],["FB",1,0,"T","S",1],["SL",3,0,"X","",0]]],
-[1,0,"GO","GB",[103.7,141.7],[["FB",3,3,"F","",0],["SL",4,3,"T","B",0],["FB",2,4,"X","",0]]],
+[1,0,"GO","GB",[103.7,141.7],[["FB",3,3,"F","",0],["SL",4,3,"T","B",0],["FB",2,4,"X","",0]],1],
 [2,0,"BB","",0,[["FB",2,3,"W","",0],["SL",3,3,"T","S",0],["SL",4,4,"F","",0],["SL",4,3,"T","B",0],["SL",3,3,"T","B",1],["SL",3,4,"T","B",0],["SL",3,4,"T","B",0]]],
 [3,0,"Kc","",0,[["FB",2,1,"T","S",0],["SL",4,0,"T","S",1],["FB",1,2,"T","S",0]]],
 [4,0,"Kc","",0,[["FB",2,3,"F","",0],["FB",2,3,"T","S",0],["FB",2,3,"T","S",0]]],
 [5,0,"GO","GB",[94.9,135.7],[["FB",1,3,"F","",0],["SL",4,4,"T","B",0],["FB",2,2,"T","S",0],["SL",4,4,"F","",0],["SL",4,3,"T","B",0],["SL",3,4,"X","",0]]],
-[6,0,"FO","FB",[142.2,114.6],[["FB",2,1,"T","S",0],["SL",3,0,"T","S",1],["FB",2,0,"X","",0]]],
+[6,0,"FO","FB",[142.2,114.6],[["FB",2,1,"T","S",0],["SL",3,0,"T","S",1],["FB",2,0,"X","",0]],1],
 [7,0,"Kc","",0,[["FB",1,4,"W","",0],["CH",2,3,"T","S",0],["SL",4,3,"T","B",0],["SL",3,4,"T","S",1]]],
-[8,0,"HR","FB",[157.3,80.6],[["FB",1,3,"T","S",0],["SL",3,4,"T","S",1],["SL",3,4,"X","",0]]],
+[8,0,"HR","FB",[157.3,80.6],[["FB",1,3,"T","S",0],["SL",3,4,"T","S",1],["SL",3,4,"X","",0]],1],
 [0,0,"K","",0,[["FB",1,1,"T","S",0],["FB",1,1,"F","",0],["SL",4,0,"T","B",0],["SL",3,0,"W","",0]]],
 [1,0,"K","",0,[["CB",3,2,"T","S",0],["SL",3,4,"T","S",1],["FB",0,4,"W","",0]]],
 [2,0,"PO","PU",[92.1,136.8],[["FB",1,3,"W","",0],["SL",3,4,"X","",0]]],
@@ -1511,28 +1667,28 @@ var SAMPLE_CUR = [[0,0,"GO","GB",[97.3,124.5],[["SL",4,1,"T","B",0],["FB",3,3,"T
 [4,0,"Kc","",0,[["FB",2,4,"T","B",0],["FB",2,1,"T","S",0],["FB",2,3,"T","S",0],["FB",2,4,"T","B",0],["SL",4,4,"T","S",1]]],
 [5,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",3,3,"T","B",1],["FB",1,3,"T","S",0],["SL",3,4,"T","S",1]]],
 [6,0,"Kc","",0,[["FB",2,1,"T","S",0],["FB",2,1,"T","S",0],["FB",1,0,"F","",0],["FB",0,1,"T","B",0],["FB",1,2,"T","S",0]]],
-[7,0,"GO","GB",[92.7,135.0],[["FB",3,3,"T","S",0],["FB",1,4,"T","B",0],["FB",1,2,"F","",0],["SL",4,4,"X","",0]]],
+[7,0,"GO","GB",[92.7,135.0],[["FB",3,3,"T","S",0],["FB",1,4,"T","B",0],["FB",1,2,"F","",0],["SL",4,4,"X","",0]],1],
 [8,0,"PO","PU",[92.0,123.5],[["FB",3,3,"T","S",0],["FB",3,4,"T","S",1],["SL",3,3,"X","",0]]],
 [0,0,"Kc","",0,[["FB",1,1,"F","",0],["FB",2,1,"F","",0],["SL",3,1,"T","S",0]]],
 [1,0,"Kc","",0,[["FB",3,4,"T","B",0],["FB",2,2,"T","S",0],["FB",2,3,"T","S",0],["SL",4,4,"T","S",1]]],
-[2,0,"LO","LD",[126.9,119.7],[["CB",2,2,"X","",0]]],
+[2,0,"LO","LD",[126.9,119.7],[["CB",2,2,"X","",0]],1],
 [3,0,"GO","GB",[114.6,143.3],[["FB",3,1,"T","B",1],["FB",2,2,"X","",0]]],
 [4,0,"1B","LD",[62.4,112.6],[["FB",1,3,"X","",0]]],
 [5,0,"Kc","",0,[["FB",2,3,"W","",0],["FB",3,4,"T","S",1],["SL",3,4,"T","B",0],["CH",3,3,"T","S",0]]],
 [6,0,"K","",0,[["FB",3,1,"T","S",0],["FB",3,2,"W","",0],["FB",0,2,"T","B",0],["SL",4,0,"W","",0]]],
 [7,0,"K","",0,[["FB",2,3,"T","S",0],["FB",1,4,"T","B",0],["CH",3,3,"T","B",1],["FB",2,1,"W","",0],["SL",4,3,"W","",0]]],
 [8,1,"Kc","",0,[["CB",4,2,"T","B",0],["FB",2,2,"T","S",0],["FB",2,3,"W","",0],["FB",1,3,"T","S",0]]],
-[0,1,"1B","LD",[89.8,111.8],[["FB",2,1,"X","",0]]],
+[0,1,"1B","LD",[89.8,111.8],[["FB",2,1,"X","",0]],1],
 [1,1,"Kc","",0,[["FB",2,3,"T","S",0],["CB",3,2,"T","S",0],["CB",4,2,"T","B",0],["FB",1,3,"F","",0],["FB",1,3,"T","S",0]]],
-[2,1,"FO","FB",[78.1,84.3],[["FB",2,3,"T","S",0],["FB",3,4,"T","B",0],["CB",2,2,"X","",0]]],
+[2,1,"FO","FB",[78.1,84.3],[["FB",2,3,"T","S",0],["FB",3,4,"T","B",0],["CB",2,2,"X","",0]],1],
 [3,1,"Kc","",0,[["FB",3,1,"T","S",0],["CB",3,2,"F","",0],["CB",3,2,"F","",0],["FB",1,1,"F","",0],["CB",3,2,"T","S",0]]],
 [4,1,"Kc","",0,[["FB",1,3,"F","",0],["CB",3,2,"W","",0],["FB",1,2,"F","",0],["CB",3,3,"T","S",0]]],
 [5,1,"PO","PU",[82.2,134.9],[["CB",3,1,"T","S",0],["CB",2,2,"T","S",0],["CB",3,3,"T","B",1],["FB",0,3,"T","B",0],["CB",4,2,"X","",0]]]];
-var SAMPLE_P1 = [[0,0,"2B","LD",[140.6,100.2],[["FB",1,1,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","B",0],["CH",3,1,"X","",0]]],
-[1,0,"LO","LD",[68.5,119.7],[["FB",1,3,"X","",0]]],
+var SAMPLE_P1 = [[0,0,"2B","LD",[140.6,100.2],[["FB",1,1,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","B",0],["CH",3,1,"X","",0]],1],
+[1,0,"LO","LD",[68.5,119.7],[["FB",1,3,"X","",0]],1],
 [2,0,"BB","",0,[["FB",2,3,"T","S",0],["FB",1,4,"T","B",0],["CH",2,2,"T","S",0],["SL",4,4,"T","B",0],["SL",3,4,"T","B",0],["SL",4,4,"T","B",0]]],
 [3,0,"Kc","",0,[["FB",2,1,"T","S",0],["FB",3,1,"F","",0],["SL",3,0,"T","S",1]]],
-[4,0,"HR","FB",[155.0,90.8],[["FB",2,3,"T","S",0],["CH",2,2,"T","S",0],["SL",3,4,"X","",0]]],
+[4,0,"HR","FB",[155.0,90.8],[["FB",2,3,"T","S",0],["CH",2,2,"T","S",0],["SL",3,4,"X","",0]],1],
 [5,0,"Kc","",0,[["FB",2,3,"T","S",0],["CH",3,2,"F","",0],["FB",0,3,"T","B",0],["SL",4,3,"F","",0],["SL",3,4,"T","S",1]]],
 [6,0,"LO","LD",[94.6,117.3],[["FB",3,1,"W","",0],["CH",3,2,"X","",0]]],
 [7,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",4,4,"T","S",1],["SL",3,4,"T","S",1]]],
@@ -1544,9 +1700,9 @@ var SAMPLE_P1 = [[0,0,"2B","LD",[140.6,100.2],[["FB",1,1,"T","S",0],["SL",4,1,"T
 [4,0,"Kc","",0,[["FB",3,3,"T","B",1],["FB",2,2,"T","S",0],["CH",3,3,"T","S",0],["SL",3,4,"T","S",1]]],
 [5,0,"K","",0,[["FB",2,3,"F","",0],["SL",3,3,"T","S",0],["FB",1,3,"W","",0]]],
 [6,0,"GO","GB",[93.2,138.9],[["FB",3,1,"X","",0]]],
-[7,0,"2B","LD",[116.3,90.7],[["FB",3,3,"T","S",0],["SL",3,3,"T","S",0],["SL",3,4,"X","",0]]],
+[7,0,"2B","LD",[116.3,90.7],[["FB",3,3,"T","S",0],["SL",3,3,"T","S",0],["SL",3,4,"X","",0]],1],
 [8,0,"K","",0,[["CB",3,2,"T","S",0],["FB",3,2,"F","",0],["SL",3,4,"T","B",0],["SL",3,4,"T","B",0],["CH",4,3,"T","B",0],["SL",3,3,"W","",0]]],
-[0,0,"GO","GB",[99.0,132.4],[["FB",3,1,"X","",0]]],
+[0,0,"GO","GB",[99.0,132.4],[["FB",3,1,"X","",0]],1],
 [1,0,"Kc","",0,[["FB",1,3,"T","S",0],["SL",4,3,"F","",0],["SL",3,3,"F","",0],["FB",1,3,"T","S",0]]],
 [2,0,"Kc","",0,[["FB",1,3,"T","S",0],["FB",2,3,"T","S",0],["SL",4,4,"T","B",0],["SL",3,3,"T","S",0]]],
 [3,0,"K","",0,[["FB",3,0,"T","B",0],["FB",2,2,"T","S",0],["FB",3,2,"T","B",1],["FB",2,2,"T","S",0],["FB",2,1,"W","",0]]],
@@ -1554,34 +1710,34 @@ var SAMPLE_P1 = [[0,0,"2B","LD",[140.6,100.2],[["FB",1,1,"T","S",0],["SL",4,1,"T
 [5,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",3,4,"T","S",1],["SL",3,3,"T","S",0]]],
 [6,0,"Kc","",0,[["FB",3,1,"T","B",1],["FB",2,3,"T","S",0],["CH",2,1,"T","S",0],["SL",3,0,"T","S",1]]],
 [7,0,"Kc","",0,[["FB",2,3,"T","S",0],["FB",1,3,"T","S",0],["FB",1,2,"T","S",0]]],
-[8,0,"GO","GB",[82.4,137.9],[["FB",2,3,"T","S",0],["CH",3,2,"X","",0]]],
-[0,1,"HR","FB",[91.2,73.3],[["FB",2,1,"X","",0]]],
+[8,0,"GO","GB",[82.4,137.9],[["FB",2,3,"T","S",0],["CH",3,2,"X","",0]],1],
+[0,1,"HR","FB",[91.2,73.3],[["FB",2,1,"X","",0]],1],
 [1,1,"BB","",0,[["FB",2,4,"T","B",0],["CB",4,1,"T","B",0],["FB",2,2,"T","S",0],["FB",3,2,"T","S",0],["CB",4,2,"T","B",0],["CB",4,2,"T","B",0]]],
 [2,1,"GO","GB",[112.2,132.1],[["FB",3,3,"T","B",1],["FB",3,1,"T","B",1],["CB",3,2,"T","S",0],["CB",3,2,"W","",0],["FB",1,3,"X","",0]]],
-[3,1,"2B","LD",[97.3,69.7],[["FB",2,1,"T","S",0],["CB",4,2,"T","B",0],["FB",1,0,"T","B",0],["FB",3,3,"T","S",0],["CB",4,1,"T","B",0],["FB",0,1,"X","",0]]]];
+[3,1,"2B","LD",[97.3,69.7],[["FB",2,1,"T","S",0],["CB",4,2,"T","B",0],["FB",1,0,"T","B",0],["FB",3,3,"T","S",0],["CB",4,1,"T","B",0],["FB",0,1,"X","",0]],1]];
 var SAMPLE_P2 = [[0,0,"K","",0,[["FB",3,1,"W","",0],["SL",3,1,"F","",0],["FB",1,1,"W","",0]]],
 [1,0,"K","",0,[["FB",3,3,"F","",0],["CH",3,2,"T","B",1],["FB",3,3,"T","S",0],["SL",3,3,"W","",0]]],
 [2,0,"GO","GB",[93.3,130.4],[["FB",3,3,"W","",0],["SL",3,3,"X","",0]]],
-[3,0,"2B","LD",[119.8,77.8],[["FB",2,0,"X","",0]]],
-[4,0,"2B","LD",[135.6,85.2],[["FB",1,3,"X","",0]]],
+[3,0,"2B","LD",[119.8,77.8],[["FB",2,0,"X","",0]],1],
+[4,0,"2B","LD",[135.6,85.2],[["FB",1,3,"X","",0]],1],
 [5,0,"Kc","",0,[["FB",2,4,"T","S",1],["CH",2,3,"F","",0],["CH",3,3,"T","S",0]]],
 [6,0,"Kc","",0,[["FB",3,1,"F","",0],["SL",4,0,"T","B",0],["FB",1,2,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","S",1]]],
 [7,0,"FO","FB",[83.5,96.3],[["FB",2,3,"X","",0]]],
-[8,0,"GO","GB",[101.4,136.0],[["FB",2,4,"X","",0]]],
+[8,0,"GO","GB",[101.4,136.0],[["FB",2,4,"X","",0]],1],
 [0,0,"BB","",0,[["SL",4,1,"T","B",0],["FB",2,2,"T","S",0],["CH",2,1,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","B",0],["SL",4,0,"T","B",0]]],
-[1,0,"FO","FB",[45.5,98.1],[["FB",3,3,"X","",0]]],
+[1,0,"FO","FB",[45.5,98.1],[["FB",3,3,"X","",0]],1],
 [2,0,"Kc","",0,[["FB",2,3,"F","",0],["SL",4,4,"T","B",0],["FB",2,4,"T","S",1],["SL",4,4,"T","S",1]]],
-[3,0,"HR","FB",[138.7,78.6],[["FB",1,0,"T","S",1],["CH",3,1,"F","",0],["SL",3,1,"X","",0]]],
+[3,0,"HR","FB",[138.7,78.6],[["FB",1,0,"T","S",1],["CH",3,1,"F","",0],["SL",3,1,"X","",0]],1],
 [4,0,"Kc","",0,[["FB",2,3,"T","S",0],["FB",3,2,"F","",0],["SL",3,4,"T","B",0],["SL",4,3,"T","B",0],["CH",3,3,"T","S",0]]],
 [5,0,"1B","LD",[136.9,110.9],[["FB",3,4,"T","S",1],["SL",3,3,"F","",0],["SL",4,3,"T","B",0],["FB",1,4,"T","B",0],["SL",3,4,"T","B",0],["CH",3,2,"X","",0]]],
-[6,0,"FO","FB",[63.5,88.3],[["FB",1,0,"T","B",0],["FB",2,2,"T","S",0],["SL",4,1,"T","B",0],["FB",2,3,"T","S",0],["FB",1,1,"X","",0]]],
+[6,0,"FO","FB",[63.5,88.3],[["FB",1,0,"T","B",0],["FB",2,2,"T","S",0],["SL",4,1,"T","B",0],["FB",2,3,"T","S",0],["FB",1,1,"X","",0]],1],
 [7,0,"GO","GB",[116.6,128.8],[["FB",3,3,"T","B",1],["FB",3,2,"T","S",0],["SL",3,3,"X","",0]]],
 [8,0,"PO","PU",[91.7,122.0],[["FB",1,3,"T","S",0],["FB",1,3,"X","",0]]],
 [0,0,"GO","GB",[96.0,139.0],[["FB",3,1,"X","",0]]],
 [1,0,"Kc","",0,[["FB",1,3,"F","",0],["FB",3,2,"T","S",0],["SL",3,4,"F","",0],["SL",3,4,"T","S",1]]],
-[2,0,"GO","GB",[91.8,127.5],[["FB",2,3,"T","S",0],["FB",3,3,"T","S",0],["SL",4,3,"T","B",0],["CH",3,3,"T","B",1],["SL",4,3,"X","",0]]],
+[2,0,"GO","GB",[91.8,127.5],[["FB",2,3,"T","S",0],["FB",3,3,"T","S",0],["SL",4,3,"T","B",0],["CH",3,3,"T","B",1],["SL",4,3,"X","",0]],1],
 [3,0,"Kc","",0,[["FB",2,1,"T","S",0],["SL",4,0,"T","B",0],["FB",1,1,"T","S",0],["SL",4,0,"T","S",1]]],
-[4,0,"LO","LD",[110.5,116.0],[["FB",3,4,"F","",0],["FB",2,3,"T","S",0],["CH",4,3,"X","",0]]],
+[4,0,"LO","LD",[110.5,116.0],[["FB",3,4,"F","",0],["FB",2,3,"T","S",0],["CH",4,3,"X","",0]],1],
 [5,0,"K","",0,[["FB",2,4,"T","S",1],["CH",2,3,"W","",0],["SL",4,4,"W","",0]]],
 [6,0,"PO","PU",[81.7,133.4],[["FB",1,1,"X","",0]]],
 [7,1,"PO","PU",[80.8,129.5],[["FB",2,3,"T","S",0],["FB",3,3,"X","",0]]],
@@ -1599,7 +1755,7 @@ function buildSample(rows, date, opp, home){
   });
   g.pas = rows.map(function(d){
     var a = newPA(d[0], d[1]);
-    a.result = d[2]; a.traj = d[3] || "";
+    a.result = d[2]; a.traj = d[3] || ""; a.hard = !!d[6];
     if(d[4]) a.spray = {x:d[4][0], y:d[4][1]};
     a.hname = SAMPLE_LU[d[0]][0]; a.hhand = SAMPLE_LU[d[0]][1];
     d[5].forEach(function(x){
@@ -1909,7 +2065,7 @@ function render(){
       var hit = (sel.spray === "H")
         ? O.pas.filter(function(a){ return a.spray && a.spray.x != null && a.spot === here.spot; })
         : O.pas.filter(function(a){ return a.spray && a.spray.x != null; });
-      drawField(el("diamond"), hit, here);
+      drawField(el("diamond"), hit, here, false, true);   /* the one you tap */
       var tog = document.querySelectorAll("[data-spray] [data-sv]");
       for(var ti=0; ti<tog.length; ti++){
         tog[ti].className = (tog[ti].getAttribute("data-sv") === sel.spray) ? "on" : "";
@@ -1935,6 +2091,7 @@ function wire(){
   TABS.forEach(function(t){ el("tab-"+t).onclick = function(){ showTab(t); }; });
   el("btnExport").onclick = exportNow;
   el("btnUndo").onclick   = undoPitch;
+  el("hardBtn").onclick   = toggleHard;
   el("btnNextPA").onclick = nextPA;
   el("umpFlip").onclick   = flipUmp;
   el("btnReal").onclick   = startReal;
@@ -2057,9 +2214,14 @@ function wire(){
     if(reviewing()){ hint("Reviewing — tap Back to the plate first"); return; }
     var pt = svgPoint(this, e);
     a.spray = {x:+pt.x.toFixed(1), y:+pt.y.toFixed(1)};
-    if(!a.traj) a.traj = "LD";
+    /* This used to default an unanswered trajectory to "LD", so a ground-ball
+       single marked on the field was filed as a line drive and counted toward
+       hard contact. WHERE it went and HOW it was hit are two different
+       questions - leave the one the charter has not answered empty. */
     if(a.pitches.length && a.pitches[a.pitches.length-1].m!=="X"){
-      a.pitches[a.pitches.length-1].m = "X"; a.result = "";
+      a.pitches[a.pitches.length-1].m = "X";
+      /* Only an auto-assigned result is stale here; one the charter tapped stands. */
+      if(AUTO_RESULT[a.result]) a.result = "";
     }
     render(); save();
   });

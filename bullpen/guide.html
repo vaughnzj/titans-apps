@@ -195,14 +195,14 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Bullpen Chart Coach's Guide</h1>
       <p>How to run a winter bullpen on the iPad. The script goes in before anybody warms up; after that it's one tap a pitch.</p>
-      <div class="meta">App v10 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
+      <div class="meta">App v17 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
     </div>
   </div>
 
   <section>
     <h2>What it does</h2>
     <ul>
-      <li>Holds the <b>script</b> &mdash; the pitch, the wind-up or stretch, the target spot and the situation &mdash; so every pitcher on your mound throws the same routine.</li>
+      <li>Holds the <b>script</b> &mdash; the wind-up/stretch/slide step, the pitch, the target location and the situation &mdash; so every pitcher on your mound throws the same routine.</li>
       <li>Records where each pitch actually finished, and works out whether he hit the spot, whether he was close, and whether it was a strike either way.</li>
       <li>Tells you the <b>pattern in his misses</b>, not just the percentage.</li>
       <li>Ranks the pitchers on your iPad against each other. Same script, same targets, so the numbers actually compare.</li>
@@ -210,7 +210,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Before you start</span>
-      <p>It holds <b>one session at a time</b>. Starting a new session erases the last one. Export before you start the next.</p>
+      <p>It keeps <b>every session you file</b>. Tapping <b>Finish &amp; file this session</b> moves the current one into <b>History</b> and starts a clean one with the same script and the same names &mdash; nothing is erased, and a session you forgot to export is still sitting there next week.</p>
     </div>
   </section>
 
@@ -229,7 +229,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v10</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v17</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -251,12 +251,16 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <ul>
       <li><b>Mound</b> &mdash; name it so it's different from the other iPads: Mound 1, Mound 2, and so on. This goes into every row of the export and is what keeps the four files apart when they're merged.</li>
       <li><b>Date</b> and <b>Coach</b> &mdash; who's charting.</li>
-      <li><b>The script</b> &mdash; either <b>load a template</b> (see below) or build it by hand: <b>+ Add pitch</b>, then <b>+ Repeat last</b> to add four of the same call in a row quickly. Each row is a pitch type, W or S, a target spot, and an optional situation note like <code>0-2 bury it</code>.</li>
+      <li><b>The script</b> &mdash; either <b>load a template</b> (see below) or build it by hand: <b>+ Add pitch</b>, then <b>+ Repeat last</b> to add four of the same call in a row quickly. Each row is a delivery (<b>W</b> wind-up, <b>S</b> stretch, <b>SS</b> slide step), a pitch type, a target <b>location</b>, and an optional <b>situation</b> &mdash; in that order, left to right.</li>
       <li><b>Pitchers</b> &mdash; 4 or 5 per iPad. Name, jersey, hand, PitchSafe number 0&ndash;100, the stretch-only box, and under <b>Runs</b>, whether he follows the script or goes freeform.</li>
     </ul>
     <div class="note">
       <span class="lab">Stretch only</span>
-      <p>Tick it for a pitcher who doesn't throw from the wind-up and every <code>W</code> in the script becomes an <code>S</code> for him. You don't need a second script.</p>
+      <p>Tick it for a pitcher who doesn't throw from the wind-up and every <code>W</code> in the script becomes an <code>S</code> for him. You don't need a second script. <b>Slide-step calls are left alone</b> &mdash; a slide step already comes out of the stretch, so he can throw it.</p>
+    </div>
+    <div class="note">
+      <span class="lab">Situations</span>
+      <p>The situation is a <b>picked list</b>, not a typed note, so the report can group on it later: <b>Runner on 1B</b>, <b>Runner on 2B</b>, <b>2 strikes, chase</b>, <b>2-0 O/S strike</b>, or none. Pick it on the script row, or in the <b>Call it</b> panel for a freeform pitcher.</p>
     </div>
   </section>
 
@@ -265,6 +269,9 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <p class="sub">Four mounds only compare to each other if they threw the same routine. That is the whole reason the leaderboard means anything, so the app makes the matching script the easy path and tells on you when it drifts.</p>
     <ul>
       <li><b>Load template</b> on the Setup tab picks a named routine and <b>locks the script</b>. Every mound that loads the same one is charting the same thing.</li>
+      <li>Four are shipped, and they run <b>in the order the dropdown lists them</b>. Each name says what that week works:<br><b>Fastball Command</b> (25) &mdash; fastball and change-up, wind-up only<br><b>Breaking Ball &amp; Stretch</b> (30) &mdash; adds the breaking ball and the stretch<br><b>Holding Runners</b> (35) &mdash; adds the slide step<br><b>Hitter&rsquo;s Counts</b> (40) &mdash; adds the change-up off the slide step and a 2-0 breaking ball<br><b>Every call in the first one is still in the fourth</b> &mdash; the later routines only add, so a pitcher&rsquo;s numbers compare week to week against the same test.</li>
+      <li><b>Getting loose is not in the script.</b> The first charted pitch is one he is trying to execute. Count his warm-up separately.</li>
+      <li><b>CB covers every breaking ball.</b> A slider guy throws his slider on a CB row &mdash; it is too pitcher-specific to script.</li>
       <li>The bar above the script always says where you stand: <i>Running: Winter Week 1</i>, with an <b>ID</b> next to it. <b>Two iPads showing the same ID ran the same routine.</b> That is the check, and it takes two seconds.</li>
       <li><b>Unlock to edit</b> is one tap if you genuinely need to change a call. The bar then turns amber &mdash; <i>Modified from Winter Week 1</i> &mdash; and every row of that iPad's export is stamped <code>ScriptModified = Y</code>.</li>
       <li>Building a script by hand is allowed. It just won't compare to the other mounds, and the bar says so plainly.</li>
@@ -276,11 +283,11 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
   </section>
 
   <section>
-    <h2>The spots</h2>
-    <p class="sub">Same six the pitching coaches call off the paper chart, sitting on the same 5&times;5 grid the in-game app uses. The middle 9 boxes are the strike zone; the ring around them is off the plate. It's the catcher's view, so <b>In is on the left, Out on the right</b>.</p>
+    <h2>The locations</h2>
+    <p class="sub">The <b>Location</b> column on the script row. Same six the pitching coaches call off the paper chart, sitting on the same 5&times;5 grid the in-game app uses. The middle 9 boxes are the strike zone; the ring around them is off the plate. It's the catcher's view, so <b>In is on the left, Out on the right</b>.</p>
     <div class="tw">
       <table>
-        <thead><tr><th>Spot</th><th>Where</th><th>In the zone?</th></tr></thead>
+        <thead><tr><th>Location</th><th>Where</th><th>In the zone?</th></tr></thead>
         <tbody>
           <tr><td><span class="disc">0</span></td><td>Middle</td><td>Yes</td></tr>
           <tr><td><span class="disc">1</span></td><td>Up, above the zone</td><td>No &mdash; climbing the ladder</td></tr>
@@ -293,7 +300,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </div>
     <ul style="margin-top:14px">
       <li>All six carry a <b>navy number</b> and a dashed outline, so you can see the whole target set at once.</li>
-      <li>The spot the script is calling <b>right now</b> turns orange with a ring around it.</li>
+      <li>The location the script is calling <b>right now</b> turns orange with a ring around it.</li>
       <li>Pitch types are the paper chart's numbers: <b>1</b> FB, <b>2</b> CB, <b>3</b> SL, <b>4</b> CH, <b>5</b> CT.</li>
     </ul>
   </section>
@@ -306,7 +313,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
         <div class="n">1</div>
         <div class="body">
           <h3>Read the call</h3>
-          <p>The navy card across the top says it: wind-up or stretch, the pitch, the spot number and what it means, plus the situation. Little map on the right shows the target.</p>
+          <p>The navy card across the top says it: the delivery, the pitch, the location number and what it means, plus the situation. Little map on the right shows the target.</p>
         </div>
       </div>
       <div class="step">
@@ -346,7 +353,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
   <section>
     <h2>When it doesn't go to script</h2>
     <ul>
-      <li><b>He threw something else, or you changed your mind:</b> tap <b>Change the call</b>, set the pitch, W/S, spot and situation, then <b>Use this call</b>. It changes that one pitch for that one pitcher and marks it off-script in the export. <b>Back to the script</b> undoes it.</li>
+      <li><b>He threw something else, or you changed your mind:</b> tap <b>Change the call</b>, set the delivery, pitch, location and situation, then <b>Use this call</b>. It changes that one pitch for that one pitcher and marks it off-script in the export. <b>Back to the script</b> undoes it.</li>
       <li><b>You want to change it for everybody:</b> go to Setup and edit the script row. Pitchers who haven't got there yet pick it up.</li>
       <li><b>He's throwing extra:</b> tap <b>+ Extra pitch</b>. It adds a rep past the end of the script and opens the editor so you can say what it was.</li>
       <li><b>Wrong box:</b> tap <b>&larr; Go back</b> to drop the last pitch, or tap that pitch in the log and tap the right box to move it.</li>
@@ -358,11 +365,11 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <h2>Freeform pitchers</h2>
     <p class="sub">Set a pitcher's <b>Runs</b> column to <b>Freeform</b> on Setup and the script gets out of his way. Everybody else on the iPad keeps running the routine &mdash; it's set per pitcher, not per session.</p>
     <ul>
-      <li>His Chart screen grows a <b>Call it</b> panel: pitch, wind-up or stretch, and the spot. Tap what you just called, then tap where it finished.</li>
+      <li>His Chart screen grows a <b>Call it</b> panel: the delivery, the pitch, and the location. Tap what you just called, then tap where it finished.</li>
       <li><b>Everything sticks.</b> Four sliders down and away in a row is one tap each &mdash; you only touch the call panel when something changes.</li>
       <li>Situation is a free-text box that also sticks. Use it or don't.</li>
       <li>The navy call card still reads the same, so the screen looks familiar and stays readable from the mound.</li>
-      <li>All the numbers still work. You're still calling a spot, so <b>on the spot</b>, <b>spot + close</b> and the miss read all mean exactly what they mean in scripted mode.</li>
+      <li>All the numbers still work. You're still calling a location, so <b>on the spot</b>, <b>spot + close</b> and the miss read all mean exactly what they mean in scripted mode.</li>
       <li>He's marked <b>freeform</b> on the pitcher strip and on his report card, and every one of his rows carries <code>Mode=Freeform</code> in the export so you can split them out later.</li>
     </ul>
     <div class="note">
@@ -398,6 +405,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li>Tap <b>Export pitch log (.csv)</b>. The iPad asks where to put it &mdash; send it to Files or straight to the shared folder. That's the file that matters: one row per pitch, and it merges with the other mounds.</li>
       <li><b>Export summary (.txt)</b> is the readable version, if you want to hand a pitcher a page.</li>
       <li>Files are named <code>bullpen-2027-01-21-mound-1.csv</code>, so a winter's worth sorts itself.</li>
+      <li><b>Then tap Finish &amp; file this session.</b> It moves to <b>History</b> and the app hands you a clean sheet with the same script and the same five names, ready for next week. Filing never deletes: History keeps an <b>Export</b> beside every session, and if more than one is sitting there unsent it says so at the top.</li>
       <li>Every row carries <code>Build</code>, <code>Template</code>, <code>ScriptID</code> and <code>ScriptModified</code> next to the pitch data. <b>Merge the four files and sort on ScriptID</b> &mdash; one value means all four mounds ran the same routine, and anything else shows you which one drifted.</li>
     </ul>
     <div class="note">
