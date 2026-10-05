@@ -1,6 +1,6 @@
 /* Titans Bullpen Chart - offline cache
    Bump CACHE when you upload a new index.html, or iPads keep the old one. */
-var CACHE = "titans-bullpen-v20";
+var CACHE = "titans-bullpen-v21";
 var FILES = [
   "./",
   "./index.html",
@@ -31,7 +31,11 @@ self.addEventListener("activate", function(e){
 self.addEventListener("fetch", function(e){
   if(e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then(function(hit){
+    /* SCOPED TO THIS VERSION'S CACHE. caches.match() with no cacheName searches
+       EVERY cache in the origin, so a stale cache that survives for any reason
+       keeps being served and the update never lands - the exact "stale app that
+       looks perfectly fine" failure this file was written to prevent. */
+    caches.match(e.request, {cacheName: CACHE}).then(function(hit){
       if(hit) return hit;
       return fetch(e.request).then(function(res){
         if(res && res.status === 200 && res.type === "basic"){
@@ -40,7 +44,7 @@ self.addEventListener("fetch", function(e){
         }
         return res;
       })["catch"](function(){
-        return caches.match("./index.html");
+        return caches.match("./index.html", {cacheName: CACHE});
       });
     })
   );

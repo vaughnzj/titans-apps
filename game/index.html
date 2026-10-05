@@ -2806,23 +2806,53 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v15";
+var BUILD = "v16";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;
-  e.textContent = BUILD; e.className = "build";
+  e.textContent = BUILD;
+  e.className = "build";
+  e.style.cursor = "";
+  e.onclick = null;
   if(!("caches" in window)) return;
+  var PRE = "titans-game-";
   caches.keys().then(function(keys){
-    var k=null;
-    for(var i=0;i<keys.length;i++) if(keys[i].indexOf("titans-game-")===0) k=keys[i];
-    if(!k) return;
-    var cached = k.slice("titans-game-".length);
-    if(cached !== BUILD){
-      e.textContent = BUILD + " \u2260 " + cached;
-      e.className = "build warn";
-      e.title = "The page and the saved copy are different versions. Close the app fully and open it again.";
-    }
+    var mine = [], i;
+    for(i=0;i<keys.length;i++) if(keys[i].indexOf(PRE)===0) mine.push(keys[i].slice(PRE.length));
+    if(!mine.length) return;                      /* nothing saved yet - not a mismatch */
+    var other = [];
+    for(i=0;i<mine.length;i++) if(mine[i] !== BUILD) other.push(mine[i]);
+    if(!other.length) return;                     /* only this version is saved - correct */
+    /* Either an old cache survived next to the new one, or the only cache is the
+       wrong version. Both mean this iPad can still serve stale files, and both are
+       fixed the same way - so the warning IS the button that fixes it. The old
+       advice ("close the app and open it again") did not work for Jim. */
+    e.textContent = BUILD + " \u2260 " + other.join("/") + " \u00b7 tap to fix";
+    e.className = "build warn";
+    e.style.cursor = "pointer";
+    e.title = "This iPad still has an old copy of the app saved. Tap to clear it and reload.";
+    e.onclick = forceUpdate;
   })["catch"](function(){});
+}
+/* The escape hatch. Clears the saved copy of the APP only - localStorage, which
+   holds the live session and History, is deliberately untouched. */
+function forceUpdate(){
+  ask("Force this iPad to take the newest version?\n\nIt clears the saved copy of the app "+
+      "and reloads. Your charted work and History are not touched.", "Update", function(){
+    var jobs = [];
+    if("caches" in window){
+      jobs.push(caches.keys().then(function(ks){
+        return Promise.all(ks.map(function(k){ return caches["delete"](k); }));
+      }));
+    }
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+        return Promise.all(rs.map(function(r){ return r.unregister(); }));
+      }));
+    }
+    var go = function(){ location.reload(); };
+    Promise.all(jobs).then(go, go);
+  });
 }
 
 /* ---------- offline readiness ---------- */
