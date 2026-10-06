@@ -150,6 +150,48 @@ const styled = sel =>
     ["mound chip",       "#pChips [data-cp='1']",         t("#pChips .pchip.on"), 'O.cp=0; render();'],
     ["tab: report",      "#tab-report",                   'document.getElementById("v-report").hidden+""'],
     ["tab: history",     "#tab-history",                  'document.getElementById("v-history").hidden+""'],
+    /* History mirrors the Setup tab's tags and notes. It must be a MIRROR - the
+       moment an entry control appears here there are two places to set a tag and
+       no answer to which one is current. */
+    ["reads on the header", null,
+       `(function(){ var h = document.querySelector("#hist .phead.withreads");
+          return h && h.querySelector(".rtag") && /What to expect/.test(h.textContent)
+            ? "yes" : "NO"; })()`,
+       'showTab("history");', "yes"],
+    ["header may wrap",   null,
+       `getComputedStyle(document.querySelector("#hist .phead.withreads")).flexWrap`,
+       null, "wrap"],
+    ["reads are read-only", null,
+       'document.querySelectorAll("#hist .readsbar button, #hist .readsbar input, '+
+       '#hist .readsbar textarea, #hist .readsbar select, #hist [data-ptag], '+
+       '#hist .rtag button").length+""',
+       null, "0"],
+    ["reads column",      null,
+       'Array.prototype.map.call(document.querySelectorAll("#hist table.grid th"),'+
+       'function(e){return e.textContent;}).indexOf("Reads")>=0 ? "yes":"NO"', null, "yes"],
+    /* Scouting an opposing pitcher. Every one of these lives on the Setup tab,
+       so they run together and the chart screen is restored afterwards. */
+    ["pitcher tag count",null,                            n("#pRows [data-pi='0'] .ptag"),
+       'showTab("setup");', 7],
+    ["pitcher notes",    null,                            n("#pRows [data-pi='0'] textarea[data-pf='notes']"), null, 1],
+    ["pull button",      null,                            '(!!document.querySelector("[data-ppull]"))+""',
+       null, "true"],
+    /* A tag the coach sets by hand must stick as HIS, not get recomputed away by
+       the auto layer on the next render. */
+    ["pitcher tag",      "#pRows [data-pi='0'] .ptag[data-ptag='NOGIVE']",
+       c("#pRows [data-pi='0'] .ptag[data-ptag='NOGIVE']")],
+    ["tag is stored",    null,  'O.pitchers[0].tags.NOGIVE+""', null, "1"],
+    /* POUNDS and WILD are opposites and BOTH can be auto-detected, so the
+       exclusion has to hold in ptagOn, not just in the tap handler. For one
+       release the panel could show a pitcher as both. */
+    ["pounds/wild exclusive", null,
+       '(function(){ var p=O.pitchers[0]; p.tags={POUNDS:1};'+
+       ' var r=ptagOn(O,0,"POUNDS")+"/"+ptagOn(O,0,"WILD"); p.tags={WILD:1};'+
+       ' r+=" "+ptagOn(O,0,"POUNDS")+"/"+ptagOn(O,0,"WILD"); p.tags={}; return r; })()',
+       null, "true/false false/true"],
+    ["export carries tags", null,
+       '(csvOf(O).split("\\n")[0].indexOf("PitcherTags")>=0 && '+
+       'csvOf(O).split("\\n")[0].indexOf("PitcherCarried")>=0)+""', null, "true"],
     /* LAST in this list on purpose: it leaves the Order column hidden, which
        would break any check below it that clicks a lineup spot. */
     ["order collapses",  "#btnOrder",                     c("#chartCols"), 'showTab("chart");'],

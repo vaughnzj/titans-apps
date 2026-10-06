@@ -178,6 +178,50 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
 .pchip.on .prdot{background:#fff !important;box-shadow:none}
 .pchip .mt{font-family:var(--mono);font-size:11px;opacity:.7}
 
+/* pitcher scouting tags - the same model the Pitch Chart uses for hitters.
+   A stored tag is the coach's decision and always wins. A dashed one with a dot
+   was worked out from the pitches charted in THIS game and can be tapped off. */
+.ptags{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ptag{text-align:center;padding:8px 4px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--surface);color:var(--text-2);font-family:var(--cond);font-weight:600;
+  font-size:13px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+.ptag.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ptag.auto{border-style:dashed;border-color:var(--navy-soft)}
+.ptag.auto::after{content:"\2022";margin-left:5px;opacity:.75}
+.pnotes{padding:8px 9px;min-height:52px;resize:vertical;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--surface);color:var(--text);
+  font-family:inherit;font-size:15px;line-height:1.4;width:100%;box-sizing:border-box}
+/* A read carried in from the last meeting is a starting point, not something seen
+   today. Say so where the tags are set, and again in the export. */
+.pcarried{font-size:12px;line-height:1.4;color:var(--text-2);background:var(--surface-2);
+  border:1px solid var(--line-soft);border-radius:var(--r);padding:6px 9px}
+.ppicklist{max-height:46vh;overflow:auto;margin-bottom:14px}
+.ppick{display:block;width:100%;text-align:left;padding:9px 10px;margin-bottom:6px;
+  border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--text)}
+.ppick b{font-weight:600;font-size:14.5px}
+.ppick span{display:block;font-size:12px;line-height:1.45;color:var(--text-2);margin-top:2px}
+/* The History tab mirrors the Setup tab's tags and notes READ-ONLY. History is for
+   reading the night before a game; entry stays in one place so there is never a
+   question of which copy is current. Same dashed-plus-dot marking for a detected tag. */
+.readsbar{display:flex;flex-direction:column;gap:6px;padding:10px 12px;
+  background:var(--surface-2);border-bottom:1px solid var(--line-soft)}
+.rtags{display:flex;gap:5px;flex-wrap:wrap}
+.rtag{font-family:var(--cond);font-weight:600;font-size:12px;letter-spacing:.05em;
+  text-transform:uppercase;padding:3px 9px;border-radius:999px;
+  background:var(--navy);color:#fff;border:1px solid var(--navy)}
+.rtag.auto{background:transparent;color:var(--navy-soft);border-style:dashed}
+.rtag.auto::after{content:"\2022";margin-left:4px;opacity:.8}
+.rnotes{font-size:14.5px;line-height:1.45;color:var(--text)}
+.rfrom{font-family:var(--cond);font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--text-3)}
+.rnone{font-size:13px;color:var(--text-2);font-style:italic}
+/* The chips ride the panel header next to "What to expect - <name>", because they
+   ARE what to expect. The header has to be allowed to wrap: four chips plus a name
+   plus the game count does not fit one iPad line. */
+.phead.withreads{flex-wrap:wrap;row-gap:6px}
+.phead .rtags{flex:0 1 auto;min-width:0}
+.phead .rtag{font-size:10.5px;padding:2px 7px}
+
 /* at-bat */
 .batstrip{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--surface-2);
   border-bottom:1px solid var(--line-soft)}
@@ -598,7 +642,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v31";
+var BUILD = "v34";
 var KEY   = "titans-offense-v1";
 var RKEY  = "titans-offense-roster-v1";
 var AKEY  = "titans-offense-archive-v1";
@@ -643,7 +687,10 @@ function emptyGame(){
 }
 function newPitcher(name){
   return { id:uid(), name:name||"", jersey:"", hand:"R",
-           types: TYPES.slice() };
+           types: TYPES.slice(),
+           /* tags holds ONLY what the coach set by hand - see ptagOn. notes is his
+              own, carried names the game a pulled read came from. */
+           notes:"", tags:{}, carried:null };
 }
 function newPA(spot, pIdx){
   var a = { spot:spot, p:pIdx, pitches:[], result:"", traj:"", spray:null, hard:false };
@@ -782,6 +829,52 @@ function samePerson(x, y){
 }
 
 /* ===================== pitchers ===================== */
+/* What we want to know walking up there the SECOND time. Six are the coach's
+   call; POUNDS, WILD and FPS the app can also work out for itself from the
+   charted pitches, and marks with a dot when it did.
+   POUNDS and WILD are opposites - turning one on releases the other. */
+var PTAGS = [
+  {k:"POUNDS",  l:"Pounds",   t:"Fills up the zone - be ready early"},
+  {k:"WILD",    l:"Wild",     t:"Behind a lot - make him prove it"},
+  {k:"FPS",     l:"FPS",      t:"First-pitch strike guy - he starts you 0-1"},
+  {k:"BBSTR",   l:"BB-Str",   t:"Lands the breaking ball for a strike - cannot just sit fastball"},
+  {k:"NOGIVE",  l:"No Give",  t:"Will not give in with two strikes"},
+  {k:"RUNNABLE",l:"Runnable", t:"Slow to the plate - we can run"},
+  {k:"QUICK",   l:"Quick",    t:"Slide-steps and holds runners"}
+];
+var PTAGKEYS = PTAGS.map(function(t){ return t.k; });
+var PEXCLUSIVE = {POUNDS:"WILD", WILD:"POUNDS"};
+/* Thresholds deliberately need a body of work. Nothing lights up in the first
+   inning, because a 4-for-5 start is not a read. */
+function pitcherAutoTags(game, idx){
+  var s = pitcherStats(game, idx), a = {};
+  a.POUNDS = s.n >= 15 && (s.str / s.n) >= 0.65;
+  a.WILD   = s.n >= 15 && (s.str / s.n) <= 0.50;
+  a.FPS    = s.fp >= 8 && (s.fps / s.fp) >= 0.65;
+  return a;
+}
+function ptagOn(game, idx, k){
+  var p = game.pitchers[idx];
+  if(!p) return false;
+  if(p.tags && Object.prototype.hasOwnProperty.call(p.tags, k)) return !!p.tags[k];
+  /* Both halves of an exclusive pair can be auto-detectable, so the exclusion has
+     to hold HERE and not only in the tap handler: a POUNDS the coach set by hand
+     has to keep a detected WILD down, and the other way round. Otherwise he sets
+     one, the data lights the other, and the panel says both. */
+  var ex = PEXCLUSIVE[k];
+  if(ex && p.tags && p.tags[ex]) return false;
+  return !!pitcherAutoTags(game, idx)[k];
+}
+function ptagIsAuto(game, idx, k){
+  var p = game.pitchers[idx];
+  if(!p) return false;
+  if(p.tags && Object.prototype.hasOwnProperty.call(p.tags, k)) return false;
+  return ptagOn(game, idx, k);
+}
+function ptagLabel(k){
+  for(var i=0;i<PTAGS.length;i++) if(PTAGS[i].k===k) return PTAGS[i].l;
+  return k;
+}
 function drawPitchersSetup(){
   var h = O.pitchers.map(function(p,i){
     return '<div class="panel" data-pi="'+i+'" style="box-shadow:none">'+
@@ -796,11 +889,74 @@ function drawPitchersSetup(){
           '<select data-pf="hand">'+["R","L"].map(function(x){
             return '<option'+(p.hand===x?" selected":"")+'>'+x+'</option>'; }).join("")+
           '</select></label>'+
+        '<button class="btn sm" data-ppull="'+i+'" style="height:38px">Pull</button>'+
         (i>0 ? '<button class="btn sm" data-pdel="'+i+'" style="height:38px">Remove</button>' : '')+
-      '</div></div></div>';
+      '</div>'+
+      (p.carried ? '<div class="pcarried">Reads carried in from '+esc(p.carried)+
+        '. Check them against what you see today.</div>' : '')+
+      '<div class="stack" style="gap:3px"><span class="lbl">What to expect</span>'+
+      '<div class="ptags">'+PTAGS.map(function(t){
+        return '<button class="ptag'+(ptagOn(O,i,t.k)?" on":"")+
+               (ptagIsAuto(O,i,t.k)?" auto":"")+'" data-ptag="'+t.k+'" title="'+
+               esc(t.t)+'">'+esc(t.l)+'</button>';
+      }).join("")+'</div></div>'+
+      '<label class="field"><span class="lbl">Notes on him</span>'+
+        '<textarea class="pnotes" data-pf="notes" rows="2" placeholder="'+
+        'Anything the next at-bat should know">'+esc(p.notes||"")+'</textarea></label>'+
+      '</div></div>';
   }).join("");
   el("pRows").innerHTML = h;
   el("pInfo").textContent = O.pitchers.length + (O.pitchers.length===1?" pitcher":" pitchers");
+}
+/* We play almost everybody twice. This is the whole point of keeping the
+   archive: the second time up, his name, his number, your notes and your tags
+   come back with one tap. The PITCH DATA is never copied - only the reads. */
+function pickPitcher(i){
+  var seen = seenPitchers();
+  if(!seen.length){ hint("No filed games yet \u2014 nothing to pull from", false); return; }
+  var w = document.createElement("div");
+  w.className = "askwrap";
+  w.innerHTML = '<div class="askbox"><p>Pull a pitcher we have charted before.'+
+    '\n\nHis hand, number, your notes and your tags come with him. Nothing from the '+
+    'pitch data is copied \u2014 today starts clean.</p><div class="ppicklist">'+
+    seen.slice(0,14).map(function(o,j){
+      return '<button class="ppick" data-pp="'+j+'"><b>'+esc(o.name)+'</b><span>'+
+        esc(o.hand||"?")+'HP \u00b7 '+o.games+(o.games===1?" game":" games")+' \u00b7 '+
+        o.n+' pitches \u00b7 '+pct(o.str,o.n)+' strikes \u00b7 '+topMix(o.mix,2)+'<br>'+
+        'last seen '+esc(o.from||o.last||"\u2014")+
+        (o.ptags && o.ptags.length ? ' \u00b7 '+esc(o.ptags.map(function(t){
+          return t.l + (t.auto ? "*" : ""); }).join(" ")) : "")+
+        '</span></button>';
+    }).join("")+'</div><div class="askrow">'+
+    '<button class="btn" data-no>Cancel</button></div></div>';
+  function close(){
+    if(w.parentNode) w.parentNode.removeChild(w);
+    document.removeEventListener("keydown", key);
+  }
+  function key(e){ if(e.key === "Escape") close(); }
+  w.addEventListener("click", function(e){
+    if(e.target === w || (e.target.hasAttribute && e.target.hasAttribute("data-no"))){ close(); return; }
+    var b = e.target.closest ? e.target.closest("[data-pp]") : null;
+    if(!b) return;
+    close();
+    var o = seen[+b.getAttribute("data-pp")], p = O.pitchers[i];
+    if(!o || !p) return;
+    p.name = o.name;
+    p.hand = o.hand || "R";
+    if(o.jersey) p.jersey = o.jersey;
+    var tg = {}, any = false, k;
+    for(k in o.tags){ if(Object.prototype.hasOwnProperty.call(o.tags,k)){ tg[k] = o.tags[k]; any = true; } }
+    p.tags = tg;
+    p.notes = o.notes || "";
+    /* Only claim a carried read when something actually came across. Pulling a
+       name we never wrote anything about is not a read to double-check. */
+    p.carried = (any || p.notes) ? (o.from || "a previous game") : null;
+    save(); render();
+    hint("Pulled " + o.name + (p.carried ? " \u2014 reads carried in from " + p.carried : ""), true);
+  });
+  document.addEventListener("keydown", key);
+  document.body.appendChild(w);
+  w.querySelector("[data-no]").focus();
 }
 function curP(){ return O.pitchers[O.cp] || O.pitchers[0]; }
 /* Starter darkest, each reliever a step lighter; the same shade follows a
@@ -1579,7 +1735,8 @@ function drawReport(){
   if(!team && pi != null){
     var pp = O.pitchers[pi], st = pitcherStats(O, pi);
     out += expectBlock([O], null, "What to expect \u2014 " + pname(pi),
-                       "this game only", sel.hand, "rpt", pi, roleShade(pi));
+                       "this game only", sel.hand, "rpt", pi, roleShade(pi),
+                       readsOf(O, pi));
     out += '<div class="panel" style="border-left:4px solid ' + roleShade(pi) + '">' +
       '<div class="phead"><span class="lbl">' + roleDot(pi) + ' ' +
       esc(pname(pi)) + ' \u00b7 ' + esc(pp.hand) + 'HP</span>' +
@@ -1650,7 +1807,10 @@ function drawReport(){
 }
 
 /* ===================== export ===================== */
+/* PitcherTags marks a detected tag with * exactly as the Pitch Chart does for
+   hitters, so a season roll-up can tell the coach's read from the app's. */
 var COLS = ["Date","Opponent","HomeAway","Charting","Build","Pitcher","PitcherHand",
+  "PitcherTags","PitcherNotes","PitcherCarried",
   "PA","Spot","Hitter","Bats","PitchNo","CountB","CountS","Situation","Pitch",
   "Row","Col","InZone","What","Call","UmpOverride","Swing","Chase",
   "PAResult","Traj","HardContact","SprayDir","SprayDepth"];
@@ -1661,10 +1821,16 @@ function csvOf(game){
     var h = paHitter(a);
     if(!a.pitches.length) return;
     a.pitches.forEach(function(x, i){
-      var p = game.pitchers[pitcherOf(a,x)] || {name:"",hand:""};
+      var pIdx = pitcherOf(a,x);
+      var p = game.pitchers[pIdx] || {name:"",hand:""};
+      var ptg = game.pitchers[pIdx]
+        ? PTAGKEYS.filter(function(t){ return ptagOn(game, pIdx, t); })
+                  .map(function(t){ return ptagIsAuto(game, pIdx, t) ? t+"*" : t; }).join(" ")
+        : "";
       var cb = countBefore(a,i), iz = inZone(x.r,x.c);
       lines.push([game.date, game.opp, game.home, game.who, game.build||BUILD,
-        p.name, p.hand, ai+1, a.spot+1, h.name, h.hand||"", i+1, cb.b, cb.s, situOf(cb),
+        p.name, p.hand, ptg, p.notes||"", p.carried||"",
+        ai+1, a.spot+1, h.name, h.hand||"", i+1, cb.b, cb.s, situOf(cb),
         x.tn||x.t, x.r+1, x.c+1, iz?"Y":"N", MODN[x.m]||x.m,
         x.m==="T" ? (x.call==="S"?"Strike":"Ball") : "", x.ov?"Y":"",
         isSwing(x)?"Y":"", (!iz && isSwing(x))?"Y":"",
@@ -1723,16 +1889,76 @@ function seenPitchers(){
       var s = pitcherStats(g, i);
       if(!s.n) return;
       var o = by[key] = by[key] || {name:p.name, hand:p.hand, games:0, n:0, str:0,
-                                    sw:0, wh:0, mix:{}, last:""};
+                                    sw:0, wh:0, mix:{}, last:"", jersey:"",
+                                    notes:"", tags:{}, ptags:[], from:"", _rk:-1};
       o.games++; o.n += s.n; o.str += s.str; o.sw += s.sw; o.wh += s.wh;
       for(var k in s.mix) o.mix[k] = (o.mix[k]||0) + s.mix[k];
       if(!o.last || (g.date||"") > o.last) o.last = g.date || "";
       if(g.opp) o.opp = g.opp;
+      /* The reads come from the MOST RECENT look, not a merge of all of them -
+         a note from April beats the same note from February. Filed time orders
+         them; the archive is newest-first, so the first one seen usually wins. */
+      var rk = g.filed || 0;
+      if(rk >= o._rk){
+        o._rk = rk;
+        o.hand = p.hand || o.hand;
+        o.jersey = p.jersey || "";
+        o.notes = p.notes || "";
+        o.tags = p.tags || {};
+        o.ptags = PTAGKEYS.filter(function(t){ return ptagOn(g, i, t); })
+                          .map(function(t){ return {l:ptagLabel(t).toUpperCase(),
+                                                    auto:ptagIsAuto(g, i, t)}; });
+        o.from = (g.opp || "a previous game") + (g.date ? ", " + g.date : "");
+      }
     });
   });
   var rows = []; for(var k in by) rows.push(by[k]);
   rows.sort(function(a,b){ return b.n - a.n; });
   return rows;
+}
+/* Everything we hold on one pitcher, in the shape seenPitchers() already produces,
+   so the live game and a filed game render through the same two functions below. */
+function readsOf(game, idx){
+  var p = game.pitchers[idx];
+  if(!p) return null;
+  return {
+    ptags: PTAGKEYS.filter(function(t){ return ptagOn(game, idx, t); })
+                   .map(function(t){ return {l:ptagLabel(t).toUpperCase(),
+                                             auto:ptagIsAuto(game, idx, t)}; }),
+    notes: p.notes || "",
+    carried: p.carried || ""
+  };
+}
+/* Read-only in both places it appears. A detected tag keeps its dashed-dot marking
+   so the report never launders the app's guess into somebody's judgement. */
+function readsChips(o){
+  var tg = (o && o.ptags) || [];
+  if(!tg.length) return "";
+  return '<div class="rtags">'+tg.map(function(t){
+    return '<span class="rtag'+(t.auto?" auto":"")+'" title="'+
+           (t.auto?"Detected from the charted pitches":"Set by a coach")+'">'+
+           esc(t.l)+'</span>';
+  }).join("")+'</div>';
+}
+/* The prose half - notes and where a carried read came from. Never in the header;
+   it is a sentence, and a sentence in a header line wrecks the wrap. */
+function readsLine(o){
+  if(!o) return "";
+  var tg = o.ptags || [], bits = [];
+  if(o.notes) bits.push('<div class="rnotes">'+esc(o.notes)+'</div>');
+  var foot = [];
+  /* Two different claims, and they must not be confused. carried = these came from
+     ANOTHER game into the one being charted, so check them. from = this is simply
+     where we last wrote them down, which is all History can say. */
+  if(o.carried) foot.push("Reads carried in from " + o.carried + " \u2014 check them against today");
+  else if(o.from) foot.push("Last written down " + o.from);
+  if(tg.some(function(t){ return t.auto; })) foot.push("dotted = the app detected it");
+  if(foot.length) bits.push('<div class="rfrom">'+esc(foot.join(" \u00b7 "))+'</div>');
+  if(!tg.length && !o.notes){
+    bits.push('<div class="rnone">No tags or notes on him yet \u2014 set them on the '+
+              'Setup tab and they follow him to the next game.</div>');
+  }
+  return bits.length ? '<div class="readsbar">'+bits.join("")+'</div>' : "";
 }
 function topMix(mix, n){
   var ks = []; for(var k in mix) ks.push(k);
@@ -1765,19 +1991,25 @@ function drawHistory(){
       }).join("")+'</div></div></div>';
     out += expectBlock(arch(), pk, "What to expect \u2014 " + picked.name,
       picked.games + (picked.games===1?" filed game":" filed games"),
-      sel.histHand, "hist");
+      sel.histHand, "hist", null, null, picked);
   }
   if(seen.length){
     out += '<div class="panel"><div class="phead"><span class="lbl">Pitchers we have seen</span>'+
       '<span class="lbl" style="margin-left:auto">across '+arch().length+' filed '+
       (arch().length===1?"game":"games")+'</span></div><div class="pbody"><div class="scroller">'+
       '<table class="grid"><thead><tr><th>Pitcher</th><th>Hand</th><th>Games</th><th>Pitches</th>'+
-      '<th>Strike %</th><th>Our whiff %</th><th>What he throws</th><th>Last seen</th></tr></thead><tbody>'+
+      '<th>Strike %</th><th>Our whiff %</th><th>What he throws</th><th>Reads</th>'+
+      '<th>Last seen</th></tr></thead><tbody>'+
       seen.map(function(o){
         return '<tr><td><b>'+esc(o.name)+'</b></td><td>'+esc(o.hand||"")+'</td>'+
           '<td class="num">'+o.games+'</td><td class="num">'+o.n+'</td>'+
           '<td class="num">'+pct(o.str,o.n)+'</td><td class="num">'+pct(o.wh,o.sw)+'</td>'+
-          '<td>'+topMix(o.mix,3)+'</td><td>'+esc(o.last||"—")+'</td></tr>';
+          '<td>'+topMix(o.mix,3)+'</td>'+
+          '<td>'+((o.ptags && o.ptags.length)
+            ? o.ptags.map(function(t){ return '<span class="rtag'+(t.auto?" auto":"")+
+                '" style="font-size:10.5px;padding:2px 6px">'+esc(t.l)+'</span>'; }).join(" ")
+            : (o.notes ? '<span class="rfrom">notes only</span>' : "—"))+'</td>'+
+          '<td>'+esc(o.last||"—")+'</td></tr>';
       }).join("")+'</tbody></table></div></div></div>';
   }
 
@@ -2252,14 +2484,16 @@ function handSeg(id, val){
       return '<button data-hv="'+x[0]+'"'+(val===x[0]?' class="on"':'')+'>'+x[1]+'</button>';
     }).join("")+'</div>';
 }
-function expectBlock(games, pitcherKey, title, sub, hand, segId, onlyIdx, shade){
+function expectBlock(games, pitcherKey, title, sub, hand, segId, onlyIdx, shade, reads){
   var all = expectRecords(games, pitcherKey, onlyIdx);
   var recs = (hand==="A") ? all : all.filter(function(r){ return r.bats===hand; });
   var colors = typeOrder(all);
+  var chips = readsChips(reads);
   return '<div class="panel"'+(shade?' style="border-left:4px solid '+shade+'"':'')+
-    '><div class="phead"><span class="lbl">'+esc(title)+'</span>'+
+    '><div class="phead'+(chips?" withreads":"")+'"><span class="lbl">'+esc(title)+'</span>'+
+    chips+
     '<span class="lbl" style="margin-left:auto;font-weight:400;text-transform:none;'+
-    'letter-spacing:0">'+esc(sub)+'</span></div><div class="pbody stack">'+
+    'letter-spacing:0">'+esc(sub)+'</span></div>'+readsLine(reads)+'<div class="pbody stack">'+
     '<div class="row" style="align-items:center">'+handSeg(segId, hand)+
       '<span class="lbl" style="text-transform:none;letter-spacing:0">'+
       recs.length+' pitches in view</span></div>'+
@@ -2358,7 +2592,8 @@ function wire(){
   document.addEventListener("click", function(e){
     var t = e.target.closest ? e.target.closest("[data-r],[data-mod],[data-ty],"+
       "[data-res],[data-tr],[data-spot],[data-cp],[data-newp],[data-rdel],[data-pdel],"+
-      "[data-hexp],[data-hdel],[data-hv],[data-hp],[data-sv],[data-rp]") : null;
+      "[data-hexp],[data-hdel],[data-hv],[data-hp],[data-sv],[data-rp],[data-ptag],"+
+      "[data-ppull]") : null;
     if(!t) return;
     var g = function(k){ return t.getAttribute(k); };
     if(g("data-r")!==null){ logPitch(+g("data-r"), +g("data-c")); return; }
@@ -2402,6 +2637,19 @@ function wire(){
       if(O.cp>=O.pitchers.length) O.cp = O.pitchers.length-1;
       save(); render(); return;
     }
+    if(g("data-ptag")){
+      var tk = g("data-ptag"), tpi = +t.closest("[data-pi]").getAttribute("data-pi");
+      var tp = O.pitchers[tpi];
+      if(!tp) return;
+      if(!tp.tags) tp.tags = {};
+      if(!ptagOn(O,tpi,tk)){
+        tp.tags[tk] = 1;                                   /* on */
+        if(PEXCLUSIVE[tk]) delete tp.tags[PEXCLUSIVE[tk]];
+      } else if(ptagIsAuto(O,tpi,tk)) tp.tags[tk] = 0;     /* override a detected one off */
+      else delete tp.tags[tk];                             /* release it back to the data */
+      save(); render(); return;
+    }
+    if(g("data-ppull")!==null && g("data-ppull")!==""){ pickPitcher(+g("data-ppull")); return; }
     if(g("data-sv")){ sel.spray = g("data-sv"); render(); return; }
     if(g("data-hv")){
       var seg = t.closest("[data-hand]").getAttribute("data-hand");

@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Offense Chart Coach's Guide</h1>
       <p>How to chart the other team's pitcher while we hit. Read it once before you go, then keep it open on your phone for the first inning.</p>
-      <div class="meta">App v31 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
+      <div class="meta">App v34 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
     </div>
   </div>
 
@@ -227,7 +227,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, right after &ldquo;Offense Chart.&rdquo; This guide describes <b>v31</b>. If it shows two numbers in amber, like <code>v28 &ne; v27</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, right after &ldquo;Offense Chart.&rdquo; This guide describes <b>v34</b>. If it shows two numbers in amber, like <code>v28 &ne; v27</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -258,12 +258,35 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li>Fill in the <b>date</b> and <b>opponent</b> across the top, and who's charting on the Setup tab.</li>
       <li>Set the lineup if it changed.</li>
       <li>Enter <b>their starter</b> &mdash; name or number is enough, plus whether he throws R or L.</li>
+      <li>Seen him before? Tap <b>Pull</b> on his panel and take him off the list &mdash; see below.</li>
       <li>Nothing to set up for his pitches &mdash; the buttons are the same six every time.</li>
     </ul>
     <div class="note">
       <span class="lab">The sample game</span>
       <p>The app opens on a sample so you can see a filled-in report. <b>Nothing in the sample is ever saved.</b> Tap <b>Start a real game</b> when you're ready &mdash; that's the only way out of it.</p>
     </div>
+  </section>
+
+  <section>
+    <h3 class="upd">Scouting the man on the mound</h3>
+    <p>Every pitcher's panel on the <b>Setup</b> tab has a row of tags and a notes box. Seven tags, all of them things you want to know walking up there the second time:</p>
+    <ul>
+      <li><b>POUNDS</b> &mdash; fills up the zone, be ready early</li>
+      <li><b>WILD</b> &mdash; behind a lot, make him prove it</li>
+      <li><b>FPS</b> &mdash; first-pitch strike guy, he starts you 0-1</li>
+      <li><b>BB-STR</b> &mdash; lands the breaking ball for a strike, can't just sit fastball</li>
+      <li><b>NO GIVE</b> &mdash; won't give in with two strikes</li>
+      <li><b>RUNNABLE</b> &mdash; slow to the plate, we can run</li>
+      <li><b>QUICK</b> &mdash; slide-steps and holds runners</li>
+    </ul>
+    <p><b>POUNDS</b>, <b>WILD</b> and <b>FPS</b> the app works out for itself once there are enough pitches charted, and marks them with a <b>dot</b> so you know nobody set them by hand. Tap one to overrule it &mdash; off, then on as yours, then back to the app. <b>Your tap always wins.</b></p>
+    <p>POUNDS and WILD are opposites. Turning one on turns the other off.</p>
+    <p>Notes are yours and free-form. Both tags and notes go out in the export, with a <code>*</code> on anything the app detected rather than a coach deciding.</p>
+
+    <h3 class="upd">Pulling him off the list</h3>
+    <p>We play most teams twice. The second time, tap <b>Pull</b> on his panel and pick him out of the list of everybody we've already charted. His <b>hand, number, your notes and your tags</b> come back with him.</p>
+    <p>Nothing from the pitch data is copied &mdash; today starts clean, and the panel says <b>&ldquo;Reads carried in from Northview, 4/18&rdquo;</b> so nobody mistakes a note from six weeks ago for something somebody saw this afternoon. Check them against what he's actually doing.</p>
+    <p>Only his most recent look comes across. A note from April beats the same note from February.</p>
   </section>
 
   <section>
@@ -381,7 +404,12 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
   <section>
     <h2>The next time we see him</h2>
     <p>The <b>History</b> tab has a <b>Pitchers we have seen</b> table built from every filed game &mdash; how many times we've faced him, his strike percentage, how often we whiff, and what he throws.</p>
-    <p>Spell his name the same way each time and it all lands on one line. If you only have a number, use the number consistently.</p>
+    <p>Spell his name the same way each time and it all lands on one line. If you only have a number, use the number consistently. That spelling is also what the <b>Pull</b> button matches on, on the Setup tab.</p>
+    <h3 class="upd">Your tags and notes show up here too</h3>
+    <p>Pick him off the name chips and his tags sit <b>right on the <span class="nw">WHAT TO EXPECT</span> header</b>, next to his name &mdash; because they are what to expect. Your notes and where they were last written down sit on the line just under it. The <b>Reads</b> column in the table below does the same thing at a glance for everybody.</p>
+    <p>Dotted tags are the ones the app worked out from the pitches; solid ones are somebody's call.</p>
+    <p>The same header shows up on the <b>Report</b> tab during a game, for whoever is on the mound right now.</p>
+    <p><b>It is read-only in both places.</b> They are for reading &mdash; the night before, or between innings. To change a tag or a note, do it on the <b>Setup</b> tab, so there is never a question of which copy is current.</p>
   </section>
 
   <section>
