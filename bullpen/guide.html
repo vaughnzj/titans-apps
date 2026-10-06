@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Bullpen Chart Coach's Guide</h1>
       <p>How to run a winter bullpen on the iPad. The script goes in before anybody warms up; after that it's one tap a pitch.</p>
-      <div class="meta">App v21 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
+      <div class="meta">App v23 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
     </div>
   </div>
 
@@ -229,7 +229,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v21</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v23</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -376,6 +376,46 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <span class="lab">When to use it</span>
       <p>A kid coming back from an arm issue who just needs to get loose, a side session with a specific fix in mind, or a pen where you're reacting to what you're seeing instead of working a card. If you find yourself using <b>Change the call</b> on every pitch, that pitcher should be freeform.</p>
     </div>
+  </section>
+
+  <section>
+    <h2 class="upd">Switching pitchers</h2>
+    <p class="sub">The strip across the top of the Chart tab &mdash; <b>Who's throwing</b> &mdash; is the switcher. Tap a name and that pitcher's call, log and numbers come up.</p>
+    <ul>
+      <li>A pitcher who has finished his card is <b>dimmed and struck through</b>, so the arm with work left is the one that catches your eye.</li>
+      <li>When somebody finishes, his card shows a <b>&ldquo;Vance is up &rarr;&rdquo;</b> button. Tapping it hands the mound over.</li>
+      <li>And if you just leave the Chart tab and come back, the app <b>moves to the next arm on its own</b> &mdash; the first named pitcher with nothing charted yet. Blank rows are skipped; they aren't people until you name them.</li>
+      <li>Tap a name yourself and that choice sticks. Going back to a finished pitcher to look at his zone is deliberate, so tabbing to Report and back won't steer you away from him.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Setting up a pitcher does not put him on screen</span>
+      <p>Naming a pitcher on Setup doesn't switch the Chart tab to him &mdash; you normally set up all four or five arms before anybody throws, and hijacking the screen mid-session would be worse. Tap his name on the strip, or let the hand-off do it when the man ahead of him is done.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="upd">Live ABs</h2>
+    <p class="sub">Set a pitcher's mode to <b>Live ABs</b> on Setup when he's facing hitters. He gets the same <b>Call it</b> panel as a freeform pitcher, plus an at-bat around it.</p>
+    <ul>
+      <li>A big <b>count</b> at the top, worked out from where you plotted the pitches &mdash; in the zone is a strike, outside it is a ball. Nothing to enter.</li>
+      <li>A strip of <b>at-bat chips</b> below it. One per AB, with its result and pitch count on it. The live one is outlined.</li>
+      <li><b>How it ended</b> &mdash; the same sixteen results as the Pitch Chart. Tapping one closes the at-bat and opens the next, so the next hitter costs you no extra tap.</li>
+      <li>Tapped the wrong result? Tap that at-bat's chip and tap the right one. A closed at-bat won't take another pitch &mdash; it says so rather than quietly appending.</li>
+      <li><b>+ New AB</b> is there for a hitter who never finishes.</li>
+    </ul>
+    <h3 class="upd">The called spot is optional in here</h3>
+    <p>The Location row grows a <b>&mdash; no spot called</b> button. Use it when you're competing and nobody called a spot.</p>
+    <p><b>Those pitches are left out of the execution numbers, not counted as misses.</b> That matters: a competitive inning where nobody called spots would otherwise look like the worst command of the winter. The pitch still counts for strike %, velo and the at-bat; it just has nothing to be graded against. When some pitches are ungraded the KPI label tells you &mdash; <b>Spot &middot; of 12 graded</b> instead of <b>On the spot</b> &mdash; and the pip in the zone is outlined instead of coloured.</p>
+    <h3 class="upd">AO3+</h3>
+    <p>Two characters, the same as the Pitch Chart and the same as the old spreadsheet. The first says whether he <b>got ahead</b> (ahead after three pitches, or the at-bat was over inside three). The second says whether he <b>got the out</b>.</p>
+    <ul>
+      <li><code>++</code> ahead, got the out &mdash; 2 points</li>
+      <li><code>+-</code> ahead, no out &mdash; 1</li>
+      <li><code>-+</code> behind, got the out &mdash; 1</li>
+      <li><code>--</code> behind, no out &mdash; 0</li>
+    </ul>
+    <p>The report shows all four counts, not just a percentage &mdash; a pitcher who's losing by never getting ahead is a different problem from one who gets ahead and gets hit, and one number hides which. It needs a <b>result</b> on the at-bat; an open AB isn't counted.</p>
+    <p>Export: <code>Mode=Live</code> on every row, plus <code>AB</code>, <code>ABResult</code>, <code>ABOut</code> and <code>AO3plus</code>.</p>
   </section>
 
   <section>

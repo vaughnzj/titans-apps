@@ -202,7 +202,18 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
 .legend b{color:var(--ink);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;letter-spacing:.04em}
 
 /* ---------- pitcher strip ---------- */
+/* The strip is a switcher and has to say so. Unlabelled, it reads as a header and
+   a coach can stare at pitcher 1's finished card without realising the second arm
+   is one tap away. */
+.striplbl{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-2);padding:2px 2px 4px}
+.striplbl span{font-weight:600;letter-spacing:.04em;text-transform:none;opacity:.8}
 .strip{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;-webkit-overflow-scrolling:touch}
+/* A finished scripted pitcher is dimmed, so the one with work left is the one that
+   draws the eye. */
+.pcard.done{opacity:.6}
+.pcard.done .nm{text-decoration:line-through;text-decoration-thickness:1px}
 .pcard{
   flex:0 0 auto;min-width:132px;text-align:left;border:1px solid var(--line);
   background:var(--card);border-radius:10px;padding:8px 12px;
@@ -273,6 +284,9 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
 .zone .pip.hit{background:var(--good)}
 .zone .pip.near{background:var(--close)}
 .zone .pip.off{background:var(--miss)}
+/* Ungraded - no spot was called. Deliberately NOT the miss colour: it is an
+   outlined pip, so it reads as "no claim" rather than "he missed". */
+.zone .pip.none{background:transparent;color:var(--ink-2);box-shadow:inset 0 0 0 1.5px var(--line)}
 .zone .pip.more{background:var(--ink-2);width:auto;min-width:19px;padding:0 5px;border-radius:99px}
 .zone .pip.sel{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--ink)}
 .zoneframe{position:absolute;pointer-events:none;border:3px solid var(--zone-line);border-radius:4px}
@@ -311,6 +325,8 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
 .log button.hit{background:var(--good-bg);border-color:var(--good);color:var(--good)}
 .log button.near{background:var(--close-bg);border-color:var(--close);color:var(--close)}
 .log button.off{background:var(--miss-bg);border-color:var(--miss);color:var(--miss)}
+/* Ungraded, same reasoning as the zone pip: no claim made, so no verdict colour. */
+.log button.none{border-style:dashed;color:var(--ink-2)}
 .log button.now{box-shadow:0 0 0 3px var(--accent)}
 
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px}
@@ -319,6 +335,39 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
 .kpi .v{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-weight:700;font-size:27px;line-height:1}
 .kpi .l{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-2);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif}
 .kpi.good .v{color:var(--good)} .kpi.miss .v{color:var(--miss)}
+/* live AB mode. The at-bat strip is the spine: one chip per at-bat, its result
+   on it, the live one marked. Tapping a chip selects that at-bat so a mis-tapped
+   result can be fixed without unwinding the pitches. */
+.abstrip{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}
+.abchip{flex:none;display:flex;flex-direction:column;align-items:center;gap:1px;
+  min-width:52px;padding:6px 8px;border:1px solid var(--line);border-radius:9px;
+  background:var(--card);color:inherit}
+.abchip .n{font-family:var(--mono,ui-monospace,monospace);font-size:10px;color:var(--ink-2)}
+.abchip .rs{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:700;font-size:15px;letter-spacing:.03em;line-height:1.1}
+.abchip.live{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.abchip.sel{background:var(--navy,#16325C);border-color:var(--navy,#16325C);color:#fff}
+.abchip.sel .n{color:rgba(255,255,255,.72)}
+.abchip.out .rs{color:var(--good)}
+.abchip.on .rs{color:var(--miss)}
+.abchip.sel .rs{color:#fff}
+.abcount{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:700;font-size:24px;letter-spacing:.02em;line-height:1}
+.abhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.resgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(58px,1fr));gap:5px}
+.resgrid button{padding:9px 4px;border:1px solid var(--line);border-radius:7px;background:var(--card);
+  font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:600;font-size:14px;letter-spacing:.03em;text-transform:uppercase;color:inherit}
+.resgrid button.on{background:var(--navy,#16325C);border-color:var(--navy,#16325C);color:#fff}
+/* AO3+ four-state block. Same encoding as the Pitch Chart and as last winter's
+   workbook: first character is "got ahead", second is "got an out". */
+.ao3grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ao3cell{background:var(--card-2);border:1px solid var(--line);border-radius:9px;padding:8px 6px;text-align:center}
+.ao3cell .st{font-family:var(--mono,ui-monospace,monospace);font-size:15px;font-weight:700;letter-spacing:.08em}
+.ao3cell .cn{font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:700;font-size:21px;line-height:1.1}
+.ao3cell .lb2{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);line-height:1.25}
+.ao3cell.best{border-color:var(--good)} .ao3cell.worst{border-color:var(--miss)}
 
 .read{background:var(--card-2);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 13px;font-size:14px}
 
@@ -476,10 +525,28 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
 
   <!-- ============ CHART ============ -->
   <section id="v-chart" role="tabpanel" aria-labelledby="tab-chart" hidden>
+    <div class="striplbl">Who's throwing <span>&mdash; tap a name to switch</span></div>
     <div class="strip" id="strip"></div>
     <div class="cols c2">
       <div class="stack">
         <div class="call" id="call"></div>
+
+        <div class="panel" id="abbar" hidden>
+          <h2>The at-bat</h2>
+          <div class="body">
+            <div class="abhead">
+              <span class="abcount" id="abCount">0&ndash;0</span>
+              <span class="tiny" id="abWho"></span>
+              <button class="btn sm" id="abNew" style="margin-left:auto">+ New AB</button>
+            </div>
+            <div class="abstrip" id="abStrip"></div>
+            <div class="lb" style="margin:4px 0 5px">How it ended</div>
+            <div class="resgrid" id="abRes"></div>
+            <p class="tiny" style="margin:9px 0 0">A result closes the at-bat and opens the next one.
+              Tap an at-bat above to fix its result. The called spot is optional in here &mdash;
+              pitches with no spot called are left out of the execution numbers rather than counted as misses.</p>
+          </div>
+        </div>
 
         <div class="panel" id="freebar" hidden>
           <h2>Call it</h2>
@@ -634,6 +701,23 @@ function sitOpts(sel){
   return h;
 }
 
+/* Live AB results. Deliberately the SAME list and the same out/not-out split as
+   the Pitch Chart's, so a winter live AB and a spring at-bat are the same kind of
+   record and a season roll-up does not need a translation table. */
+var RESULTS = [{k:"K", l:"Strikeout, swinging"},{k:"Kc",l:"Strikeout, called"},
+               {k:"BB",l:"Walk"},            {k:"HBP",l:"Hit by pitch"},
+               {k:"1B",l:"Single"},          {k:"2B",l:"Double"},
+               {k:"3B",l:"Triple"},          {k:"HR",l:"Home run"},
+               {k:"GO",l:"Ground out"},      {k:"FO",l:"Fly out"},
+               {k:"LO",l:"Line out"},        {k:"PO",l:"Pop out"},
+               {k:"FC",l:"Fielder's choice"},{k:"E", l:"Error"},
+               {k:"SAC",l:"Sacrifice"},      {k:"DP",l:"Double play"}];
+var OUT_RESULT = {K:1,Kc:1,GO:1,FO:1,LO:1,PO:1,FC:1,DP:1,SAC:1};
+function resLabel(k){
+  for(var i=0;i<RESULTS.length;i++) if(RESULTS[i].k===k) return RESULTS[i].l;
+  return k || "";
+}
+
 var SPOTS = {
   0:{r:2,c:2,l:"Middle"},
   1:{r:0,c:2,l:"Up, above the zone"},
@@ -688,13 +772,78 @@ function pad2(n){ return (n<10?"0":"")+n; }
 
 function newPitcher(nm){
   return {id:uid(),name:nm||"",num:"",hand:"R",safe:"",stretch:false,comments:"",
-          mode:"script", free:{type:"FB",ws:"S",spot:0,sit:""}, pitches:[],over:{}};
+          mode:"script", free:{type:"FB",ws:"S",spot:0,sit:""}, pitches:[],over:{},
+          /* live AB mode only: one entry per at-bat, in order. A pitch carries the
+             index of the AB it belongs to, so p.pitches stays the single flat
+             source of truth and every older reader keeps working. */
+          abs:[]};
 }
-function pmode(p){ return (p && p.mode==="free") ? "free" : "script"; }
+/* Three modes now. "live" charts at-bats against hitters; "free" is the same
+   pitch entry with no at-bat around it. */
+function pmode(p){
+  if(!p) return "script";
+  return (p.mode === "free" || p.mode === "live") ? p.mode : "script";
+}
+function plive(p){ return pmode(p) === "live"; }
+/* Freeform and live share the picker row, so they share the picked call. */
+function ppick(p){ var m = pmode(p); return m === "free" || m === "live"; }
 function pfree(p){
   if(!p) return {type:"FB",ws:"S",spot:0,sit:""};
   if(!p.free) p.free = {type:"FB",ws:"S",spot:0,sit:""};
   return p.free;
+}
+function pabs(p){
+  if(!p.abs) p.abs = [];
+  if(!p.abs.length) p.abs.push({result:""});
+  return p.abs;
+}
+/* The AB being charted is the last one. Tapping a result closes it and opens the
+   next, which is the app's auto-advance convention everywhere else. */
+function liveIdx(p){ return pabs(p).length - 1; }
+function abPitches(p, ai){
+  var out = [];
+  for(var i=0;i<p.pitches.length;i++) if(p.pitches[i].ab === ai) out.push(p.pitches[i]);
+  return out;
+}
+/* Balls and strikes inside one AB. A bullpen has no fouls or swings to read, so
+   a strike is a pitch plotted in the zone - which is what the app already knows. */
+function abCount(p, ai){
+  var b = 0, s = 0, ps = abPitches(p, ai);
+  for(var i=0;i<ps.length;i++){
+    if(inZone(ps[i].r, ps[i].c)){ if(s<3) s++; } else { if(b<4) b++; }
+  }
+  return {b:b, s:s, n:ps.length};
+}
+/* AO3+ exactly as the Pitch Chart defines it: ahead after three pitches (or the
+   at-bat was over inside three), then whether it ended in an out. Two characters,
+   four states, same as last winter's workbook. */
+function ao3OfAB(p, ai){
+  var ab = pabs(p)[ai];
+  if(!ab || !ab.result) return null;            /* still live - not a result yet */
+  var ps = abPitches(p, ai);
+  if(!ps.length) return null;
+  var ao3;
+  if(ps.length <= 3) ao3 = true;
+  else {
+    var b = 0, s = 0;
+    for(var i=0;i<3;i++){ if(inZone(ps[i].r, ps[i].c)) s++; else b++; }
+    ao3 = s > b;
+  }
+  var out = !!OUT_RESULT[ab.result];
+  return {ao3:ao3, out:out, state:(ao3?"+":"-") + (out?"+":"-")};
+}
+/* Points are last winter's: ++ = 2, one of each = 1, -- = 0. Kept as a per-AB
+   quality number, NOT as a leaderboard - the bracket is gone. */
+var AO3PTS = {"++":2, "+-":1, "-+":1, "--":0};
+function ao3Stats(p){
+  var c = {"++":0,"+-":0,"-+":0,"--":0}, n = 0, pts = 0;
+  var a = pabs(p);
+  for(var i=0;i<a.length;i++){
+    var r = ao3OfAB(p, i);
+    if(!r) continue;
+    c[r.state]++; n++; pts += AO3PTS[r.state];
+  }
+  return {c:c, n:n, pts:pts, open:a.length - n};
 }
 function blank(){
   return {v:1,pad:"Mound 1",date:today(),coach:"",
@@ -729,7 +878,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v21";
+var BUILD = "v23";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
@@ -836,7 +985,10 @@ function tplModified(){ return !!S.tpl && scriptId(S.script) !== S.tplId; }
 
 /* ===================== scoring ===================== */
 function call(p, i){
-  if(pmode(p)==="free"){
+  /* Freeform and live both take the call from the picker row rather than the
+     script. "free" stays on the record for backward compatibility; Mode in the
+     export is what distinguishes them. */
+  if(ppick(p)){
     var rec = (pending!==null && pending===i) ? p.pitches[i] : null;
     var src = rec || pfree(p);
     var fc = {type:src.type, ws:src.ws, spot:src.spot, sit:src.sit, off:false, free:true};
@@ -854,20 +1006,27 @@ function call(p, i){
 }
 function inZone(r,c){ return r>=1 && r<=3 && c>=1 && c<=3; }
 function grade(pitch){
+  /* No spot was called, so there is nothing to grade against. This must NOT
+     read as a miss: during a live AB the called spot is optional, and counting a
+     skipped call as a miss would make a competitive inning look like bad command.
+     Execution percentages are computed over GRADED pitches only. */
+  if(pitch.spot == null) return "none";
   var t = SPOTS[pitch.spot];
   if(!t) return "off";
   var d = Math.max(Math.abs(pitch.r-t.r), Math.abs(pitch.c-t.c));
   return d===0 ? "hit" : (d===1 ? "near" : "off");
 }
 function stats(p){
-  var o = {n:0,spot:0,near:0,strike:0,byType:{},velo:{},up:0,down:0,inn:0,out:0,miss:0};
+  var o = {n:0,graded:0,spot:0,near:0,strike:0,byType:{},velo:{},up:0,down:0,inn:0,out:0,miss:0};
   for(var i=0;i<p.pitches.length;i++){
     var q = p.pitches[i], g = grade(q), t = SPOTS[q.spot];
     o.n++;
+    if(g!=="none") o.graded++;
     if(g==="hit") o.spot++; else if(g==="near") o.near++;
     if(inZone(q.r,q.c)) o.strike++;
-    if(!o.byType[q.type]) o.byType[q.type] = {n:0,spot:0,near:0,strike:0};
+    if(!o.byType[q.type]) o.byType[q.type] = {n:0,graded:0,spot:0,near:0,strike:0};
     var b = o.byType[q.type]; b.n++;
+    if(g!=="none") b.graded++;
     if(g==="hit") b.spot++; else if(g==="near") b.near++;
     if(inZone(q.r,q.c)) b.strike++;
     if(q.velo){ if(!o.velo[q.type]) o.velo[q.type]={n:0,sum:0,top:0};
@@ -882,7 +1041,9 @@ function stats(p){
 function pct(a,b){ return b ? Math.round(a*100/b) : 0; }
 function missRead(o){
   if(!o.n) return "No pitches charted yet.";
-  if(!o.miss) return "Every pitch on the spot. Move the targets.";
+  if(!o.graded) return o.n + (o.n===1?" pitch":" pitches")+" charted with no spot called \u2014 "+
+                 "nothing to grade, so there is no miss pattern yet.";
+  if(!o.miss) return "Every graded pitch on the spot. Move the targets.";
   var vert = o.up>o.down ? [o.up," up"] : (o.down>o.up ? [o.down," down"] : null);
   var horz = o.inn>o.out ? [o.inn," to the arm side (in)"] : (o.out>o.inn ? [o.out," to the glove side (away)"] : null);
   var bits = [];
@@ -904,7 +1065,7 @@ function show(which){
      on charting state - the new Finish bar above all - stayed stale until some
      other edit happened to redraw it. */
   if(which==="setup")  drawSetup();
-  if(which==="chart") drawChart();
+  if(which==="chart"){ followTheMound(); drawChart(); }
   if(which==="report") drawReport();
   if(which==="hist")   drawHistory();
   window.scrollTo(0,0);
@@ -953,7 +1114,8 @@ function drawSetup(){
       '<td><select class="mini" data-f="hand">'+opt("R","R",p.hand==="R")+opt("L","L",p.hand==="L")+'</select></td>'+
       '<td><input type="number" inputmode="numeric" min="0" max="100" step="1" data-f="safe" value="'+esc(p.safe)+'" placeholder="0–100" style="max-width:92px"></td>'+
       '<td style="text-align:center"><input type="checkbox" data-f="stretch"'+(p.stretch?" checked":"")+' style="width:22px;height:22px"></td>'+
-      '<td><select class="mini" data-f="mode">'+opt("script","The script",pmode(p)==="script")+opt("free","Freeform",pmode(p)==="free")+'</select></td>'+
+      '<td><select class="mini" data-f="mode">'+opt("script","The script",pmode(p)==="script")+
+        opt("free","Freeform",pmode(p)==="free")+opt("live","Live ABs",pmode(p)==="live")+'</select></td>'+
       '<td><button class="btn sm" data-del="1">&times;</button></td></tr>';
   }
   rb.innerHTML = h2;
@@ -1132,20 +1294,63 @@ var pending = null; /* index being re-done, else null = next */
 function nextIdx(p){ return p.pitches.length; }
 function activeIdx(p){ return pending!==null ? pending : nextIdx(p); }
 
+/* A scripted pitcher is finished when he has thrown the whole card. A freeform or
+   live-AB pitcher is never "finished" - there is no card to run out of - so he is
+   never skipped past automatically. */
+function pitcherDone(p){
+  if(!p) return true;
+  if(ppick(p)) return false;
+  return S.script.length > 0 && p.pitches.length >= S.script.length;
+}
+/* The next arm: the first NAMED pitcher with nothing charted yet. Unnamed rows are
+   the five blanks a fresh session ships with and are not people. */
+function nextUpId(){
+  for(var i=0;i<S.pitchers.length;i++){
+    var p = S.pitchers[i];
+    if((p.name||"").trim() && !p.pitches.length) return p.id;
+  }
+  return null;
+}
+/* Opening the Chart tab used to always land on whoever was selected last, which
+   in practice meant pitcher 1 forever: you set a second pitcher up, tapped Chart,
+   and got the first one's finished card with no sign that anything was wrong. The
+   pitcher strip was the only way across and it reads like a header.
+   So: when the man on screen has nothing left to throw, move to the next arm. Never
+   move away from a pitcher with pitches left - going back to review is deliberate. */
+/* A pitcher the coach picked off the strip himself. Going back to a finished arm
+   to look at his zone is deliberate, and tabbing to Report and back must not steer
+   away from him. Picking somebody else, or taking the "X is up" button, clears it. */
+var manualId = null;
+function followTheMound(){
+  var p = cur();
+  if(manualId && S.cur === manualId) return;
+  if(!pitcherDone(p)) return;
+  var id = nextUpId();
+  if(!id || id === S.cur) return;
+  S.cur = id; pending = null; abSel = null; manualId = null; save();
+  var np = cur();
+  note("Now on " + (np.name || "the next pitcher") +
+       (plive(np) ? " \u2014 live ABs" : (pmode(np)==="free" ? " \u2014 freeform" : "")));
+}
+
 function drawStrip(){
   var h = "";
   for(var i=0;i<S.pitchers.length;i++){
     var p = S.pitchers[i], o = stats(p);
-    h += '<button class="pcard" data-id="'+p.id+'" aria-pressed="'+(p.id===S.cur)+'">'+
+    h += '<button class="pcard'+(pitcherDone(p)?" done":"")+'" data-id="'+p.id+
+      '" aria-pressed="'+(p.id===S.cur)+'">'+
       '<span class="nm">'+esc(p.name || ("Pitcher "+(i+1)))+'</span>'+
-      '<span class="mt">'+o.n+' thrown'+(o.n?' &middot; '+pct(o.spot,o.n)+'% spot':'')+
-      (pmode(p)==="free"?' &middot; freeform':'')+(p.stretch?' &middot; str only':'')+'</span></button>';
+      '<span class="mt">'+o.n+' thrown'+(o.graded?' &middot; '+pct(o.spot,o.graded)+'% spot':'')+
+      (pmode(p)==="free"?' &middot; freeform':'')+(plive(p)?' &middot; live ABs':'')+
+      (p.stretch?' &middot; str only':'')+'</span></button>';
   }
   el("strip").innerHTML = h;
 }
 el("strip").addEventListener("click", function(e){
   var b = e.target.closest("button[data-id]"); if(!b) return;
-  S.cur = b.getAttribute("data-id"); pending = null; save(); drawChart();
+  S.cur = b.getAttribute("data-id"); pending = null; abSel = null;
+  manualId = S.cur;                       /* his choice stands until he makes another */
+  save(); drawChart();
 });
 
 function drawCall(){
@@ -1154,29 +1359,47 @@ function drawCall(){
   var i = activeIdx(p), c = call(p,i);
   if(!c){
     var none = !S.script.length && !p.pitches.length;
+    /* The old copy said "Next pitcher" and was not a button. Whoever is actually
+       up next gets one here, so finishing a card leads somewhere. */
+    var nid = nextUpId(), nxt = null;
+    if(nid && nid !== S.cur){
+      for(var z=0;z<S.pitchers.length;z++) if(S.pitchers[z].id===nid) nxt = S.pitchers[z];
+    }
     el("call").innerHTML = '<div><div class="idx">'+esc(p.name||"This pitcher")+'</div>'+
       '<div class="big">'+(none ? "No script" : "Script complete")+'</div>'+
       '<div class="spotname">'+(none
         ? 'Load a template on the Setup tab, or set this pitcher to Freeform.'
-        : p.pitches.length+' pitches charted. Next pitcher, or add an extra pitch.')+'</div></div>';
+        : p.pitches.length+' pitches charted.'+(nxt ? '' : ' Add an extra pitch, or name the next arm on Setup.'))+'</div>'+
+      (nxt ? '<button class="btn pri" id="nextArm" style="margin-top:10px">'+
+             esc(nxt.name)+' is up &rarr;</button>' : '')+'</div>';
+    if(el("nextArm")) el("nextArm").onclick = function(){
+      S.cur = nid; pending = null; abSel = null; manualId = null; save(); drawChart();
+      note("Now on " + (nxt.name || "the next pitcher") +
+           (plive(nxt) ? " \u2014 live ABs" : (pmode(nxt)==="free" ? " \u2014 freeform" : "")));
+    };
     return;
   }
+  /* A live AB may have no spot called, so there is no target to draw and nothing
+     named. Dereferencing SPOTS[null] here threw and took the entire render down
+     with it - the pitch landed in the model and the screen never moved. */
   var t = SPOTS[c.spot], mini = "";
   for(var r=0;r<5;r++) for(var cc=0;cc<5;cc++){
-    var cls = (r===t.r && cc===t.c) ? "t" : (inZone(r,cc) ? "z" : "");
+    var cls = (t && r===t.r && cc===t.c) ? "t" : (inZone(r,cc) ? "z" : "");
     mini += '<i class="'+cls+'"></i>';
   }
   el("call").innerHTML =
     '<div>'+
       '<div class="idx">'+esc(p.name||"Pitcher")+' &middot; pitch '+(i+1)+
-        (c.free ? ' &middot; freeform' : ' of '+Math.max(S.script.length,i+1))+
+        (c.free ? (plive(p) ? ' &middot; live AB' : ' &middot; freeform')
+                : ' of '+Math.max(S.script.length,i+1))+
         (pending!==null?' &middot; redoing':'')+(c.off?' &middot; off-script':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:12px;margin-top:4px">'+
         '<span class="ws">'+esc(wsLabel(c.ws))+'</span>'+
         '<span class="big">'+esc(c.type)+'</span>'+
-        '<span class="big" style="color:var(--accent)">'+c.spot+'</span>'+
+        '<span class="big" style="color:var(--accent)">'+(c.spot==null?"\u2014":c.spot)+'</span>'+
       '</div>'+
-      '<div class="spotname">'+esc(typeLabel(c.type))+' &mdash; '+esc(t.l)+'</div>'+
+      '<div class="spotname">'+esc(typeLabel(c.type))+' &mdash; '+
+        (t ? esc(t.l) : 'no spot called \u2014 this one is not graded')+'</div>'+
       (c.sit ? '<div class="sit">'+esc(sitLabel(c.sit))+'</div>' : '')+
     '</div>'+
     '<div class="mini"><div class="minizone">'+mini+'</div></div>';
@@ -1235,8 +1458,23 @@ el("zone").addEventListener("click", function(e){
   if(!c) return;
   var rec = {type:c.type, ws:c.ws, spot:c.spot, sit:c.sit, off:!!c.off, free:!!c.free,
              r:+b.getAttribute("data-r"), c:+b.getAttribute("data-c"), velo:null};
-  if(pending!==null){ rec.velo = p.pitches[pending] ? p.pitches[pending].velo : null; p.pitches[pending] = rec; pending = null; }
-  else p.pitches.push(rec);
+  if(pending!==null){
+    rec.ab = p.pitches[pending] ? p.pitches[pending].ab : undefined;
+    rec.velo = p.pitches[pending] ? p.pitches[pending].velo : null;
+    p.pitches[pending] = rec; pending = null;
+  } else {
+    if(plive(p)){
+      /* A closed at-bat does not take another pitch. Tap New AB, or change the
+         result, rather than quietly appending to an at-bat that is already over. */
+      var ai = liveIdx(p);
+      if(pabs(p)[ai].result){
+        note("That at-bat is closed \u2014 tap New AB, or change its result first.");
+        return;
+      }
+      rec.ab = ai;
+    }
+    p.pitches.push(rec);
+  }
   save(); drawChart();
 });
 
@@ -1288,8 +1526,17 @@ function drawKpis(){
   var p = cur();
   if(!p){ el("liveKpis").innerHTML=""; el("liveRead").textContent=""; return; }
   var o = stats(p);
-  var k = [["v",o.n,"Pitches",""],["v",pct(o.spot,o.n)+"%","On the spot","good"],
-           ["v",pct(o.spot+o.near,o.n)+"%","Spot + close",""],["v",pct(o.strike,o.n)+"%","Strikes",""]];
+  /* Execution is over GRADED pitches, not all pitches. In live ABs the called
+     spot is optional, so o.n and o.graded diverge and the label says so. */
+  var k = [["v",o.n,"Pitches",""],
+           ["v",pct(o.spot,o.graded)+"%", o.graded<o.n ? "Spot \u00b7 of "+o.graded+" graded" : "On the spot","good"],
+           ["v",pct(o.spot+o.near,o.graded)+"%","Spot + close",""],
+           ["v",pct(o.strike,o.n)+"%","Strikes",""]];
+  if(plive(p)){
+    var q = ao3Stats(p);
+    k.push(["v", q.n ? pct(q.c["++"], q.n)+"%" : "\u2013",
+            "AO3+ \u00b7 "+q.n+(q.n===1?" AB":" ABs"), ""]);
+  }
   var h = "";
   for(var i=0;i<k.length;i++) h += '<div class="kpi '+k[i][3]+'"><div class="v">'+k[i][1]+'</div><div class="l">'+k[i][2]+'</div></div>';
   el("liveKpis").innerHTML = h;
@@ -1297,11 +1544,11 @@ function drawKpis(){
 }
 
 function drawFree(){
-  var p = cur(), free = pmode(p)==="free";
-  el("freebar").hidden = !free;
-  el("changeCall").hidden = free;
-  el("extraPitch").hidden = free;
-  if(!free || !p) return;
+  var p = cur(), pick = ppick(p);
+  el("freebar").hidden = !pick;
+  el("changeCall").hidden = pick;
+  el("extraPitch").hidden = pick;
+  if(!pick || !p) return;
   var f = pfree(p), h;
   h = '<span class="lb">Pitch</span>';
   for(var i=0;i<TYPES.length;i++)
@@ -1326,6 +1573,11 @@ function drawFree(){
     h += '<button class="pick'+(f.spot===sk?" on":"")+'" data-s="'+sk+'">'+sk+
          '<small>'+esc(SPOTS[sk].l)+'</small></button>';
   }
+  /* Live ABs only. "No spot" is a real answer during a competitive inning, and it
+     has to be distinguishable from a spot that was called and missed. */
+  if(plive(p))
+    h += '<button class="pick'+(f.spot==null?" on":"")+'" data-s="x">\u2014'+
+         '<small>no spot called</small></button>';
   el("f-spot").innerHTML = h;
 
   el("f-sit").innerHTML = sitOpts(f.sit);
@@ -1340,15 +1592,84 @@ el("f-ws").addEventListener("click", function(e){
 });
 el("f-spot").addEventListener("click", function(e){
   var b = e.target.closest("button[data-s]"); if(!b) return;
-  pfree(cur()).spot = +b.getAttribute("data-s"); save(); drawChart();
+  var v = b.getAttribute("data-s");
+  pfree(cur()).spot = (v === "x") ? null : +v;
+  save(); drawChart();
 });
 el("f-sit").addEventListener("input", function(){
   var p = cur(); if(!p) return;
   pfree(p).sit = this.value; save(); drawCall();
 });
 
+/* Which at-bat the result pad is pointing at. null means the live one, which is
+   what it points at unless a chip was tapped. */
+var abSel = null;
+function abTarget(p){
+  var a = pabs(p);
+  if(abSel != null && a[abSel]) return abSel;
+  return liveIdx(p);
+}
+function drawAB(){
+  var p = cur(), live = plive(p);
+  el("abbar").hidden = !live;
+  if(!live || !p) return;
+  var a = pabs(p), ti = abTarget(p), li = liveIdx(p), c = abCount(p, ti);
+
+  el("abCount").textContent = c.b + "\u2013" + c.s;
+  el("abWho").textContent = "AB " + (ti+1) + " of " + a.length + " \u00b7 " +
+    c.n + (c.n===1?" pitch":" pitches") +
+    (a[ti].result ? " \u00b7 " + a[ti].result + " (" + resLabel(a[ti].result).toLowerCase() + ")"
+                  : (ti===li ? " \u00b7 live" : " \u00b7 no result"));
+
+  var h = "";
+  for(var i=0;i<a.length;i++){
+    var r = a[i].result, o = ao3OfAB(p, i), n = abPitches(p, i).length;
+    h += '<button class="abchip'+(i===ti?" sel":"")+(i===li&&!r?" live":"")+
+         (r ? (OUT_RESULT[r] ? " out" : " on") : "")+'" data-ab="'+i+'">'+
+         '<span class="n">AB '+(i+1)+'</span>'+
+         '<span class="rs">'+esc(r || "\u2013")+'</span>'+
+         '<span class="n">'+n+'p'+(o?" "+o.state:"")+'</span></button>';
+  }
+  el("abStrip").innerHTML = h;
+
+  h = "";
+  for(var j=0;j<RESULTS.length;j++){
+    var rk = RESULTS[j].k;
+    h += '<button data-res="'+rk+'" class="'+(a[ti].result===rk?"on":"")+'" title="'+
+         esc(RESULTS[j].l)+'">'+rk+'</button>';
+  }
+  el("abRes").innerHTML = h;
+}
+el("abStrip").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-ab]"); if(!b) return;
+  var i = +b.getAttribute("data-ab");
+  abSel = (abSel === i) ? null : i;
+  drawChart();
+});
+el("abRes").addEventListener("click", function(e){
+  var b = e.target.closest("button[data-res]"); if(!b) return;
+  var p = cur(); if(!p || !plive(p)) return;
+  var a = pabs(p), ti = abTarget(p), rk = b.getAttribute("data-res");
+  var wasLive = (ti === liveIdx(p)) && !a[ti].result;
+  a[ti].result = (a[ti].result === rk) ? "" : rk;
+  /* Auto-advance, the same rule as everywhere else in both apps: closing the live
+     at-bat opens the next one so the next hitter needs no extra tap. Editing an
+     OLD at-bat's result does not open anything. */
+  if(wasLive && a[ti].result){ a.push({result:""}); abSel = null; }
+  save(); drawChart();
+});
+el("abNew").onclick = function(){
+  var p = cur(); if(!p || !plive(p)) return;
+  var a = pabs(p);
+  if(!abPitches(p, liveIdx(p)).length && !a[liveIdx(p)].result){
+    note("That at-bat has no pitches in it yet.");
+    return;
+  }
+  a.push({result:""}); abSel = null; save(); drawChart();
+};
+
 function drawChart(){
-  drawStrip(); drawFree(); drawCall(); drawZone(); drawVelo(); drawLog(); drawKpis();
+  drawStrip(); drawFree(); drawAB(); drawCall(); drawZone(); drawVelo(); drawLog(); drawKpis();
   var p = cur();
   el("comments").value = p ? p.comments : "";
   el("goBack").disabled = !p || !p.pitches.length;
@@ -1390,13 +1711,32 @@ el("e-reset").onclick = function(){
 
 /* ===================== report ===================== */
 function bar(o){
-  var g = pct(o.spot,o.n), c = pct(o.near,o.n), m = 100-g-c;
+  var g = pct(o.spot,o.graded), c = pct(o.near,o.graded), m = 100-g-c;
   return '<div class="track"><i class="g" style="width:'+g+'%"></i><i class="c" style="width:'+c+'%"></i><i class="m" style="width:'+m+'%"></i></div>';
+}
+function r1(a,b){ return b ? (a/b).toFixed(1) : "0.0"; }
+/* The four states, spelled out. A percentage hides which half went wrong - a
+   pitcher at 40% "++" who is losing the other 60% by never getting ahead is a
+   different problem from one who gets ahead and gets hit. */
+function ao3Block(q){
+  if(!q.n) return '<div class="read" style="margin-top:12px">No at-bats finished yet \u2014 '+
+                  'AO3+ needs a result on the at-bat.</div>';
+  var cells = [["++","Ahead, got the out","best"],["+-","Ahead, no out",""],
+               ["-+","Behind, got the out",""],["--","Behind, no out","worst"]];
+  var h = '<div class="lb" style="margin:14px 0 6px">AO3+ \u00b7 '+q.n+
+          (q.n===1?" at-bat":" at-bats")+(q.open?' ('+q.open+' still open)':'')+'</div>'+
+          '<div class="ao3grid">';
+  for(var i=0;i<cells.length;i++){
+    h += '<div class="ao3cell '+cells[i][2]+'"><div class="st">'+cells[i][0]+'</div>'+
+         '<div class="cn">'+q.c[cells[i][0]]+'</div>'+
+         '<div class="lb2">'+cells[i][1]+'</div></div>';
+  }
+  return h + '</div>';
 }
 function drawReport(){
   var ranked = S.pitchers.filter(function(p){ return p.pitches.length; })
     .map(function(p){ return {p:p,o:stats(p)}; })
-    .sort(function(a,b){ return pct(b.o.spot,b.o.n) - pct(a.o.spot,a.o.n); });
+    .sort(function(a,b){ return pct(b.o.spot,b.o.graded) - pct(a.o.spot,a.o.graded); });
 
   if(!ranked.length){
     el("board").innerHTML = '<div class="empty">Nothing charted on this mound yet.</div>';
@@ -1407,7 +1747,8 @@ function drawReport(){
   for(var i=0;i<ranked.length;i++){
     var p = ranked[i].p, o = ranked[i].o;
     h += '<div class="barrow"><b class="cond" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name||"—")+'</b>'+
-         bar(o)+'<span class="tiny" style="text-align:right">'+pct(o.spot,o.n)+'% / '+o.n+'</span></div>';
+         bar(o)+'<span class="tiny" style="text-align:right">'+pct(o.spot,o.graded)+'% / '+
+         (o.graded<o.n ? o.graded+' of '+o.n : o.n)+'</span></div>';
   }
   h += '</div><div class="legend"><span><b style="color:var(--good)">&#9632;</b> on the spot</span>'+
        '<span><b style="color:var(--close)">&#9632;</b> one cell off</span>'+
@@ -1418,7 +1759,8 @@ function drawReport(){
   var out = "";
   for(var j=0;j<ranked.length;j++){
     var pp = ranked[j].p, oo = ranked[j].o;
-    var sp = pct(oo.spot,oo.n);
+    var sp = pct(oo.spot,oo.graded);
+    var q3 = plive(pp) ? ao3Stats(pp) : null;
     var pillCls = sp>=45 ? "good" : (sp>=25 ? "warn" : "bad");
     var rows = "";
     for(var t=0;t<TYPES.length;t++){
@@ -1426,7 +1768,8 @@ function drawReport(){
       if(!b) continue;
       var v = oo.velo[k];
       rows += '<tr><td><b class="cond">'+k+'</b> <span class="tiny">'+esc(TYPES[t].l)+'</span></td>'+
-              '<td>'+b.n+'</td><td>'+pct(b.spot,b.n)+'%</td><td>'+pct(b.spot+b.near,b.n)+'%</td><td>'+pct(b.strike,b.n)+'%</td>'+
+              '<td>'+b.n+(b.graded<b.n?' <span class="tiny">('+b.graded+')</span>':'')+'</td>'+
+              '<td>'+pct(b.spot,b.graded)+'%</td><td>'+pct(b.spot+b.near,b.graded)+'%</td><td>'+pct(b.strike,b.n)+'%</td>'+
               '<td>'+(v ? Math.round(v.sum/v.n)+' / '+v.top : '<span class="tiny">—</span>')+'</td></tr>';
     }
     out += '<div class="rptcard">'+
@@ -1434,15 +1777,20 @@ function drawReport(){
         (pp.num?'<span class="mt">#'+esc(pp.num)+'</span>':'')+
         '<span class="mt">'+esc(pp.hand)+'HP</span>'+
         (pmode(pp)==="free"?'<span class="pill">Freeform</span>':'')+
+        (plive(pp)?'<span class="pill">Live ABs</span>':'')+
         (pp.stretch?'<span class="pill">Stretch only</span>':'')+
         (pp.safe!==""&&pp.safe!=null?'<span class="pill">PitchSafe '+esc(pp.safe)+'</span>':'')+
         '<span class="pill '+pillCls+'" style="margin-left:auto">'+sp+'% on the spot</span></div>'+
       '<div class="body" style="padding:14px 16px">'+
         '<div class="kpis"><div class="kpi"><div class="v">'+oo.n+'</div><div class="l">Pitches</div></div>'+
-        '<div class="kpi good"><div class="v">'+sp+'%</div><div class="l">On the spot</div></div>'+
-        '<div class="kpi"><div class="v">'+pct(oo.spot+oo.near,oo.n)+'%</div><div class="l">Spot + close</div></div>'+
-        '<div class="kpi"><div class="v">'+pct(oo.strike,oo.n)+'%</div><div class="l">Strikes</div></div></div>'+
+        '<div class="kpi good"><div class="v">'+sp+'%</div><div class="l">'+
+          (oo.graded<oo.n ? 'Spot \u00b7 of '+oo.graded+' graded' : 'On the spot')+'</div></div>'+
+        '<div class="kpi"><div class="v">'+pct(oo.spot+oo.near,oo.graded)+'%</div><div class="l">Spot + close</div></div>'+
+        '<div class="kpi"><div class="v">'+pct(oo.strike,oo.n)+'%</div><div class="l">Strikes</div></div>'+
+        (q3 ? '<div class="kpi"><div class="v">'+(q3.n?r1(q3.pts,q3.n):'\u2013')+
+              '</div><div class="l">AO3+ pts / AB</div></div>' : '')+'</div>'+
         '<div class="read" style="margin-top:12px">'+esc(missRead(oo))+'</div>'+
+        (q3 ? ao3Block(q3) : '')+
         (rows ? '<div class="scroller" style="margin-top:12px"><table class="grid"><thead><tr><th>Pitch</th><th>No.</th><th>Spot</th><th>+Close</th><th>Strike</th><th>Velo avg / top</th></tr></thead><tbody>'+rows+'</tbody></table></div>' : '')+
         (pp.comments ? '<div class="read" style="margin-top:12px;border-left-color:var(--bar-2)"><b class="cond">Coach:</b> '+esc(pp.comments)+'</div>' : '')+
       '</div></div>';
@@ -1453,10 +1801,15 @@ function drawReport(){
 /* ===================== export ===================== */
 function slug(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,""); }
 function csv(){
+  /* AB / ABResult / AO3plus are live-AB only and blank elsewhere, so one file can
+     hold a scripted mound and a live-AB mound without two schemas.
+     "Result" is the execution grade; it is now BLANK when no spot was called,
+     never "Miss" - a skipped call is not a missed pitch. */
   var head = ["Mound","Date","Coach","Build","Template","ScriptID","ScriptModified",
               "Pitcher","Jersey","Hand","PitchSafe","StretchOnly","Mode","PitchNo",
               "CalledType","CalledWS","CalledSpot","SpotName","Situation","SituationName","OffScript",
-              "ActualRow","ActualCol","Strike","Result","MissVert","MissHoriz","Velo"];
+              "ActualRow","ActualCol","Strike","Result","MissVert","MissHoriz","Velo",
+              "AB","ABResult","ABOut","AO3plus"];
   var lines = [head.join(",")], sid = scriptId(S.script);
   function q(v){ v = (v==null?"":String(v)); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   for(var i=0;i<S.pitchers.length;i++){
@@ -1465,12 +1818,19 @@ function csv(){
       var x = p.pitches[j], t = SPOTS[x.spot], g = grade(x);
       var mv = t ? (x.r<t.r?"up":(x.r>t.r?"down":"")) : "";
       var mh = t ? (x.c<t.c?"in":(x.c>t.c?"out":"")) : "";
+      var ai = (x.ab == null) ? null : x.ab;
+      var ab = (ai == null) ? null : (p.abs || [])[ai];
+      var a3 = (ai == null) ? null : ao3OfAB(p, ai);
+      var mode = plive(p) ? "Live" : (x.free ? "Freeform" : "Script");
       lines.push([S.pad,S.date,S.coach,BUILD,S.tpl||"",sid,tplModified()?"Y":"N",
         p.name,p.num,p.hand,p.safe,p.stretch?"Y":"N",
-        x.free?"Freeform":"Script",j+1,
-        x.type,x.ws,x.spot,t?t.l:"",x.sit,sitLabel(x.sit),x.off?"Y":"N",
+        mode,j+1,
+        x.type,x.ws,x.spot==null?"":x.spot,t?t.l:"",x.sit,sitLabel(x.sit),x.off?"Y":"N",
         x.r+1,x.c+1,inZone(x.r,x.c)?"Y":"N",
-        g==="hit"?"Spot":(g==="near"?"Close":"Miss"),mv,mh,x.velo==null?"":x.velo].map(q).join(","));
+        g==="none"?"":(g==="hit"?"Spot":(g==="near"?"Close":"Miss")),mv,mh,x.velo==null?"":x.velo,
+        ai==null?"":(ai+1), (ab&&ab.result)||"",
+        (ab&&ab.result)?(OUT_RESULT[ab.result]?"Y":"N"):"",
+        a3?a3.state:""].map(q).join(","));
     }
   }
   return lines.join("\r\n");
@@ -1492,14 +1852,36 @@ function txt(){
     var o = stats(p);
     L.push("────────────────────────────────────────");
     L.push((p.name||"Unnamed")+(p.num?"  #"+p.num:"")+"  "+p.hand+"HP"+
-      (pmode(p)==="free"?"  [freeform]":"")+(p.stretch?"  [stretch only]":"")+
+      (pmode(p)==="free"?"  [freeform]":"")+(plive(p)?"  [live ABs]":"")+(p.stretch?"  [stretch only]":"")+
       (p.safe!==""&&p.safe!=null?"   PitchSafe "+p.safe:""));
-    L.push("  "+o.n+" pitches   on the spot "+pct(o.spot,o.n)+"%   spot+close "+pct(o.spot+o.near,o.n)+"%   strikes "+pct(o.strike,o.n)+"%");
+    L.push("  "+o.n+" pitches"+(o.graded<o.n ? " ("+o.graded+" graded)" : "")+
+      "   on the spot "+pct(o.spot,o.graded)+"%   spot+close "+pct(o.spot+o.near,o.graded)+
+      "%   strikes "+pct(o.strike,o.n)+"%");
     L.push("  "+missRead(o));
+    if(plive(p)){
+      var q3 = ao3Stats(p);
+      if(q3.n){
+        L.push("  AO3+   "+q3.n+(q3.n===1?" at-bat":" at-bats")+
+               "   ++ "+q3.c["++"]+"   +- "+q3.c["+-"]+"   -+ "+q3.c["-+"]+"   -- "+q3.c["--"]+
+               "   ("+r1(q3.pts,q3.n)+" pts/AB)");
+        var ab = pabs(p), line = [];
+        for(var z=0;z<ab.length;z++){
+          var cc = abCount(p,z), oo3 = ao3OfAB(p,z);
+          if(!cc.n && !ab[z].result) continue;
+          line.push("AB"+(z+1)+" "+cc.b+"-"+cc.s+" "+cc.n+"p "+
+                    (ab[z].result||"open")+(oo3?" "+oo3.state:""));
+        }
+        if(line.length) L.push("  "+line.join("   "));
+      } else {
+        L.push("  AO3+   no at-bats finished yet");
+      }
+    }
     for(var t=0;t<TYPES.length;t++){
       var k = TYPES[t].k, b = o.byType[k]; if(!b) continue;
       var v = o.velo[k];
-      L.push("    "+k+"  n="+b.n+"  spot "+pct(b.spot,b.n)+"%  strike "+pct(b.strike,b.n)+"%"+(v?"  velo "+Math.round(v.sum/v.n)+" avg / "+v.top+" top":""));
+      L.push("    "+k+"  n="+b.n+(b.graded<b.n?" ("+b.graded+" graded)":"")+
+             "  spot "+pct(b.spot,b.graded)+"%  strike "+pct(b.strike,b.n)+"%"+
+             (v?"  velo "+Math.round(v.sum/v.n)+" avg / "+v.top+" top":""));
     }
     if(p.comments) L.push("  Coach: "+p.comments);
     L.push("");

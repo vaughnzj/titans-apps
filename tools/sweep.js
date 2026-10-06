@@ -242,6 +242,84 @@ const styled = sel =>
        '[].map.call(document.querySelectorAll("#tplPick option"),'+
        'function(o){return o.textContent.trim()}).slice(1).join(" / ")', null,
        "Fastball Command / Breaking Ball & Stretch / Holding Runners / Hitter\'s Counts"],
+    /* ---- live AB mode (v22). LAST in this list: it switches the pitcher out of
+       script mode, which changes the whole chart screen. ---- */
+    ["three modes",       null,
+       '[].map.call(document.querySelectorAll(\'[data-f="mode"]\')[0].options,'+
+       'function(o){return o.value}).join("/")', null, "script/free/live"],
+    ["live AB panel",     null,
+       'document.getElementById("abbar").hidden+""',
+       'document.querySelectorAll(\'[data-f="mode"]\')[0].value="live";'+
+       'document.querySelectorAll(\'[data-f="mode"]\')[0]'+
+       '.dispatchEvent(new Event("input",{bubbles:true}));'+
+       'document.getElementById("tab-chart").click();', "false"],
+    ["result pad",        null,  n("#abRes button"), null, 16],
+    /* The called spot is OPTIONAL in a live AB, and a skipped call must stay
+       distinguishable from a called spot that was missed. */
+    ["no-spot offered",   null,
+       '(!!document.querySelector(\'#f-spot button[data-s="x"]\'))+""', null, "true"],
+    /* An uncalled spot once threw inside drawCall and took the entire render down
+       with it - the pitch landed in the model and the screen never moved. */
+    ["no-spot still renders", null,
+       '(function(){ document.querySelector(\'#f-spot button[data-s="x"]\').click();'+
+       ' document.querySelector(\'#zone button[data-r="0"][data-c="0"]\').click();'+
+       ' var k=document.querySelectorAll("#liveKpis .kpi");'+
+       ' return (k.length && k[0].querySelector(".v").textContent==="1") ? "logged":"DEAD"; })()',
+       null, "logged"],
+    /* ...and it must not be graded as a miss. One ungraded pitch, nothing graded,
+       so the spot percentage has no denominator rather than reading 0%. */
+    /* The Chart tab used to always land on whoever was selected last, which in
+       practice meant pitcher 1 forever: set a second arm up, tap Chart, and you got
+       the first one's finished card with nothing saying so. The strip is the only
+       way across and it reads like a header unless it is labelled. */
+    ["strip says it switches", null,
+       '/tap a name to switch/.test((document.querySelector(".striplbl")||{}).textContent||"")+""',
+       null, "true"],
+    ["ungraded is not a miss", null,
+       '(function(){ var t=document.getElementById("liveRead").textContent||"";'+
+       ' return /no spot called/.test(t) ? "ungraded":t.slice(0,40); })()',
+       null, "ungraded"],
+    /* LAST: finishing a scripted card has to lead somewhere. Name two arms, run the
+       first one out of script, and the Chart tab must move to the second. */
+    ["follows the mound",  null,
+       '(function(){'+
+       ' document.getElementById("tab-setup").click();'+
+       ' var ns=document.querySelectorAll(\'#rosterTbl tbody input[data-f="name"]\');'+
+       ' ns[0].value="A"; ns[0].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' ns[1].value="B"; ns[1].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' ns[2].value="C"; ns[2].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' var ms=document.querySelectorAll(\'[data-f="mode"]\');'+
+       ' ms[0].value="script"; ms[0].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' ms[1].value="script"; ms[1].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' document.getElementById("tab-chart").click();'+
+       /* Put A on screen deliberately, run him past the end of the card, then leave
+          and come back. Earlier checks may already have left him finished, so this
+          asserts the RULE - a finished arm hands over to the next named one - and
+          not a particular starting point. */
+       /* Re-query the strip before every click: each click redraws it, so a NodeList
+          taken earlier is detached and clicking it does nothing. */
+       ' function pick(i){ document.querySelectorAll("#strip .pcard")[i].click(); }'+
+       ' function on(){ return document.querySelector("#strip .pcard[aria-pressed=true] .nm").textContent; }'+
+       ' pick(0);'+
+       ' var n=document.querySelectorAll(\'#scriptTbl tbody [data-f="type"]\').length || 1;'+
+       ' for(var i=0;i<=n;i++) document.querySelector(\'#zone button[data-r="2"][data-c="2"]\').click();'+
+       ' pick(1); pick(0);'+
+       ' if(on()!=="A") return "could not select A, on "+on();'+
+       /* A is finished and hand-picked, so he keeps the screen - that part is
+          deliberate. His card must still offer the hand-off. */
+       ' var nb=document.getElementById("nextArm");'+
+       ' if(!nb) return "no hand-off offered on a finished card";'+
+       ' if(nb.textContent.indexOf("B")<0) return "offered: "+nb.textContent;'+
+       ' nb.click();'+                      /* clears the manual pick, lands on B */
+       ' if(on()!=="B") return "hand-off did not move, on "+on();'+
+       /* NOW the path Jim actually hit: B runs out of card, and simply leaving the
+          tab and coming back has to find C. Nothing is tapped on the strip, so
+          nothing is hand-picked and the app is free to follow the mound. */
+       ' for(var j=0;j<=n;j++) document.querySelector(\'#zone button[data-r="2"][data-c="2"]\').click();'+
+       ' document.getElementById("tab-report").click();'+
+       ' document.getElementById("tab-chart").click();'+
+       ' return on(); })()',
+       null, "C"],
   ]);
 
   await b.close();
