@@ -1,4 +1,4 @@
-/* Dugout Pitch Chart - offline cache
+/* Pitch Chart - offline cache
    Bump CACHE when you change the APP - index.html, the guide - or iPads keep the
    old one. A new roster.js needs no bump: see rosterFirst below. */
 var CACHE = "titans-game-v18";

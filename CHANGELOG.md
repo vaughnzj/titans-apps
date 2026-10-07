@@ -257,7 +257,18 @@ execution grading.
 
 ### v18 · Oct 7, 2026
 **Headline:** You pick your pitchers off the roster now instead of typing their names — and the
-sample game is gone, so the app opens ready to chart.
+sample game is gone, so the app opens ready to chart. The app is now just **Pitch Chart**.
+
+- **Renamed from "Dugout Pitch Chart" to "Pitch Chart."** The header, the home-screen name and the
+  guide already said Pitch Chart; the page title, the landing page and the install prompt still
+  said Dugout. Now they all agree.
+- **Two things the rename deliberately did NOT touch.** The saved game and the filed History live
+  under storage keys that still read `dugout-pitch-chart-…`. Those are addresses, not labels —
+  renaming one doesn't move anything, it points the app at an empty slot, so every iPad would
+  silently lose its game in progress and its whole History on first open. Nobody ever sees them.
+- An already-installed home-screen icon **keeps whatever name it was given.** iOS doesn't rename
+  an installed app when the manifest changes. If a coach's icon says Dugout Pitch Chart he can
+  rename it by long-pressing it, or just leave it — nothing is wrong with it.
 
 - **The mound chips are drop-downs.** Tap the chip, pick the arm; his class and throwing hand come
   with him. A pitcher already on another chip drops off the list, so the same kid can't be charted

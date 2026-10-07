@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Dugout Pitch Chart</title>
+<title>Pitch Chart</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#16325C">
@@ -1183,6 +1183,12 @@ function ao3Stats(scope){
 function pct(v){ return v==null ? "—" : Math.round(v*100)+"%"; }
 var ROLES = ["Starter","Relief 1","Relief 2","Relief 3","Relief 4"];
 var MAXSPOTS = 12;
+/* STILL "dugout-", AND IT STAYS THAT WAY. The app was renamed from "Dugout Pitch
+   Chart" to "Pitch Chart" in v18; these two keys were deliberately NOT renamed.
+   A localStorage key is a storage address, not a label - renaming it does not move
+   anything, it just points the app at an empty slot, so every iPad would silently
+   lose the game in progress AND its entire filed History the first time it opened
+   the new build. Nothing a user ever sees reads these strings. Leave them. */
 var KEY  = "dugout-pitch-chart-v2";
 /* Filed games. Nothing here is ever overwritten - "Finish & file" MOVES the game
    in, it does not save-and-discard. Same shape and same ritual as the Offense

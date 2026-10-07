@@ -20,7 +20,7 @@ WHAT'S HERE
   tools/swcache/        Proves a new roster reaches an app with no cache bump
   tools/admin/          Test suites for the Roster Manager, plus the generator
                         that builds Titans-Roster-Template.xlsx. See its README.
-  game/index.html       The Dugout Pitch Chart app
+  game/index.html       The Pitch Chart app
   game/guide.html       The Pitch Chart coach's guide
   offense/index.html    The Offense Chart app (how they pitch us)
   offense/guide.html    The Offense Chart coach's guide
