@@ -111,12 +111,17 @@ WHEN I CHANGE AN APP, FOUR THINGS MOVE TOGETHER
   rather than sitting there silently.
   CHANGELOG.md is the fifth. Update it first, while you remember what changed.
 
-BEFORE EVERY PUSH, RUN BOTH TEST SCRIPTS
+BEFORE EVERY PUSH, RUN THE TEST SCRIPTS
   python3 -m http.server 8807 &
   node tools/sweep.js            every control still does something
   node tools/roster-states.js    the four roster states
   sweep.js stays green through a bug that silently breaks roster identity, which
   is why the second script exists. Run both.
+
+  AFTER TOUCHING EITHER sw.js, also run tools/swcache/ -- it proves a new roster
+  reaches the app with no cache bump, that app code is still cache-first, and
+  that the app still opens offline and against a stalling server. It needs its
+  own harness; see tools/swcache/README.txt.
 
   The Roster Manager has three more suites in tools/admin/ -- they need a small
   harness first because that page loads SheetJS from a CDN. tools/admin/README.txt
@@ -170,14 +175,20 @@ THE ROSTER
   where the ID comes forward. Uploading a file with a corrected spelling is a name
   the tool has never seen, and it mints a NEW id.
 
-  To change the roster:
+  To change the roster -- THREE STEPS, NO VERSION NUMBERS:
     1. Fill in Titans-Roster-Template.xlsx (Software folder).
-    2. Open Titans Roster Manager.html. LOAD THE RELEASED roster.js FIRST —
+    2. Open Titans Roster Manager.html. LOAD THE RELEASED roster.js FIRST --
        that is what keeps every existing ID. Then upload the spreadsheet.
-    3. Download roster.js. Drop it into BOTH bullpen/ and offense/.
-    4. Bump the CACHE name in BOTH sw.js files, or the iPads keep the old roster.
-    5. Add a line to the roster table in CHANGELOG.md.
-    6. Open each iPad once on wifi.
+    3. Download roster.js, drop it into BOTH bullpen/ and offense/, and push.
+       Then add a line to the roster table in CHANGELOG.md.
+
+  No cache bump. No build number. The apps ask the server for roster.js before
+  falling back to their saved copy, so a new one lands the next time an iPad
+  opens with signal. An iPad that has been offline keeps the roster it had, says
+  so in its banner, and picks up the new one when it next has signal.
+
+  THE CACHE BUMP IS STILL REQUIRED FOR AN APP CHANGE -- index.html, guide.html,
+  templates.js. Those are code and stay cache-first. See the next section.
 
   Until the first real roster is released, both apps ship a SAMPLE roster and
   show a red "SAMPLE roster — not the real team" banner. It will let a coach

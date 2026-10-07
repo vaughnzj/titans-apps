@@ -17,9 +17,9 @@ old one — tap the amber stamp to fix it.
 
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
-| **Bullpen Chart** | **v27** | v21 — **v22–v27 waiting to be pushed** |
+| **Bullpen Chart** | **v28** | v27 — **v28 waiting to be pushed** |
 | **Pitch Chart** (game) | **v17** | v17 ✅ |
-| **Offense Chart** | **v37** | v34 — **v35–v37 waiting to be pushed** |
+| **Offense Chart** | **v38** | v37 — **v38 waiting to be pushed** |
 
 **`roster.js` is new in this push** and has to go into **both** `bullpen/` and `offense/` — the
 same file, twice. A service worker can only cache files inside its own folder, so one shared copy
@@ -33,6 +33,26 @@ first job is: fill in `Titans-Roster-Template.xlsx` → upload it in the Roster 
 ---
 
 ## Bullpen Chart
+
+### v28 · Oct 7, 2026
+**Headline:** Releasing a roster is now just dropping the file in and pushing. No version numbers
+to bump, nothing to remember.
+
+- `roster.js` is the **one file the app checks the server for first**, falling back to the copy it
+  already has. Everything else is still cache-first, which is what makes the app open with no
+  signal.
+- **Why it changed.** A roster is data and changes far more often than the app does — jerseys in
+  the spring, a kid added, a spelling fixed. Under the old rule every one of those was a code
+  release with two version numbers to bump, and forgetting them failed *silently*: the server had
+  the new roster, every iPad kept the old one, and nothing on screen said so.
+- **It will not hang on bad wifi.** The network gets **2.5 seconds**, then the app serves the
+  roster it already has and carries on. That matters more than it sounds: a gym wifi that accepts
+  the connection and never answers would otherwise freeze the app on its own roster, before the
+  first pitch. Measured: usable in **2.6s** against a server stalling for 6.
+- A response that arrives after the app gave up is **not** saved. Storing it would mean the next
+  session showed a roster this one declined to use.
+- **Still bump the cache for an app change** — index.html, the guide, templates.js. That part is
+  unchanged.
 
 ### v27 · Oct 7, 2026
 **Headline:** Last and first name are separate now, which fixes a real bug: two players
@@ -252,6 +272,14 @@ Not logged at the time.
 
 ## Offense Chart
 
+### v38 · Oct 7, 2026
+**Headline:** Same as the bullpen — a new roster reaches the app with no version bump.
+
+- `roster.js` is checked on the server first with a 2.5-second budget, then falls back to the
+  cached copy. Everything else stays cache-first.
+- Verified against this app too: new roster picked up with no bump, app code still served from
+  cache, opens offline with the server stopped, and opens in under 3s against a 6-second stall.
+
 ### v37 · Oct 7, 2026
 **Headline:** Same as the bullpen — last and first name split apart, so two players with the
 same last name are two people. A hitter still reads as just his last name unless there's a
@@ -365,14 +393,21 @@ different IDs and a merged season is back to matching on names. A shipped file g
 the same IDs for the same people, which is the identity problem actually solved rather than
 deferred.
 
-**When the roster changes, it's a release** — same discipline as any other:
+**Releasing a roster — three steps, no version numbers** *(since Bullpen v28 / Offense v38)*:
 
 1. Edit in the Roster Manager and download `roster.js`.
-2. Drop it into `bullpen/` and `offense/` in the repo.
-3. **Bump the cache name in each app's `sw.js`**, or the iPads keep serving the old roster. Same
-   trap `templates.js` has.
-4. Add a line here saying who changed and why.
-5. Open each iPad once on wifi. The amber build stamp catches any that are behind.
+2. Drop it into `bullpen/` **and** `offense/` in the repo and push.
+3. Add a line to the table below saying what changed and why.
+
+That's it. The apps check the server for `roster.js` before falling back to their saved copy, so a
+new one lands the next time an iPad opens with signal. **No cache bump, no build number.**
+
+*An iPad that has been offline since before the release keeps the roster it had, says so in the
+banner, and picks the new one up the first time it opens with signal.*
+
+**Bumping the cache is still required for an APP change** — `index.html`, `guide.html`,
+`templates.js`. Those are code and stay cache-first. Five things move together there; see
+*Keeping this up to date* at the bottom.
 
 **The IDs are permanent.** The Roster Manager loads the released file first and only mints an ID
 for a name it has never seen. Regenerating one orphans every export already collected under the
