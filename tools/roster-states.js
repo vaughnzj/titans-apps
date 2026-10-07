@@ -89,6 +89,20 @@ const bannerFull = sel => `(function(){ var b=document.getElementById(${JSON.str
        later build shipped without roster.js would serve a frozen old release and
        look exactly like a current one. */
     is("  NOT written to local storage", await ev(`localStorage.getItem(${JSON.stringify(store)})`), null);
+    /* The sweep can only see the sample roster, which auto-expands on purpose, so
+       the green-and-collapsed case is asserted here where a real release is driven.
+       This is the normal state on every iPad all winter. */
+    is("  the list is COLLAPSED on a good roster", await ev(
+       '(function(){ var b=document.getElementById("rosBody");'+
+       ' return b ? (b.hidden ? "collapsed" : "SHOWING") : "no collapsible body"; })()'), "collapsed");
+    is("  but the banner is still visible", await ev(
+       '(function(){ var s=document.getElementById("rosSrc");'+
+       ' if(!s) return "no banner";'+
+       ' var r=s.getBoundingClientRect();'+
+       ' return (r.width>0 && r.height>0) ? "visible" : "hidden too"; })()'), "visible");
+    is("  and one tap shows the players", await ev(
+       `(function(){ document.getElementById("rosToggle").click();
+          return document.querySelectorAll(${JSON.stringify(rows)}).length; })()`), 2);
     is("  no page errors", pg.__errs.join("|"), "");
     await pg.context().close();
 

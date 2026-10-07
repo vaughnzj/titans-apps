@@ -17,9 +17,9 @@ old one — tap the amber stamp to fix it.
 
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
-| **Bullpen Chart** | **v28** | v27 — **v28 waiting to be pushed** |
+| **Bullpen Chart** | **v29** | v27 — **v28 and v29 waiting to be pushed** |
 | **Pitch Chart** (game) | **v17** | v17 ✅ |
-| **Offense Chart** | **v38** | v37 — **v38 waiting to be pushed** |
+| **Offense Chart** | **v39** | v37 — **v38 and v39 waiting to be pushed** |
 
 **`roster.js` is new in this push** and has to go into **both** `bullpen/` and `offense/` — the
 same file, twice. A service worker can only cache files inside its own folder, so one shared copy
@@ -33,6 +33,23 @@ first job is: fill in `Titans-Roster-Template.xlsx` → upload it in the Roster 
 ---
 
 ## Bullpen Chart
+
+### v29 · Oct 7, 2026
+**Headline:** The roster list is folded away by default. The banner that tells you *which* roster
+this iPad has is still right there — one tap opens the players when you want them.
+
+- **Why.** 66 players is about 2,200 pixels of list, and it sat directly above **Pitchers on this
+  mound** — roughly three screens of scrolling between the script and the panel you actually start
+  a session with. You pick arms off a dropdown, so the list is reference, not the screen.
+- **The banner stays visible.** That was the one thing worth arguing about: it is what catches a
+  sample roster, a leftover local one or a stale iPad *before* a session, and a signal behind a tap
+  is a signal nobody reads.
+- **It opens itself when something is wrong.** Green banner → folded. Amber or red → already open,
+  because the list is the next thing you want to see.
+- The button says **Show all 66** so you know the size before you tap, and **Hide the roster** once
+  it is open.
+- Closed again every time the app opens — predictable rather than clever — but once you have
+  tapped it open it stays open while you work, even as the screen redraws.
 
 ### v28 · Oct 7, 2026
 **Headline:** Releasing a roster is now just dropping the file in and pushing. No version numbers
@@ -271,6 +288,14 @@ Not logged at the time.
 ---
 
 ## Offense Chart
+
+### v39 · Oct 7, 2026
+**Headline:** Same as the bullpen — the roster list is folded away, the banner stays.
+
+- On this screen the roster was pushing **Our lineup** off the bottom, which is the panel that
+  actually gets set before a game.
+- Same rules: banner always visible, folded when the roster is fine, already open when it isn't,
+  and the button names the count.
 
 ### v38 · Oct 7, 2026
 **Headline:** Same as the bullpen — a new roster reaches the app with no version bump.

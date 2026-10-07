@@ -496,12 +496,24 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
           <div class="phead"><span class="lbl">Titans roster</span>
             <span class="lbl" id="rosInfo" style="margin-left:auto">&mdash;</span></div>
           <div class="pbody stack">
+            <!-- The banner stays outside the collapse: it is what catches a sample
+                 roster or a stale iPad before a game, and a signal behind a tap is
+                 a signal nobody reads. -->
             <div class="rossrc" id="rosSrc"></div>
-            <div id="rosRows" class="stack" style="gap:2px"></div>
-            <div class="read"><b>This is a read-out, not a form.</b> The roster ships with the app,
-              released by the program, so a hitter is one hitter across every app, every iPad and
-              every export. Somebody wrong or missing? Tell Jim &mdash; he releases a corrected
-              roster with the next update, and nothing already charted is disturbed.</div>
+            <div class="row">
+              <button class="btn sm" id="rosToggle" aria-expanded="false"
+                      aria-controls="rosBody">Show the roster</button>
+            </div>
+            <!-- The lineup is what gets set on this screen. The roster is reference,
+                 and sixty-six names of it pushed the lineup off the screen. -->
+            <div id="rosBody" hidden>
+              <div id="rosRows" class="stack" style="gap:2px"></div>
+              <div class="read" style="margin-top:10px"><b>This is a read-out, not a form.</b> The
+                roster ships with the app, released by the program, so a hitter is one hitter across
+                every app, every iPad and every export. Somebody wrong or missing? Tell Jim &mdash;
+                he releases a corrected roster with the next update, and nothing already charted is
+                disturbed.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -665,7 +677,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v38";
+var BUILD = "v39";
 var KEY   = "titans-offense-v1";
 /* The roster is RELEASED, not typed. roster.js ships in this folder and the app
    reads it; nobody edits the team on an iPad any more.
@@ -911,6 +923,18 @@ function rosterSorted(){
     return String(a.first||"").toLowerCase().localeCompare(String(b.first||"").toLowerCase());
   });
 }
+/* null until the first draw decides. Not remembered between opens on purpose, and
+   sticky once the coach has toggled it - a redraw must not shut the list while he
+   is reading it. */
+var rosOpen = null;
+function applyRosOpen(){
+  var body = el("rosBody"), btn = el("rosToggle");
+  if(!body || !btn) return;
+  body.hidden = !rosOpen;
+  btn.setAttribute("aria-expanded", rosOpen ? "true" : "false");
+  btn.textContent = rosOpen ? "Hide the roster"
+    : (R.length ? "Show all " + R.length : "Show the roster");
+}
 function drawRoster(){
   var h = rosterSorted().map(function(p){
     return '<div class="rosrow">'+
@@ -924,6 +948,9 @@ function drawRoster(){
   el("rosRows").innerHTML = h || '<div class="read">No roster in this build.</div>';
   el("rosInfo").textContent = R.length + (R.length===1?" player":" players");
   drawRosSrc();
+  /* Closed when the banner is green, open when it is not. */
+  if(rosOpen === null) rosOpen = (ROSRC !== "release");
+  applyRosOpen();
 }
 /* Say which roster this iPad is looking at. A coach who cannot tell a released
    roster from a leftover local one cannot tell whether tonight's game will join up
@@ -2762,6 +2789,7 @@ function wire(){
   el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push(newLineupSpot()); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };
   el("pAdd").onclick    = function(){ O.pitchers.push(newPitcher("")); save(); render(); };
+  el("rosToggle").onclick = function(){ rosOpen = !rosOpen; applyRosOpen(); };
 
   ["fDate","fOpp","fWho"].forEach(function(id){
     el(id).oninput = function(){

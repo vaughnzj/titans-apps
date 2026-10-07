@@ -238,6 +238,22 @@ const styled = sel =>
        null, "all"],
     /* bats and throws are separate fields and both have to show, because this app
        needs the bat and the bullpen needs the arm off the same record. */
+    /* Same collapse in this app: the lineup is what gets set on this screen, and
+       the roster was pushing it off the bottom. */
+    ["roster list collapse", null,
+       '(function(){ var b=document.getElementById("rosBody");'+
+       ' if(!b) return "no collapsible body";'+
+       ' var s=document.getElementById("rosSrc");'+
+       ' var green=/\\bok\\b/.test(s?s.className:"");'+
+       ' return (b.hidden === green) ? "matches the banner" : (green?"green but SHOWING":"warning but HIDDEN"); })()',
+       'showTab("setup");', "matches the banner"],
+    ["banner is outside the collapse", null,
+       '(function(){ var b=document.getElementById("rosBody"), s=document.getElementById("rosSrc");'+
+       ' if(!b||!s) return "missing";'+
+       ' return b.contains(s) ? "INSIDE - it would be hidden" : "outside"; })()',
+       null, "outside"],
+    ["the toggle works",  "#rosToggle",
+       '(document.getElementById("rosBody")||{}).hidden+""', 'showTab("setup");'],
     /* The same display rule, checked against what this app renders. The offense
        roster row prints "Last, First" in bold and the derived name beside it. */
     ["derived names match the rule", null,
@@ -417,6 +433,36 @@ const styled = sel =>
        ' var t=document.getElementById("rosSrc").textContent;'+
        ' return /[Dd]o not chart/.test(t) ? "yes" : "no warning"; })()',
        null, "yes"],
+    /* The panel is collapsed by default. Sixty-six players is ~2,200px of list
+       sitting directly above the mound list a coach starts a session with, and you
+       pick arms off a dropdown - so the list is reference, not the screen. */
+    ["roster list collapse", null,
+       '(function(){ var b=document.getElementById("rosBody");'+
+       ' if(!b) return "no collapsible body";'+
+       /* The shipped file is the SAMPLE roster, which auto-expands on purpose, so
+          "collapsed by default" cannot be asserted against it. Assert the rule
+          instead: hidden when the banner is green, showing when it is not. */
+       ' var s=document.getElementById("rosSrc");'+
+       ' var green=/\\bok\\b/.test(s?s.className:"");'+
+       ' return (b.hidden === green) ? "matches the banner" : (green?"green but SHOWING":"warning but HIDDEN"); })()',
+       'document.getElementById("tab-setup").click();', "matches the banner"],
+    /* The banner is NOT in the collapse. It is what catches a sample or stale
+       roster before a session, and a signal behind a tap is a signal nobody reads. */
+    ["banner is outside the collapse", null,
+       '(function(){ var b=document.getElementById("rosBody"), s=document.getElementById("rosSrc");'+
+       ' if(!b||!s) return "missing";'+
+       ' return b.contains(s) ? "INSIDE - it would be hidden" : "outside"; })()',
+       null, "outside"],
+    ["the toggle labels itself", null,
+       '(function(){ var t=document.getElementById("rosToggle");'+
+       ' if(!t) return "no toggle";'+
+       ' var open=t.getAttribute("aria-expanded")==="true";'+
+       ' if(open) return /Hide/.test(t.textContent) ? "labelled" : t.textContent;'+
+       ' return t.textContent.indexOf(String(window.TITANS_ROSTER.length))>=0'+
+       '   ? "labelled" : t.textContent; })()',
+       null, "labelled"],
+    ["the toggle works",  "#rosToggle",
+       '(document.getElementById("rosBody")||{}).hidden+""'],
     ["roster header",     null,
        '[].map.call(document.querySelectorAll("#teamTbl thead th"),'+
        'function(o){return o.textContent.trim()}).join("|")', null,

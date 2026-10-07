@@ -510,21 +510,35 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
       <div class="panel">
         <h2>The roster</h2>
         <div class="body">
+          <!-- The banner stays out here on purpose. It is the whole point of the
+               four-state roster design - it catches a sample roster, a leftover
+               local one or a stale iPad BEFORE a session - and a signal behind a
+               tap is a signal nobody reads. One line costs nothing. -->
           <div class="flag" id="rosSrc"></div>
-          <div class="scroller">
-            <table class="grid ro" id="teamTbl">
-              <thead><tr><th class="no">#</th><th>Name</th><th>Shows as</th><th>Class</th><th>Throws</th><th>Bats</th></tr></thead>
-              <tbody></tbody>
-            </table>
+          <div class="row" style="margin-top:2px">
+            <button class="btn sm" id="rosToggle" aria-expanded="false"
+                    aria-controls="rosBody" style="flex:0 0 auto">Show the roster</button>
           </div>
-          <p class="tiny" style="margin:12px 0 0"><b>This is a read-out, not a form.</b> The roster
-            ships with the app, released by the program, so every iPad and every app is looking at
-            the same list of players with the same IDs. A name spelled one way here is spelled that
-            way in every export, which is the only reason a season of files can be stacked up and
-            counted.</p>
-          <p class="tiny" style="margin:8px 0 0">Wrong, missing or a class that needs moving up?
-            <b>Tell Jim</b> &mdash; he releases a corrected roster with the next update. Nothing you
-            charted is affected: a session keeps the name it was charted under.</p>
+          <!-- Sixty-six players is about 2,200px of list, and this panel sits
+               directly above the mound list a coach actually starts a session
+               with. You pick arms off a dropdown, so the list earns its place
+               only when something looks wrong. -->
+          <div id="rosBody" hidden>
+            <div class="scroller">
+              <table class="grid ro" id="teamTbl">
+                <thead><tr><th class="no">#</th><th>Name</th><th>Shows as</th><th>Class</th><th>Throws</th><th>Bats</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <p class="tiny" style="margin:12px 0 0"><b>This is a read-out, not a form.</b> The roster
+              ships with the app, released by the program, so every iPad and every app is looking at
+              the same list of players with the same IDs. A name spelled one way here is spelled that
+              way in every export, which is the only reason a season of files can be stacked up and
+              counted.</p>
+            <p class="tiny" style="margin:8px 0 0">Wrong, missing or a class that needs moving up?
+              <b>Tell Jim</b> &mdash; he releases a corrected roster with the next update. Nothing you
+              charted is affected: a session keeps the name it was charted under.</p>
+          </div>
         </div>
       </div>
 
@@ -1088,7 +1102,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v28";
+var BUILD = "v29";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
@@ -1377,6 +1391,20 @@ function rosterSorted(){
     return String(a.first||"").toLowerCase().localeCompare(String(b.first||"").toLowerCase());
   });
 }
+/* null until the first draw decides. Deliberately NOT remembered between opens:
+   predictable beats clever, and a saved preference is per-iPad state that can
+   disagree between devices for no benefit. Once the coach has toggled it, his
+   choice sticks for the rest of the session - a redraw must not snap the list
+   shut while he is reading it. */
+var rosOpen = null;
+function applyRosOpen(){
+  var body = el("rosBody"), btn = el("rosToggle");
+  if(!body || !btn) return;
+  body.hidden = !rosOpen;
+  btn.setAttribute("aria-expanded", rosOpen ? "true" : "false");
+  btn.textContent = rosOpen ? "Hide the roster"
+    : (ROS.length ? "Show all " + ROS.length : "Show the roster");
+}
 function drawTeam(){
   var tb = el("teamTbl").querySelector("tbody"), h = "", list = rosterSorted();
   for(var i=0;i<list.length;i++){
@@ -1391,6 +1419,10 @@ function drawTeam(){
   }
   tb.innerHTML = h || '<tr><td colspan="6" class="empty">No roster in this build.</td></tr>';
   drawRosSrc();
+  /* Closed when the banner is green, open when it is not. If something is wrong
+     with the roster, the list is the next thing you want to see. */
+  if(rosOpen === null) rosOpen = (ROSRC !== "release");
+  applyRosOpen();
 }
 /* Say plainly which roster this iPad is looking at. A coach who cannot tell a
    released roster from a leftover local one cannot tell whether the kid he is
@@ -1530,6 +1562,10 @@ el("rosterTbl").addEventListener("input", function(e){
 
 /* No handlers on the roster table any more - it is a read-out. The release is the
    only way a name, class or hand changes, which is the whole point. */
+el("rosToggle").onclick = function(){
+  rosOpen = !rosOpen;
+  applyRosOpen();
+};
 el("rosterTbl").addEventListener("click", function(e){
   if(!e.target.getAttribute || !e.target.getAttribute("data-del")) return;
   var i = +e.target.closest("tr").getAttribute("data-i"), p = S.pitchers[i];
