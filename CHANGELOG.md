@@ -1,0 +1,491 @@
+# Legend Titans apps — change log
+
+What changed, in what version, for all three iPad apps.
+
+Two jobs, so every entry has two parts:
+
+- **The headline** — one line you can read out, text to the staff, or paste into a group chat.
+- **The detail** — what actually changed, for when something behaves differently than you remember.
+
+**Where to find a version:** it's printed in each app's header, right after the app name. If it
+shows two numbers in amber (`v23 ≠ v21`), that iPad downloaded an update but is still serving the
+old one — tap the amber stamp to fix it.
+
+---
+
+## Where everything stands
+
+| App | Source & folder | Live on GitHub Pages |
+|---|---|---|
+| **Bullpen Chart** | **v27** | v21 — **v22–v27 waiting to be pushed** |
+| **Pitch Chart** (game) | **v17** | v17 ✅ |
+| **Offense Chart** | **v37** | v34 — **v35–v37 waiting to be pushed** |
+
+**`roster.js` is new in this push** and has to go into **both** `bullpen/` and `offense/` — the
+same file, twice. A service worker can only cache files inside its own folder, so one shared copy
+at the repo root would work online and vanish the moment an iPad lost signal.
+
+**What ships today is the SAMPLE roster.** Both apps show a red *SAMPLE roster — not the real team*
+banner until the real one is released, which is safe to push but not safe to chart against. The
+first job is: fill in `Titans-Roster-Template.xlsx` → upload it in the Roster Manager → download
+`roster.js` → drop it in both folders → bump both cache names.
+
+---
+
+## Bullpen Chart
+
+### v27 · Oct 7, 2026
+**Headline:** Last and first name are separate now, which fixes a real bug: two players
+with the same last name used to import as **one person**. On screen a player still reads as
+just his last name — he only picks up an initial when there's a second one of him.
+
+- **The bug.** Uploading a roster with a senior Dieker and a freshman Dieker produced **one**
+  player. The second overwrote the first's class and throwing hand, the Roster Manager reported
+  "1 updated" — indistinguishable from a normal re-upload — the duplicate guard said *"every name
+  unique"*, and the release was not blocked. One kid's winter silently became another kid's.
+  The guard could never have caught it: the collision happened during the import, before there
+  were two rows to compare.
+- **The fix.** Identity is now **last + first**. Two Diekers are two people with two IDs.
+- **What you see on an iPad is unchanged for almost everybody:** a player reads as
+  **"Dieker"**. He only becomes **"Dieker, T"** when somebody else on the roster shares that
+  last name, and **"Dieker, Tom"** if the initial collides as well. Nothing to type, nothing to
+  remember — and no more hand-typed "Dieker, T" baked into every export forever.
+- **The roster read-out** on Setup gained a **Shows as** column, so you can see exactly what the
+  app will print before you release.
+- **Export is 37 columns** — `PitcherLast` and `PitcherFirst` added. `Pitcher` is still the
+  display name, and it is now explicitly *for reading, not grouping*: it can change between
+  releases when a brother joins. **Group on `PitcherID`.**
+- A record from an older session is read as a last name, or split on a comma if it has one.
+  Nothing guesses at "Tom Dieker" — the order would be a coin flip.
+
+### v26 · Oct 7, 2026
+**Headline:** The roster now ships with the app. You can read it on Setup; you can't change it.
+Wrong or missing name — tell Jim and it's fixed in the next update.
+
+- **The roster is a read-out.** No Add, no upload, no paste, no "move everyone up a class". The
+  panel lists the released team — name, class, throws, bats — sorted seniors first.
+- **Why it stopped being editable.** Every export joins on `PitcherID`. While each iPad kept its
+  own roster, the same kid typed on two iPads got two different IDs, and his winter split into two
+  pitchers the moment the files were stacked up. One released list is the fix, and it is the
+  identity problem actually solved rather than deferred.
+- **A banner says which roster this iPad has**, in four states:
+  - Green **Released roster** with the release date — what you want.
+  - Red **SAMPLE roster — not the real team** — the placeholder that ships until the first real
+    roster is released. It *works*, which is the whole danger: nothing else would stop a coach
+    charting an entire session against IDs that join up with nothing. The banner says so plainly.
+  - Amber **Leftover local roster** — the iPad is still showing a list somebody typed into it
+    before releases existed. It charts fine, but its IDs match nobody else's, so get that iPad
+    onto the current version before the next session.
+  - Red **No roster** — the build arrived without one.
+- **Nothing you charted is affected by a roster change.** A session stores the name and hand it was
+  charted under, so a filed bullpen still reads correctly years later. A pitcher who has since come
+  off the roster keeps his name on the mound slot, marked *(not on the roster)*.
+- A released roster is **never** copied into the iPad's own storage. That sounds like a detail; it's
+  what stops a future build that shipped without `roster.js` from serving a frozen old release and
+  looking exactly like a current one.
+- `roster.js` joins `templates.js` in the service worker's file list, so the roster is there with
+  no signal.
+
+### v25 · Oct 7, 2026
+**Headline:** Upload the roster as a .csv straight out of Excel. Plus two hidden ID columns in the
+export so a merged season groups correctly.
+
+- **Upload a .csv.** Header row in any order and any capitalisation (`Name, Class, Throws, Bats`),
+  or no header with the name in the first column. Class accepts `Jr`, `Junior` or `11`. Commas
+  inside a quoted name are handled — `"Hasche, J",Jr,R` lands as one person.
+- Re-uploading a corrected file **updates and never duplicates**, so you can drop a fixed export
+  straight over the top of the old roster.
+- **Paste a list** stays for a handful of names, and is the fallback if a locked-down iPad refuses
+  to open a file picker.
+- **`SessionID` and `PitcherID`** on every exported row. You never see or type them. They exist
+  because **a name is not a key**: two kids share a last name, a spelling gets corrected in
+  February, and a merged season quietly becomes two people or one. Fixing a name does not change
+  the ID. `SessionID` does the same for sessions — Mound + Date isn't unique, so a morning and an
+  afternoon group on the same mound would otherwise merge into one.
+- The export is now **35 columns**.
+
+### v24 · Oct 7, 2026
+**Headline:** Type the team once. One roster now backs the Bullpen Chart and the Offense Chart,
+with class year and throwing arm on it, and you pick each arm for a session off a list instead of
+typing a name.
+
+- **A roster panel** on Setup, above the mound list. **Paste a list** is the fast way in — one per
+  line, `Name` alone works, `Hasche, Jr, R` gives you class and throwing hand in either order. A
+  name already on the roster is **updated, not duplicated**. Nobody types fifty kids on an iPad.
+- **Shared between the Bullpen Chart and the Offense Chart.** They live on the same origin, so
+  they read the same saved roster. Whatever the Offense Chart already had is adopted automatically —
+  nothing to retype. Fixing a spelling once fixes it everywhere, including in sessions already filed.
+  **The Pitch Chart is not wired in yet** — it still types our pitchers free-form. Same origin, so
+  it's a small change, but it hasn't been made.
+- **Class** is Fr / So / Jr / Sr, a picked list. This is the field a peer comparison needs: a
+  sophomore measured against sophomores says far more than one measured against the program.
+  **Move everyone up a class** handles June. *(Changed Oct 7: the bump now removes graduating
+  seniors — see **The roster** below.)*
+- **Throws and Bats are separate fields.** One "hand" would have been wrong in one app or the
+  other — plenty of kids throw right and hit left.
+- **The mound list is one picker per slot.** Class and throwing hand print beside it as a read-out,
+  because the roster owns them; two places to edit one fact is how they drift apart. A kid can only
+  be on one slot per session, so a name already picked drops out of the other lists.
+- **Jersey number is gone** from the bullpen. A bullpen needs a name. The export carries `Class`,
+  `ClassName` and `Throws` where `Jersey` used to be.
+- A pitcher charted before the roster existed keeps his name, marked **(not on the roster)**.
+  Nothing already charted loses its owner.
+
+**Not yet built, and worth knowing:** the peer comparison *report* can't live in the app. One iPad
+only holds its own mound's sessions, so a ranking against the whole class would be computed from a
+quarter of the data and look authoritative. The export now carries class on every row, so the
+comparison is computable in Excel today and in the roll-up (E-005) when it exists.
+
+### v23 · Oct 6, 2026
+**Headline:** The Chart tab now moves to the next pitcher on its own when the one on screen
+finishes his card.
+
+- Setting a pitcher up on Setup never moved the Chart tab to him, so you could enter your second
+  arm, tap Chart, and still be looking at the first one's finished card with nothing saying so.
+- The pitcher strip at the top is now labelled **"Who's throwing — tap a name to switch."**
+  Unlabelled it read like a header.
+- A pitcher who has finished his card is **dimmed and struck through** on the strip.
+- His card now carries a **"Vance is up →"** button. The old copy said "Next pitcher" and wasn't
+  a button.
+- Leaving the Chart tab and coming back moves to the first **named** pitcher with nothing charted.
+  The five blank rows a fresh session ships with are skipped — they aren't people until you name
+  them.
+- If you tap a name yourself, that choice sticks. Going back to a finished pitcher to look at his
+  zone is deliberate, so tabbing to Report and back won't steer you away.
+
+### v22 · Oct 6, 2026
+**Headline:** Live ABs. Set a pitcher to **Live ABs** on Setup and you can chart him facing hitters
+— count, at-bat result and AO3+.
+
+- A **count** at the top of the at-bat, worked out from where you plot each pitch. In the zone is a
+  strike. Nothing to enter.
+- **At-bat chips** across the top, one per AB, each with its result and pitch count. Tap one to fix
+  a mis-tapped result.
+- **Sixteen results**, the same list as the Pitch Chart. Tapping one closes the at-bat and opens
+  the next, so the next hitter costs no extra tap. A closed at-bat refuses another pitch and says
+  so rather than quietly appending.
+- **The called spot is optional in here** — there's a `— no spot called` button. Those pitches are
+  **left out of the execution numbers, not counted as misses.** A competitive inning where nobody
+  called spots would otherwise read as the worst command of the winter. The KPI label says
+  `Spot · of 12 graded` when some are ungraded, and the zone pip is outlined instead of coloured.
+- **AO3+**, the same two-character code as the Pitch Chart and last winter's spreadsheet:
+  `++` ahead and got the out (2 pts) · `+-` ahead, no out (1) · `-+` behind, got the out (1) ·
+  `--` behind, no out (0). The report shows all four counts rather than one percentage.
+- **Export:** `Mode=Live` plus four new columns — `AB`, `ABResult`, `ABOut`, `AO3plus`.
+  `Result` (the execution grade) is now **blank** for an ungraded pitch where it used to say `Miss`.
+- **Fixed:** a pitch with no called spot made the call card dereference a target that wasn't there
+  and threw, which killed the whole render — the pitch went into the data and the screen froze with
+  no error. Worst kind of bug; now guarded, with a test that goes red if it comes back.
+
+### v21 · Oct 5, 2026
+**Headline:** Four winter routines, a reset button, no more sample, and a build stamp you can tap
+to fix a stuck update.
+
+- **Four cumulative routines** in `templates.js` — Fastball Command (25), Breaking Ball & Stretch
+  (30), Holding Runners (35), Hitter's Counts (40). Every call in week 1 is still in week 4, which
+  is what makes a pitcher's week-over-week numbers comparable. See
+  `claude/bullpen-winter-scripts.md`.
+- **Situations are a picked list** — Runner on 1B, Runner on 2B, 2 strikes chase, 2-0 O/S strike —
+  exported as both code and label. Typed notes never group in Excel.
+- **Slide step (`SS`)** added to the delivery column; the header reads W/S/SS. `SS` not `SL`,
+  because SL is already the Slider.
+- **Script columns reordered** to W/S/SS · Pitch · Location · Situation, and *Spot* renamed
+  *Location*.
+- **The sample session was removed**, and old saved copies of it are discarded on load. Its
+  hand-built script had a ScriptID matching no routine, so a coach running it broke the four-mound
+  comparison silently.
+- **Reset this session** added, with a confirmation that names the pitch count.
+- **Fixed:** a stale cache could serve the old app forever. The amber build stamp is now a
+  **button** — `v23 ≠ v21 · tap to fix` — that clears the saved copy and reloads, leaving your
+  charted data alone.
+- **Fixed:** every confirmation dialog was dead in the shared playground link (the sandbox has no
+  native dialogs), so Finish & file, Delete and Reset did nothing there. Replaced with in-page
+  confirms. They always worked on an installed iPad.
+
+### v11–v20 · late Sept – Oct 5, 2026
+Not logged at the time. This file starts here; earlier history is only in the conversation
+transcripts. The headline for the stretch: **Finish & file plus a History tab** (so a second real
+session became possible at all — before that the only reset lived inside the sample banner, which
+disappeared the moment you cleared the sample), the velo strip, the called-spot grid and Chebyshev
+execution grading.
+
+---
+
+## Pitch Chart (game)
+
+### v17 · Oct 5, 2026
+**Headline:** Enter the other team's lineup before first pitch, and pull it forward from the last
+time you played them — scouting notes and tags included.
+
+- A **pre-game setup screen** for their lineup: spot, hitter, jersey, position, bats. Add or remove
+  spots, so the second meeting can carry an extra kid.
+- **Pull a lineup** from a filed game — games against the same opponent are offered first.
+- **Carried reads.** Tags, position and notes follow a hitter forward and are labelled
+  *"Reads carried in from Northview, 4/18. Check them against what you see today"* on screen and in
+  the export. An unlabelled carried read is indistinguishable from something somebody watched that
+  afternoon.
+- **Fixed:** a second function had been given a name already in use, so the **batter read panel had
+  been blank for several releases** — the read line, the mini zone and the header all silently
+  stopped drawing while the panel still appeared. Renamed, and the sweep now refuses duplicate
+  top-level function names.
+
+### v16 · Oct 5, 2026
+**Headline:** Record the pitch that was *called*, not just the one that was thrown.
+
+- A **5×5 called-spot grid** matching the location grid tap for tap, so you can separate a pitcher
+  who executed a bad call from one who missed a good one.
+- Grading is the bullpen's, unchanged — `0 = spot`, `1 = close`, `≥2 = miss` — so pen and game
+  numbers are comparable without a conversion.
+- **Hard contact:** a one-tap "he squared it up" flag on any ball in play.
+- **A colour key** under CATCHER'S VIEW in both grids. The pitch-type colours meant nothing to
+  anyone who hadn't built the app.
+- **Export:** `CalledRow`, `CalledCol`, `Execution`, `MissV`, `MissH`, `HardContact`.
+- Skipping the called spot grades as **ungraded**, not as a miss.
+- **Finish & file + History**, same as the other two apps.
+- **Fixed:** a silent `G = emptyGame()` in the render error handler meant any render error
+  anywhere would wipe the game with no message.
+
+### v1–v15 · Sept – Oct 5, 2026
+Not logged at the time.
+
+---
+
+## Offense Chart
+
+### v37 · Oct 7, 2026
+**Headline:** Same as the bullpen — last and first name split apart, so two players with the
+same last name are two people. A hitter still reads as just his last name unless there's a
+second one of him.
+
+- The **Titans roster** read-out shows `Last, First` and the derived **Shows as** label beside it.
+- **Export** gained `HitterLast`, `HitterFirst` and `HitterID`. `Hitter` remains the display
+  name — for reading, not grouping, since it changes when a same-surname player joins. **Group
+  on `HitterID`.**
+- Those three are stamped onto the plate appearance when it's created, same as the name already
+  was, so a filed game still reads correctly after the roster changes.
+
+### v36 · Oct 7, 2026
+**Headline:** The roster now ships with the app, same as the Bullpen Chart. Read-only on the iPad;
+Jim releases changes with the update.
+
+- **The Titans roster panel is a read-out** — name, number, class, and which way he bats *and*
+  throws, sorted seniors first. The *+ Add player* button is gone, and so is editing a row.
+- **The lineup still picks off it**, exactly as before. Nothing about setting a lineup changed.
+- **Same four-state banner** as the bullpen: green *Released roster* with the date, red *SAMPLE
+  roster — not the real team* for the placeholder that ships until the first real release, amber
+  *Leftover local roster* for an iPad still on its own list, red *No roster* if the build arrived
+  without one.
+- Anything typed into this app before is still shown and still usable — labelled as leftover — until
+  the iPad picks up the update.
+- `roster.js` is in the service worker's file list, so it's there with no signal.
+
+### v35 · Oct 7, 2026
+**Headline:** The roster is now the shared one, with class year and a separate Throws column.
+
+- Reads and writes the same saved roster as the other two apps. Your existing roster was carried
+  over automatically on first open.
+- **Class** (Fr/So/Jr/Sr) and **Throws** added. Throws is separate from Bats on purpose — the
+  bullpen needs the arm, this app needs the bat, and a kid can be left-handed at one and not the
+  other.
+- Nothing else changed. The lineup, subs, pitcher tags and the count grid all behave as they did.
+
+### v34 · Oct 6, 2026
+**Headline:** A pitcher's tags now sit on the **WHAT TO EXPECT** header, in the game report as well
+as in History.
+
+- Moved the tag chips onto the panel header next to his name — they *are* what to expect. Notes and
+  provenance sit on a thin line underneath; a sentence in a header line wrecks the wrap.
+- The same header appears on the **Report** tab during a game, for whoever is on the mound.
+- Wording now distinguishes the two cases: History says **"Last written down Northview, 4/18"**;
+  the live report says **"Reads carried in from Northview, 4/18 — check them against today."**
+
+### v33 · Oct 6, 2026
+**Headline:** The History tab shows the tags and notes you've put on a pitcher, read-only.
+
+- Under **Scouting a pitcher**: his tags, your notes, and which game they came from.
+- A **Reads** column in the *Pitchers we have seen* table does the same at a glance for everybody.
+- Read-only on purpose. If a tag could be set in two places there'd be no answer to which copy is
+  current — entry stays on Setup.
+
+### v32 · Oct 6, 2026
+**Headline:** Tag and take notes on the other team's pitcher, and pull him forward the second time
+you face him.
+
+- **Seven tags** per pitcher: POUNDS, WILD, FPS, BB-STR, NO GIVE, RUNNABLE, QUICK — all of them
+  things that change what a hitter does in the box.
+- **POUNDS, WILD and FPS light up on their own** from the charted pitches once there's enough to
+  mean something, and are drawn dashed with a dot so nobody mistakes them for somebody's judgement.
+  One tap overrules off, a second claims it as yours, a third releases it back. **Your tap always
+  wins.**
+- POUNDS and WILD are opposites; turning one on turns the other off.
+- **A notes box** per pitcher, free-form.
+- **Pull** — pick him out of the list of everyone you've charted and his hand, number, notes and
+  your tags come back. Pitch data is never copied; today starts clean. Only his most recent look
+  comes across.
+- **Export:** `PitcherTags`, `PitcherNotes`, `PitcherCarried`. A detected tag carries a `*`.
+
+### v31 · Oct 5, 2026
+**Headline:** Pinch hitters and re-entries, and a Lineup column you can collapse.
+
+- A lineup spot now holds **every man who has occupied it**, so a pinch hitter can't inherit the
+  starter's at-bats and an NFHS re-entry isn't a second person.
+- A sub picker with **"Back in"** for a re-entry and **"From the roster"** for a new man.
+- **AB dots** per spot in the Lineup column — the count of plate appearances told you nothing;
+  0-for-3 and 3-for-3 looked identical.
+- `◀ Lineup` collapses the column during an at-bat, in the same place as the Pitch Chart's.
+- **Fixed:** the export resolved each hitter at export time, so **one pinch hitter moved a
+  starter's whole line.** Identity is now stamped on the plate appearance when it's created. This
+  was the worst correctness bug in the app.
+
+### v29 and earlier · Oct 1–5, 2026
+Not logged at the time. The app was built Oct 1 and the headline for that stretch is the
+**"What to expect" count grid** — all twelve counts, the most common pitch in each, split by
+batter hand — plus the archive, the umpire map and the spray chart. See
+`claude/offense-chart-app.md`, which documents the whole app rather than its history.
+
+---
+
+## The roster
+
+Not an app version, but it ships the same way and belongs in the same log.
+
+**The master roster is read-only on the iPads.** It ships as `roster.js` next to each app, the way
+`templates.js` already does, and nothing in any app can change it. Jim edits it in the **Roster
+Manager** and releases a new file.
+
+**The Roster Manager is not in this repo** — it's `Software\Titans Roster Manager.html`, one folder up
+from `titans-apps`, opened by double-clicking it. It is deliberately not on the Pages site: there,
+any coach who found the URL could generate a `roster.js`, which contradicts the roster being
+released rather than edited, and gives them a file they can't deploy. One copy only — a second,
+private web copy was deleted Oct 7 after it fell two versions behind unnoticed.
+
+**Why read-only, and why it ships with the app:** four iPads each keeping their own roster drift
+apart within a week, and worse, each device mints its own `PitcherID` — so the same kid gets four
+different IDs and a merged season is back to matching on names. A shipped file gives every mound
+the same IDs for the same people, which is the identity problem actually solved rather than
+deferred.
+
+**When the roster changes, it's a release** — same discipline as any other:
+
+1. Edit in the Roster Manager and download `roster.js`.
+2. Drop it into `bullpen/` and `offense/` in the repo.
+3. **Bump the cache name in each app's `sw.js`**, or the iPads keep serving the old roster. Same
+   trap `templates.js` has.
+4. Add a line here saying who changed and why.
+5. Open each iPad once on wifi. The amber build stamp catches any that are behind.
+
+**The IDs are permanent.** The Roster Manager loads the released file first and only mints an ID
+for a name it has never seen. Regenerating one orphans every export already collected under the
+old value, so the tool refuses to release a file with a duplicate name or a blank row — those are
+the two ways a roster silently becomes two people or one.
+
+### Last name and first name are separate
+
+**Changed Oct 7, 2026**, because that is how a program roster is actually kept in Excel — and
+because asking the question turned up a live data-loss bug.
+
+**What was wrong.** The roster had one `name` field, and the importer matched on it. Upload a
+spreadsheet containing two players who share a last name and you got **one player**: the second
+overwrote the first, the tool said "1 updated", the duplicate-name guard reported *"every name
+unique"*, and nothing blocked the release. Verified by test before fixing.
+
+**What it is now.** Identity is the **pair**. `roster.js` carries `last` and `first`; `name` is
+**derived** and the apps recompute it on load rather than trusting the file.
+
+**The display rule**, in one place, byte-identical in the Roster Manager and both apps:
+
+| Situation | Shows as |
+|---|---|
+| Only one Dieker on the roster | `Dieker` |
+| Two Diekers, different initials | `Dieker, T` and `Dieker, J` |
+| Two Diekers, both T (Tom and Tim) | `Dieker, Tom` and `Dieker, Tim` |
+| Same first *and* last name | **Blocked** — the release refuses it |
+
+A player's label can therefore change when a brother joins. That is the trade for never having to
+hand-type a disambiguation, and it is why the exports carry the stable fields as well: **`Pitcher`
+and `Hitter` are for reading, `PitcherID` and `HitterID` are for grouping.**
+
+**Timing mattered.** Nothing real had been released, so no IDs were in the wild and no exports
+referenced any names. In February this would have meant reconciling IDs against files already
+collected.
+
+**Also fixed in passing:** the Roster Manager's redraw-on-blur handler still keyed on the old
+`name` field, so a typed last name never refreshed the Shows-as column or the flags — a true
+duplicate sat there unflagged. Both halves of the name are wired now.
+
+### A later upload fills in what you did not know yet
+
+The season order is **names first, the rest as you learn it** — Jim won't know spring jerseys until
+spring. Uploading a file later works the way you'd want, and it is tested:
+
+- **Every ID survives.** A name already on the roster is matched on last + first and *updated*, so
+  nothing already charted or exported is orphaned.
+- **A column the file does not contain is left alone.** A jersey-only file with no Class column
+  cannot wipe the class years typed in between. Verified: 78 players in, classes and throwing hands
+  set by hand, a 7-player jersey file uploaded, all 78 IDs identical and every hand-set value intact.
+- **A column the file *does* contain wins.** A jersey in the new file overwrites an old one — which
+  is what makes a correction possible.
+- Leading zeros survive, so `05` stays `05`.
+
+**The one thing to be careful about: the match key is the name.** Correct a spelling *in the Roster
+Manager*, where the ID comes forward. If you instead upload a file with the corrected spelling, that
+is a name the tool has never seen and it mints a **new** ID.
+
+### The June bump graduates seniors off the roster
+
+**Move everyone up a class** moves Fr → So → Jr → Sr **and removes the seniors.** A player with no
+class set is left alone.
+
+Jim's call, and the reasoning is worth keeping: a graduated senior has no relevance going forward,
+and **every export already carries his name, class, throwing hand and the rest on the row** — so
+last winter's files still read correctly without him, all the analysis still works, and the roster
+file doesn't carry four years of alumni into the mound picker.
+
+What it costs, knowingly:
+
+- **This is the only irreversible thing the tool does.** An ID removed here is gone. A name re-added
+  later is a name the tool has never seen, so it mints a **new** ID that joins to none of his old
+  files. So: take the **.csv backup** before a bump if you want a record of who left.
+- The confirmation **names every player coming off** before it does anything, and the result line
+  lists them again so you can paste them into the roster table below.
+- **A session already charted against a removed player keeps his name**, marked *(not on the
+  roster)* on the mound slot. Nothing charted loses its owner.
+
+**The order matters and is tested.** The seniors are removed *before* the classes are bumped. Do it
+the other way round and this year's juniors become seniors and are then swept out in the same pass
+— a kid deleted from the roster for having been promoted. `tadmin` has a check that goes red if the
+order is ever flipped back.
+
+### Roster releases
+
+| Date | Players | What changed |
+|---|---|---|
+| 2026-10-07 | — | *No real roster released yet.* Both apps ship a **sample** `roster.js` so they have something to read; it flags itself and both apps show a red **SAMPLE roster — not the real team** banner telling coaches not to chart against it. The first real release goes on the next line. |
+
+---
+
+## Keeping this up to date
+
+Add an entry **in the same pass that bumps the version** — it's part of shipping, not paperwork
+afterwards. Five things already move together (`index.html`, `sw.js`'s `CACHE`, the `BUILD`
+constant, the guide's `App v_` line, and the version inside the guide's "Which version am I on?"
+callout). Both the bullpen and the offense chart now also list `roster.js` in `sw.js`, and the
+bullpen lists `templates.js`. This file is the last one.
+
+**Before you push, run both test scripts** — not just the sweep:
+
+```
+cd titans-apps && python3 -m http.server 8807 &
+node tools/sweep.js            # every control still does something
+node tools/roster-states.js    # released / missing / leftover-local roster
+```
+
+`sweep.js` stays green through a bug that silently breaks roster identity, which is exactly why
+`roster-states.js` exists. Both have been proved to fail by reintroducing the bugs they cover.
+
+Write the **headline** for a coach who has never seen the code: what he can now do, or what stopped
+being wrong. Put the version numbers and column names in the detail bullets underneath.
+
+**Say when something is a fix, and say what it did.** "Fixed the render" tells a coach nothing;
+"a pitch with no called spot froze the screen with no error" tells him why his iPad behaved that
+way last Tuesday, and whether his data from that day is any good.

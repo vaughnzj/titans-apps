@@ -172,6 +172,18 @@ input[type=date]{
 .btn[disabled]{opacity:.4;cursor:not-allowed}
 
 /* ---------- setup ---------- */
+/* A read-out table. No inputs, so the rows can be tighter than an editable grid,
+   and nothing in here should look tappable. */
+.grid.ro td{ padding:9px 10px; }
+.grid.ro .dim{ color:var(--ink-2); }
+.flag{ display:flex; gap:10px; flex-wrap:wrap; align-items:baseline;
+       padding:11px 13px; border-radius:9px; margin:0 0 14px;
+       border:1px solid var(--line); background:rgba(255,255,255,.03); }
+.flag b{ flex:0 0 auto; }
+.flag span{ flex:1 1 260px; color:var(--ink-2); font-size:13px; line-height:1.45; }
+.flag.ok{   border-color:rgba(74,222,128,.34); background:rgba(74,222,128,.07); }
+.flag.warn{ border-color:rgba(251,191,36,.36); background:rgba(251,191,36,.08); }
+.flag.bad{  border-color:rgba(248,113,113,.38); background:rgba(248,113,113,.08); }
 table.grid{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 table.grid th{
   text-align:center;font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;font-size:12px;
@@ -189,6 +201,11 @@ table.grid select,table.grid input[type=text],table.grid input[type=number]{
   height:34px;padding:4px 8px;font-size:14px;line-height:1.2
 }
 .tiny{font-size:12.5px;color:var(--ink-2)}
+/* Class and throwing hand beside the picked name. A read-out, not a control: the
+   roster owns these, and two places to edit one fact is how they drift apart. */
+.whoami{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-2);font-family:"Avenir Next Condensed","HelveticaNeue-CondensedBold","Arial Narrow",-apple-system,system-ui,sans-serif;
+  font-weight:600;margin-top:2px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-top:12px}
 .tplbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 13px;border-radius:9px;
   border:1px solid var(--line);background:var(--card-2);margin-bottom:14px;font-size:14px}
@@ -491,18 +508,41 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
       </div>
 
       <div class="panel">
+        <h2>The roster</h2>
+        <div class="body">
+          <div class="flag" id="rosSrc"></div>
+          <div class="scroller">
+            <table class="grid ro" id="teamTbl">
+              <thead><tr><th class="no">#</th><th>Name</th><th>Shows as</th><th>Class</th><th>Throws</th><th>Bats</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <p class="tiny" style="margin:12px 0 0"><b>This is a read-out, not a form.</b> The roster
+            ships with the app, released by the program, so every iPad and every app is looking at
+            the same list of players with the same IDs. A name spelled one way here is spelled that
+            way in every export, which is the only reason a season of files can be stacked up and
+            counted.</p>
+          <p class="tiny" style="margin:8px 0 0">Wrong, missing or a class that needs moving up?
+            <b>Tell Jim</b> &mdash; he releases a corrected roster with the next update. Nothing you
+            charted is affected: a session keeps the name it was charted under.</p>
+        </div>
+      </div>
+
+      <div class="panel">
         <h2>Pitchers on this mound</h2>
         <div class="body">
           <div class="scroller">
             <table class="grid" id="rosterTbl">
-              <thead><tr><th class="no">#</th><th>Name</th><th>Jersey</th><th>Hand</th><th>PitchSafe 0&ndash;100</th><th>Stretch only</th><th>Runs</th><th></th></tr></thead>
+              <thead><tr><th class="no">#</th><th>Pitcher</th><th>PitchSafe 0&ndash;100</th><th>Stretch only</th><th>Runs</th><th></th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
           <div class="row" style="margin-top:14px">
             <button class="btn" id="addPitcher" style="flex:0 0 auto">+ Add pitcher</button>
           </div>
-          <p class="tiny" style="margin:12px 0 0">Stretch only rewrites every wind-up call to stretch for that pitcher. <b>Freeform</b> drops the script for him &mdash; you call the pitch and the spot on the mound, then tap where it went.</p>
+          <p class="tiny" style="margin:12px 0 0">Pick each arm off the roster above. Class and throwing hand come with him, so there is nothing to retype.
+            Stretch only rewrites every wind-up call to stretch for that pitcher. <b>Freeform</b> drops the script for him &mdash;
+            you call the pitch and the spot on the mound, then tap where it went. <b>Live ABs</b> adds an at-bat around it.</p>
         </div>
       </div>
 
@@ -662,6 +702,10 @@ footer{max-width:1340px;margin:0 auto;padding:0 16px 30px;color:var(--ink-2);fon
 Add this page to your home screen and it works with no signal at all. Legend Titans.</footer>
 
 <script src="templates.js"></script>
+<!-- The master roster, released by Jim out of the Roster Manager. Optional on
+     purpose: if this file is not in the folder the tag 404s, TITANS_ROSTER stays
+     undefined, and the app falls back to whatever was typed in locally before. -->
+<script src="roster.js"></script>
 <script>
 (function(){
 "use strict";
@@ -733,12 +777,153 @@ var KEY  = "titans-bullpen-v1";
    banner hides the moment the sample is cleared. So this is not only the E-004
    data guard, it is what makes the app usable across a winter. */
 var AKEY = "titans-bullpen-archive-v1";
+
+/* ===================== the released roster =====================
+   ONE roster for the program, released as roster.js and shipped with the app.
+   Nobody edits it on an iPad. That is not a convenience decision - it is the only
+   way the IDs hold still. Every export joins on PitcherID, so a kid retyped on one
+   iPad gets a different ID there and his bullpens quietly split into two pitchers
+   in a season roll-up. Jim maintains the list in the Roster Manager, which keeps
+   each existing ID across releases, and ships it with the update.
+
+   A record carries BOTH hands. Throws matters here, bats matters in the Offense
+   Chart, and plenty of kids throw right and hit left - one field would have been
+   wrong in one app or the other.
+
+   Class is Fr/So/Jr/Sr by Jim's call: a picked list, not free text, because a peer
+   group you cannot GROUP on is useless and "Soph", "SO" and "10th" are three
+   things to Excel. It goes stale every June - that roll-up now happens once, in
+   the Roster Manager, instead of once per iPad. */
+var ROSKEY = "titans-roster-v1";
+var OLD_OFFENSE_ROSKEY = "titans-offense-roster-v1";
+
+var CLASSES = [{k:"Fr", l:"Freshman"}, {k:"So", l:"Sophomore"},
+               {k:"Jr", l:"Junior"},   {k:"Sr", l:"Senior"}];
+function classLabel(k){
+  for(var i=0;i<CLASSES.length;i++) if(CLASSES[i].k===k) return CLASSES[i].l;
+  return k || "";
+}
+function newPlayer(last, first){
+  return {id:uid(), last:last||"", first:first||"", name:"",
+          jersey:"", cls:"", throws:"R", bats:"R"};
+}
+
+/* ---------- the display name ----------
+   THE RULE: a player reads as his last name alone. He only picks up an initial
+   when somebody else on the roster shares that last name, and the full first name
+   when the initial collides too. Two players with the same last AND first name
+   cannot be released, so there is no fourth case.
+
+   `name` is DERIVED and cached on the record, so every picker, chip, header and
+   export keeps reading p.name and the rule lives in one place.
+
+   Self-contained on purpose: this block is byte-identical in the Roster Manager,
+   the Bullpen Chart and the Offense Chart. Change it in one, change it in all
+   three. Do not make it call a host helper - that is how the three drift. */
+function dnKey(s){ return String(s==null?"":s).trim().toLowerCase(); }
+function displayName(p, list){
+  var last = String(p.last||"").trim(), first = String(p.first||"").trim();
+  if(!last) return first;
+  if(!first) return last;
+  var sameLast = 0, sameInit = 0, li = first.charAt(0).toLowerCase();
+  for(var i=0;i<list.length;i++){
+    var q = list[i];
+    if(q === p || (q.id && q.id === p.id)) continue;
+    if(dnKey(q.last) !== dnKey(last)) continue;
+    sameLast++;
+    if(String(q.first||"").trim().charAt(0).toLowerCase() === li) sameInit++;
+  }
+  if(!sameLast) return last;
+  if(!sameInit) return last + ", " + first.charAt(0).toUpperCase();
+  return last + ", " + first;
+}
+/* Must run after the roster loads, and after any change to it: a second Dieker
+   changes what the FIRST Dieker is called, so no record's name is knowable on
+   its own. */
+function applyNames(list){
+  for(var i=0;i<list.length;i++) list[i].name = displayName(list[i], list);
+  return list;
+}
+/* Older records came from the Offense Chart, where the one hand field meant BATS.
+   Read it as bats and leave throws at its default rather than guessing. */
+function normPlayer(p){
+  if(!p) return newPlayer("","");
+  if(!p.id) p.id = uid();
+  if(p.cls == null) p.cls = p["class"] || "";
+  if(p.bats == null)   p.bats   = p.hand || "R";
+  if(p.throws == null) p.throws = "R";
+  if(p.jersey == null) p.jersey = "";
+  /* A record from before names were split carries only `name`. Read it as a last
+     name rather than guessing at a split - "Dieker, Tom" is unambiguous, "Tom
+     Dieker" is not, and putting the two the wrong way round would be worse than
+     leaving it whole. */
+  if(p.last == null && p.first == null){
+    var nm = String(p.name || "").trim(), c = nm.indexOf(",");
+    if(c > 0){ p.last = nm.slice(0,c).trim(); p.first = nm.slice(c+1).trim(); }
+    else { p.last = nm; p.first = ""; }
+  }
+  if(p.last == null)  p.last = "";
+  if(p.first == null) p.first = "";
+  return p;
+}
+var ROS = [], ROSTAMP = "", ROSRC = "none";
+/* The roster is RELEASED, not typed. roster.js ships in the app folder and always
+   wins when it is there.
+
+   The local copy is only a bridge: an iPad that typed its own roster before this
+   version keeps working until it picks up the update. It is deliberately NOT
+   written back to from the release - overwriting it would mean a later build that
+   shipped without roster.js would quietly serve a frozen copy of an old release
+   and read exactly like a current one. Better that it says it has no roster. */
+function loadRoster(){
+  var rel = null;
+  try{ rel = window.TITANS_ROSTER; }catch(e){}
+  if(rel && rel.length){
+    /* Copied, not referenced. normPlayer fills in defaults, and writing those back
+       into the array roster.js declared would be mutating the shipped file's own
+       object - harmless today, and exactly the kind of thing that bites later. */
+    ROS = applyNames(rel.map(function(p){
+      var c = {};
+      for(var k in p) if(Object.prototype.hasOwnProperty.call(p,k)) c[k] = p[k];
+      return normPlayer(c);
+    }));
+    try{ ROSTAMP = String(window.TITANS_ROSTER_STAMP || ""); }catch(e){ ROSTAMP = ""; }
+    /* A sample roster is worse than no roster: it works, so nothing stops a coach
+       charting a whole session against IDs that join up with nothing. The shipped
+       placeholder flags itself and the app says so in red. */
+    var samp = false;
+    try{ samp = !!window.TITANS_ROSTER_SAMPLE; }catch(e){}
+    ROSRC = samp ? "sample" : "release";
+    return;
+  }
+  var raw = null;
+  try{ raw = JSON.parse(localStorage.getItem(ROSKEY)); }catch(e){}
+  if(!raw || !raw.length){
+    try{ raw = JSON.parse(localStorage.getItem(OLD_OFFENSE_ROSKEY)); }catch(e){}
+  }
+  ROS = (raw && raw.length) ? applyNames(raw.map(normPlayer)) : [];
+  ROSRC = ROS.length ? "local" : "none";
+}
+function playerById(id){
+  for(var i=0;i<ROS.length;i++) if(ROS[i].id===id) return ROS[i];
+  return null;
+}
+/* Name is the join key across apps and across seasons, so it is matched loosely
+   on import - trailing spaces and casing must not create a second person. */
+function normName(s){ return String(s||"").trim().toLowerCase(); }
+function playerByName(nm){
+  var k = normName(nm);
+  if(!k) return null;
+  for(var i=0;i<ROS.length;i++) if(normName(ROS[i].name)===k) return ROS[i];
+  return null;
+}
 function loadArch(){
   try{ var a = JSON.parse(localStorage.getItem(AKEY)); return (a && a.length) ? a : []; }
   catch(e){ return []; }
 }
 function saveArch(a){ try{ localStorage.setItem(AKEY, JSON.stringify(a)); }catch(e){} }
 var A = loadArch();
+loadRoster();
 function pitchCount(st){
   var n = 0; (st.pitchers||[]).forEach(function(p){ n += (p.pitches||[]).length; }); return n;
 }
@@ -754,11 +939,15 @@ function doFile(){
   A.push(filed); saveArch(A);
   /* The script and the names carry forward: same routine, same four arms next week. */
   var keep = {script:S.script, tpl:S.tpl, tplId:S.tplId, locked:S.locked, pad:S.pad, coach:S.coach};
-  var names = S.pitchers.map(function(p){ return p.name; });
+  var names = S.pitchers.map(function(p){ return {rid:p.rid||"", name:p.name, hand:p.hand, cls:p.cls||""}; });
   S = blank();
   S.script = keep.script; S.tpl = keep.tpl; S.tplId = keep.tplId; S.locked = keep.locked;
   S.pad = keep.pad; S.coach = keep.coach;
-  names.forEach(function(n,i){ if(S.pitchers[i]) S.pitchers[i].name = n; });
+  names.forEach(function(n,i){
+    if(!S.pitchers[i]) return;
+    S.pitchers[i].rid = n.rid; S.pitchers[i].name = n.name;
+    S.pitchers[i].hand = n.hand; S.pitchers[i].cls = n.cls;
+  });
   S.cur = S.pitchers[0].id;
   save(); drawSetup(); drawHistory(); show("setup");
   noteSetup("Filed. " + A.length + (A.length===1 ? " session in History." : " sessions in History."));
@@ -770,8 +959,15 @@ function uid(){ return Math.random().toString(36).slice(2,9); }
 function today(){ var d=new Date(); return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
 function pad2(n){ return (n<10?"0":"")+n; }
 
+/* A mound slot now POINTS AT a roster entry (rid) instead of holding a typed name.
+   name/hand stay on the record as a fallback so every session already charted still
+   reads correctly, and so a pitcher who is not on the roster yet can still be typed
+   in and charted.
+   What stays per-session and NOT on the roster: PitchSafe readiness, stretch-only
+   and the mode. Those change week to week; the roster holds only what is true all
+   winter. Jersey is gone - a bullpen needs a name and nothing else. */
 function newPitcher(nm){
-  return {id:uid(),name:nm||"",num:"",hand:"R",safe:"",stretch:false,comments:"",
+  return {id:uid(),rid:"",name:nm||"",last:"",first:"",hand:"R",safe:"",stretch:false,comments:"",
           mode:"script", free:{type:"FB",ws:"S",spot:0,sit:""}, pitches:[],over:{},
           /* live AB mode only: one entry per at-bat, in order. A pitch carries the
              index of the AB it belongs to, so p.pitches stays the single flat
@@ -780,6 +976,17 @@ function newPitcher(nm){
 }
 /* Three modes now. "live" charts at-bats against hitters; "free" is the same
    pitch entry with no at-bat around it. */
+/* Who is actually on this mound slot. The roster wins when it is pointed at, so
+   fixing a spelling once fixes it everywhere, including in sessions already filed. */
+function moundPerson(p){
+  if(!p) return {name:"", last:"", first:"", cls:"", throws:"R"};
+  var r = p.rid ? playerById(p.rid) : null;
+  if(r) return {name:r.name, last:r.last||"", first:r.first||"",
+                cls:r.cls || "", throws:r.throws || "R"};
+  return {name:p.name || "", last:p.last||"", first:p.first||"",
+          cls:p.cls || "", throws:p.hand || "R"};
+}
+function pname(p){ return moundPerson(p).name; }
 function pmode(p){
   if(!p) return "script";
   return (p.mode === "free" || p.mode === "live") ? p.mode : "script";
@@ -846,7 +1053,10 @@ function ao3Stats(p){
   return {c:c, n:n, pts:pts, open:a.length - n};
 }
 function blank(){
-  return {v:1,pad:"Mound 1",date:today(),coach:"",
+  /* A session needs an id of its own. Mound + Date is NOT unique - two sessions on
+     the same mound on the same day (morning and afternoon groups) would merge into
+     one in a roll-up, and nothing downstream could tell them apart. */
+  return {v:1,sid:uid(),pad:"Mound 1",date:today(),coach:"",
           tpl:"", tplId:"", locked:false,
           script:[],
           pitchers:[newPitcher(""),newPitcher(""),newPitcher(""),newPitcher(""),newPitcher("")],
@@ -878,7 +1088,7 @@ function cur(){ return byId(S.cur); }
    The number on screen is the one baked into THIS index.html. If the service
    worker is serving a different version the two disagree, which is exactly the
    silent failure to catch: a stale app that looks perfectly fine. */
-var BUILD = "v23";
+var BUILD = "v27";
 function stampBuild(){
   var e = el("buildStamp");
   if(!e) return;
@@ -1107,11 +1317,15 @@ function drawSetup(){
   var rb = el("rosterTbl").querySelector("tbody"), h2="";
   for(var j=0;j<S.pitchers.length;j++){
     var p = S.pitchers[j];
+    var who = moundPerson(p);
     h2 += '<tr data-i="'+j+'">'+
       '<td class="no">'+(j+1)+'</td>'+
-      '<td><input type="text" data-f="name" value="'+esc(p.name)+'" placeholder="Last name"></td>'+
-      '<td><input type="text" data-f="num" value="'+esc(p.num)+'" style="max-width:70px"></td>'+
-      '<td><select class="mini" data-f="hand">'+opt("R","R",p.hand==="R")+opt("L","L",p.hand==="L")+'</select></td>'+
+      /* One control instead of three. Class and throwing hand are printed beside
+         the name as a read-out, because they are the roster's to change, not this
+         screen's - two places to edit the same fact is how they drift apart. */
+      '<td><select class="mini" data-f="rid">'+moundOpts(p)+'</select>'+
+        (who.name ? '<span class="whoami">'+(who.cls?esc(who.cls)+' \u00b7 ':'')+
+                    esc(who.throws)+'HP</span>' : '')+'</td>'+
       '<td><input type="number" inputmode="numeric" min="0" max="100" step="1" data-f="safe" value="'+esc(p.safe)+'" placeholder="0–100" style="max-width:92px"></td>'+
       '<td style="text-align:center"><input type="checkbox" data-f="stretch"'+(p.stretch?" checked":"")+' style="width:22px;height:22px"></td>'+
       '<td><select class="mini" data-f="mode">'+opt("script","The script",pmode(p)==="script")+
@@ -1119,10 +1333,100 @@ function drawSetup(){
       '<td><button class="btn sm" data-del="1">&times;</button></td></tr>';
   }
   rb.innerHTML = h2;
+  drawTeam();
 }
 
 
 /* ---------- template bar ---------- */
+/* Everyone on the roster, plus whoever is already in this slot. A name used on
+   another mound slot drops out, so the same kid cannot be charted twice in one
+   session - the same rule the Offense Chart uses for lineup spots. */
+function moundOpts(p){
+  var used = {};
+  for(var i=0;i<S.pitchers.length;i++){
+    var q = S.pitchers[i];
+    if(q !== p && q.rid) used[q.rid] = true;
+  }
+  var h = opt("", "\u2014 pick a pitcher \u2014", !p.rid);
+  for(var j=0;j<ROS.length;j++){
+    var r = ROS[j];
+    if(used[r.id]) continue;
+    h += opt(r.id, r.name + (r.cls ? "  " + r.cls : ""), p.rid === r.id);
+  }
+  /* Two ways a slot can hold somebody the roster does not: charted before rosters
+     were released, or charted against an earlier release that has since dropped
+     him. Either way his name stays selected - a session in progress must never
+     silently reset to "pick a pitcher" and lose who the pitches belong to. */
+  var known = p.rid ? playerById(p.rid) : null;
+  if(p.name && !known) h += opt("__keep", p.name + "  (not on the roster)", true);
+  return h;
+}
+/* Sorted by class, oldest first, then by name - a coach scanning for a kid reads
+   it far faster than release order, and nothing downstream depends on the order. */
+var CLSORD = {Sr:0, Jr:1, So:2, Fr:3};
+function rosterSorted(){
+  return ROS.slice().sort(function(a,b){
+    var ca = CLSORD[a.cls] == null ? 9 : CLSORD[a.cls];
+    var cb = CLSORD[b.cls] == null ? 9 : CLSORD[b.cls];
+    if(ca !== cb) return ca - cb;
+    /* Sort on last then first - the derived label would put "Dieker, J" before
+       "Dieker, T" by accident rather than by rule, and would reorder the table the
+       day a second Dieker joined. */
+    var la = String(a.last||"").toLowerCase(), lb = String(b.last||"").toLowerCase();
+    if(la !== lb) return la < lb ? -1 : 1;
+    return String(a.first||"").toLowerCase().localeCompare(String(b.first||"").toLowerCase());
+  });
+}
+function drawTeam(){
+  var tb = el("teamTbl").querySelector("tbody"), h = "", list = rosterSorted();
+  for(var i=0;i<list.length;i++){
+    var p = list[i];
+    h += '<tr>'+
+      '<td class="no">'+(i+1)+'</td>'+
+      '<td><b>'+esc(p.last)+'</b>'+(p.first ? ', '+esc(p.first) : '')+'</td>'+
+      '<td>'+esc(p.name)+'</td>'+
+      '<td>'+(p.cls ? esc(classLabel(p.cls)) : '<span class="dim">\u2014</span>')+'</td>'+
+      '<td>'+esc(p.throws||"R")+'</td>'+
+      '<td>'+esc(p.bats||"R")+'</td></tr>';
+  }
+  tb.innerHTML = h || '<tr><td colspan="6" class="empty">No roster in this build.</td></tr>';
+  drawRosSrc();
+}
+/* Say plainly which roster this iPad is looking at. A coach who cannot tell a
+   released roster from a leftover local one cannot tell whether the kid he is
+   about to chart will join up with everyone else's files. */
+function drawRosSrc(){
+  var b = el("rosSrc"), n = ROS.length;
+  if(ROSRC === "release"){
+    b.className = "flag ok";
+    b.innerHTML = '<b>Released roster</b><span>'+n+(n===1?' player':' players')+
+      (ROSTAMP ? ' \u00b7 released '+esc(ROSTAMP) : '')+
+      ' \u00b7 the same list every app and every iPad is using.</span>';
+    return;
+  }
+  if(ROSRC === "sample"){
+    b.className = "flag bad";
+    b.innerHTML = '<b>SAMPLE roster \u2014 not the real team</b><span>These are placeholder '+
+      'names. <b>Do not chart a session against them</b> \u2014 the IDs are meaningless and '+
+      'anything charted here joins up with nothing. Tell Jim the real roster has not been '+
+      'released yet.</span>';
+    return;
+  }
+  if(ROSRC === "local"){
+    b.className = "flag warn";
+    b.innerHTML = '<b>Leftover local roster \u2014 '+n+(n===1?' player':' players')+'</b>'+
+      '<span>This is the list somebody typed into this iPad before rosters were '+
+      'released, and it is <b>not</b> shared with anyone. Nothing is lost, but get '+
+      'this iPad onto the current version before the next session so its names and '+
+      'IDs line up with everybody else\u2019s.</span>';
+    return;
+  }
+  b.className = "flag bad";
+  b.innerHTML = '<b>No roster</b><span>This build shipped without one, so there is '+
+    'nobody to put on a mound. Reload this app with a signal to pick up the update, '+
+    'and tell Jim if it stays empty.</span>';
+}
+
 function drawTplBar(){
   var bar = el("tplBar"), id = scriptId(S.script), mod = tplModified();
   var h = "";
@@ -1202,14 +1506,30 @@ el("rosterTbl").addEventListener("input", function(e){
   var tr = e.target.closest("tr"); if(!tr) return;
   var i = +tr.getAttribute("data-i"), f = e.target.getAttribute("data-f");
   if(!f || !S.pitchers[i]) return;
+  var p = S.pitchers[i];
+  if(f==="rid"){
+    var v = e.target.value;
+    if(v === "__keep") return;            /* leave an off-roster name exactly as it is */
+    p.rid = v;
+    var r = v ? playerById(v) : null;
+    /* Copy the name and hand onto the session record as well. The roster still wins
+       while it is pointed at - this is so a FILED session still reads correctly years
+       later even if the roster is edited or cleared. */
+    if(r){ p.name = r.name; p.last = r.last || ""; p.first = r.first || "";
+           p.hand = r.throws || "R"; p.cls = r.cls || ""; }
+    save(); drawSetup(); return;
+  }
   var val;
   if(f==="stretch") val = e.target.checked;
   else if(f==="safe"){
     val = e.target.value === "" ? "" : Math.max(0, Math.min(100, Math.round(+e.target.value || 0)));
   } else val = e.target.value;
-  S.pitchers[i][f] = val;
+  p[f] = val;
   save();
 });
+
+/* No handlers on the roster table any more - it is a read-out. The release is the
+   only way a name, class or hand changes, which is the whole point. */
 el("rosterTbl").addEventListener("click", function(e){
   if(!e.target.getAttribute || !e.target.getAttribute("data-del")) return;
   var i = +e.target.closest("tr").getAttribute("data-i"), p = S.pitchers[i];
@@ -1219,7 +1539,7 @@ el("rosterTbl").addEventListener("click", function(e){
     save(); drawSetup();
   }
   if(p.pitches.length){
-    ask("Delete "+(p.name||"this pitcher")+" and his "+p.pitches.length+" charted pitch"+
+    ask("Delete "+(pname(p)||"this pitcher")+" and his "+p.pitches.length+" charted pitch"+
         (p.pitches.length===1?"":"es")+"?\n\nThis cannot be undone.", "Delete", drop);
     return;
   }
@@ -1307,7 +1627,7 @@ function pitcherDone(p){
 function nextUpId(){
   for(var i=0;i<S.pitchers.length;i++){
     var p = S.pitchers[i];
-    if((p.name||"").trim() && !p.pitches.length) return p.id;
+    if((pname(p)||"").trim() && !p.pitches.length) return p.id;
   }
   return null;
 }
@@ -1329,7 +1649,7 @@ function followTheMound(){
   if(!id || id === S.cur) return;
   S.cur = id; pending = null; abSel = null; manualId = null; save();
   var np = cur();
-  note("Now on " + (np.name || "the next pitcher") +
+  note("Now on " + (pname(np) || "the next pitcher") +
        (plive(np) ? " \u2014 live ABs" : (pmode(np)==="free" ? " \u2014 freeform" : "")));
 }
 
@@ -1339,7 +1659,7 @@ function drawStrip(){
     var p = S.pitchers[i], o = stats(p);
     h += '<button class="pcard'+(pitcherDone(p)?" done":"")+'" data-id="'+p.id+
       '" aria-pressed="'+(p.id===S.cur)+'">'+
-      '<span class="nm">'+esc(p.name || ("Pitcher "+(i+1)))+'</span>'+
+      '<span class="nm">'+esc(pname(p) || ("Pitcher "+(i+1)))+'</span>'+
       '<span class="mt">'+o.n+' thrown'+(o.graded?' &middot; '+pct(o.spot,o.graded)+'% spot':'')+
       (pmode(p)==="free"?' &middot; freeform':'')+(plive(p)?' &middot; live ABs':'')+
       (p.stretch?' &middot; str only':'')+'</span></button>';
@@ -1365,16 +1685,16 @@ function drawCall(){
     if(nid && nid !== S.cur){
       for(var z=0;z<S.pitchers.length;z++) if(S.pitchers[z].id===nid) nxt = S.pitchers[z];
     }
-    el("call").innerHTML = '<div><div class="idx">'+esc(p.name||"This pitcher")+'</div>'+
+    el("call").innerHTML = '<div><div class="idx">'+esc(pname(p)||"This pitcher")+'</div>'+
       '<div class="big">'+(none ? "No script" : "Script complete")+'</div>'+
       '<div class="spotname">'+(none
         ? 'Load a template on the Setup tab, or set this pitcher to Freeform.'
         : p.pitches.length+' pitches charted.'+(nxt ? '' : ' Add an extra pitch, or name the next arm on Setup.'))+'</div>'+
       (nxt ? '<button class="btn pri" id="nextArm" style="margin-top:10px">'+
-             esc(nxt.name)+' is up &rarr;</button>' : '')+'</div>';
+             esc(pname(nxt))+' is up &rarr;</button>' : '')+'</div>';
     if(el("nextArm")) el("nextArm").onclick = function(){
       S.cur = nid; pending = null; abSel = null; manualId = null; save(); drawChart();
-      note("Now on " + (nxt.name || "the next pitcher") +
+      note("Now on " + (pname(nxt) || "the next pitcher") +
            (plive(nxt) ? " \u2014 live ABs" : (pmode(nxt)==="free" ? " \u2014 freeform" : "")));
     };
     return;
@@ -1389,7 +1709,7 @@ function drawCall(){
   }
   el("call").innerHTML =
     '<div>'+
-      '<div class="idx">'+esc(p.name||"Pitcher")+' &middot; pitch '+(i+1)+
+      '<div class="idx">'+esc(pname(p)||"Pitcher")+' &middot; pitch '+(i+1)+
         (c.free ? (plive(p) ? ' &middot; live AB' : ' &middot; freeform')
                 : ' of '+Math.max(S.script.length,i+1))+
         (pending!==null?' &middot; redoing':'')+(c.off?' &middot; off-script':'')+'</div>'+
@@ -1746,7 +2066,7 @@ function drawReport(){
   var h = '<div class="bars">';
   for(var i=0;i<ranked.length;i++){
     var p = ranked[i].p, o = ranked[i].o;
-    h += '<div class="barrow"><b class="cond" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.name||"—")+'</b>'+
+    h += '<div class="barrow"><b class="cond" style="font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(pname(p)||"—")+'</b>'+
          bar(o)+'<span class="tiny" style="text-align:right">'+pct(o.spot,o.graded)+'% / '+
          (o.graded<o.n ? o.graded+' of '+o.n : o.n)+'</span></div>';
   }
@@ -1773,8 +2093,8 @@ function drawReport(){
               '<td>'+(v ? Math.round(v.sum/v.n)+' / '+v.top : '<span class="tiny">—</span>')+'</td></tr>';
     }
     out += '<div class="rptcard">'+
-      '<div class="rpthead"><span class="nm">'+esc(pp.name||"Unnamed")+'</span>'+
-        (pp.num?'<span class="mt">#'+esc(pp.num)+'</span>':'')+
+      '<div class="rpthead"><span class="nm">'+esc(pname(pp)||"Unnamed")+'</span>'+
+        (moundPerson(pp).cls?'<span class="mt">'+esc(classLabel(moundPerson(pp).cls))+'</span>':'')+
         '<span class="mt">'+esc(pp.hand)+'HP</span>'+
         (pmode(pp)==="free"?'<span class="pill">Freeform</span>':'')+
         (plive(pp)?'<span class="pill">Live ABs</span>':'')+
@@ -1805,15 +2125,26 @@ function csv(){
      hold a scripted mound and a live-AB mound without two schemas.
      "Result" is the execution grade; it is now BLANK when no spot was called,
      never "Miss" - a skipped call is not a missed pitch. */
-  var head = ["Mound","Date","Coach","Build","Template","ScriptID","ScriptModified",
-              "Pitcher","Jersey","Hand","PitchSafe","StretchOnly","Mode","PitchNo",
+  /* SessionID and PitcherID are the join keys a season roll-up actually needs.
+     Names are not keys: two kids share a last name, a spelling gets corrected
+     mid-winter, and a merged file quietly becomes two people or one. The ids are
+     stable and survive a rename. */
+  var head = ["SessionID","Mound","Date","Coach","Build","Template","ScriptID","ScriptModified",
+              /* Jersey is gone - a bullpen needs a name. Class replaces it, and it is
+                 the column a peer comparison is built on: a sophomore measured against
+                 sophomores says far more than one measured against the program. */
+              /* Pitcher is the display name - "Dieker" or "Dieker, T" depending on who
+                 else is on the roster, so it can CHANGE between releases and is for
+                 reading, not grouping. PitcherLast and PitcherFirst are the stable
+                 text fields; PitcherID is the only thing to group on. */
+              "PitcherID","Pitcher","PitcherLast","PitcherFirst","Class","ClassName","Throws","PitchSafe","StretchOnly","Mode","PitchNo",
               "CalledType","CalledWS","CalledSpot","SpotName","Situation","SituationName","OffScript",
               "ActualRow","ActualCol","Strike","Result","MissVert","MissHoriz","Velo",
               "AB","ABResult","ABOut","AO3plus"];
   var lines = [head.join(",")], sid = scriptId(S.script);
   function q(v){ v = (v==null?"":String(v)); return /[",\n]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }
   for(var i=0;i<S.pitchers.length;i++){
-    var p = S.pitchers[i];
+    var p = S.pitchers[i], who = moundPerson(p);
     for(var j=0;j<p.pitches.length;j++){
       var x = p.pitches[j], t = SPOTS[x.spot], g = grade(x);
       var mv = t ? (x.r<t.r?"up":(x.r>t.r?"down":"")) : "";
@@ -1822,8 +2153,8 @@ function csv(){
       var ab = (ai == null) ? null : (p.abs || [])[ai];
       var a3 = (ai == null) ? null : ao3OfAB(p, ai);
       var mode = plive(p) ? "Live" : (x.free ? "Freeform" : "Script");
-      lines.push([S.pad,S.date,S.coach,BUILD,S.tpl||"",sid,tplModified()?"Y":"N",
-        p.name,p.num,p.hand,p.safe,p.stretch?"Y":"N",
+      lines.push([S.sid||"",S.pad,S.date,S.coach,BUILD,S.tpl||"",sid,tplModified()?"Y":"N",
+        p.rid||"", who.name, who.last, who.first, who.cls, classLabel(who.cls), who.throws, p.safe, p.stretch?"Y":"N",
         mode,j+1,
         x.type,x.ws,x.spot==null?"":x.spot,t?t.l:"",x.sit,sitLabel(x.sit),x.off?"Y":"N",
         x.r+1,x.c+1,inZone(x.r,x.c)?"Y":"N",
@@ -1851,7 +2182,8 @@ function txt(){
     var p = S.pitchers[j]; if(!p.pitches.length) continue;
     var o = stats(p);
     L.push("────────────────────────────────────────");
-    L.push((p.name||"Unnamed")+(p.num?"  #"+p.num:"")+"  "+p.hand+"HP"+
+    var pw = moundPerson(p);
+    L.push((pw.name||"Unnamed")+(pw.cls?"  "+pw.cls:"")+"  "+pw.throws+"HP"+
       (pmode(p)==="free"?"  [freeform]":"")+(plive(p)?"  [live ABs]":"")+(p.stretch?"  [stretch only]":"")+
       (p.safe!==""&&p.safe!=null?"   PitchSafe "+p.safe:""));
     L.push("  "+o.n+" pitches"+(o.graded<o.n ? " ("+o.graded+" graded)" : "")+

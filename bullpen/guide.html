@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Bullpen Chart Coach's Guide</h1>
       <p>How to run a winter bullpen on the iPad. The script goes in before anybody warms up; after that it's one tap a pitch.</p>
-      <div class="meta">App v23 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
+      <div class="meta">App v27 &nbsp;·&nbsp; September 2026 &nbsp;·&nbsp; Winter workouts</div>
     </div>
   </div>
 
@@ -229,7 +229,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v23</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, next to &ldquo;Legend Titans &middot; winter workouts.&rdquo; This guide describes <b>v27</b>. If it shows two numbers in amber, like <code>v9 &ne; v8</code>, that iPad downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -375,6 +375,36 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <div class="note">
       <span class="lab">When to use it</span>
       <p>A kid coming back from an arm issue who just needs to get loose, a side session with a specific fix in mind, or a pen where you're reacting to what you're seeing instead of working a card. If you find yourself using <b>Change the call</b> on every pitch, that pitcher should be freeform.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="upd">The roster &mdash; released, not typed</h2>
+    <p class="sub">On the Setup tab, above the mound list. <b>It ships with the app.</b> You can read it; you cannot change it. <b>The Bullpen Chart and the Offense Chart use the same released roster</b>, so a player is one player across both. The Pitch Chart still types our pitchers free-form &mdash; it isn't wired in yet.</p>
+    <p><b>Why it stopped being editable.</b> Every export joins on <code>PitcherID</code>. When each iPad kept its own roster, the same kid typed on two iPads got two different IDs, and his winter quietly split into two pitchers the moment the files were stacked up. One released list is the fix. Jim maintains it, each existing ID survives every release, and it arrives with the app update.</p>
+    <ul>
+      <li>The banner at the top of the panel says which roster this iPad has: <b>Released roster</b> with the release date is what you want to see.</li>
+      <li><b>SAMPLE roster &mdash; not the real team</b> in red means the real roster hasn't been released yet and the app is showing placeholders. It will let you chart, which is exactly why it shouts: anything charted against sample players joins up with nothing. Stop and tell Jim.</li>
+      <li><b>Leftover local roster</b> in amber means this iPad is still showing a list somebody typed into it before releases existed. It still charts fine, but its IDs match nobody else's &mdash; get the iPad onto the current version before the next session.</li>
+      <li><b>Names.</b> A pitcher reads as just his <b>last name</b>. He picks up an initial &mdash; <b>Dieker, T</b> &mdash; only when somebody else on the roster shares that last name, and his full first name if the initial collides too. Nothing to type; the app works it out. Two Diekers are two separate players with separate IDs.</li>
+      <li><b>Class</b> &mdash; Fr / So / Jr / Sr. This is the field that makes a peer comparison possible: a sophomore measured against sophomores says far more than one measured against the whole program.</li>
+      <li><b>Throws and Bats are separate.</b> Plenty of kids throw right and hit left, and the Offense Chart needs the bat while the bullpen needs the arm.</li>
+      <li>Moving everyone up a class in June now happens once, when the roster is released &mdash; not once per iPad. <b>Graduating seniors come off the roster</b> at the same time; everything they charted stays in the exports, and any session already charted against one keeps his name.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Somebody is wrong, missing, or just graduated</span>
+      <p>Tell Jim. He releases a corrected roster with the next update, and because the IDs come forward, nothing you have already charted or exported is disturbed &mdash; a filed session keeps the name it was charted under.</p>
+    </div>
+    <h3 class="upd">Picking an arm for the session</h3>
+    <p>The mound list is one <b>picker</b> per slot. His class and throwing hand are printed beside it as a read-out, straight off the released roster.</p>
+    <p>A kid can only be on one mound slot per session, so a name already picked drops out of the other slots' lists.</p>
+    <p><b>Jersey number is gone.</b> A bullpen needs a name; nobody was using the number. The export carries <code>Class</code>, <code>ClassName</code> and <code>Throws</code> where <code>Jersey</code> used to be.</p>
+    <h3 class="upd">Two ID columns in the export</h3>
+    <p>Every row now carries a <code>SessionID</code> and a <code>PitcherID</code>. You never see them on screen and you never type them &mdash; they're there so a merged season of files can be grouped correctly.</p>
+    <p><b>A name is not an ID.</b> Two kids share a last name; a spelling gets corrected in February; and a merged file quietly becomes two people or one. The IDs don't change when you fix a name. <code>SessionID</code> does the same job for sessions, because Mound + Date isn't unique &mdash; a morning and an afternoon group on the same mound would otherwise merge into one.</p>
+    <div class="note">
+      <span class="lab">Somebody not on the roster</span>
+      <p>A pitcher charted before rosters were released &mdash; or one who has since come off it &mdash; keeps his name and stays selectable, marked <b>(not on the roster)</b>. Nothing already charted loses its owner.</p>
     </div>
   </section>
 

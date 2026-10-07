@@ -308,6 +308,23 @@ table.grid tbody tr:nth-child(even){background:var(--surface-2)}
   text-transform:uppercase}
 .read{background:var(--surface-2);border-left:3px solid var(--navy-soft);padding:9px 12px;
   border-radius:0 6px 6px 0;font-size:14px}
+/* A read-out roster. No inputs, so a row is one line instead of a form, and the
+   whole winter group fits on a screen without scrolling past it. */
+.rosrow{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+  padding:7px 10px;border-radius:6px;background:var(--surface-2)}
+.rosrow:nth-child(odd){background:transparent}
+.rosrow b{flex:1 1 130px;font-size:14.5px}
+/* What the app will actually print on a chip or a report header. */
+.rosrow .sa{flex:0 0 96px;font-family:var(--cond);font-weight:600;font-size:13px;
+  color:var(--text-2)}
+.rosrow .jn{flex:0 0 auto;color:var(--text-3);font-family:var(--mono,ui-monospace),monospace;font-size:12.5px}
+.rosrow .cl{flex:0 0 78px;color:var(--text-2);font-size:13px}
+.rosrow .hd{flex:0 0 auto;color:var(--text-3);font-size:12.5px}
+.rossrc{padding:9px 12px;border-radius:6px;font-size:13px;line-height:1.45;
+  border:1px solid var(--line,rgba(255,255,255,.12))}
+.rossrc.ok{border-color:rgba(74,222,128,.34);background:rgba(74,222,128,.07)}
+.rossrc.warn{border-color:rgba(251,191,36,.36);background:rgba(251,191,36,.09)}
+.rossrc.bad{border-color:rgba(248,113,113,.38);background:rgba(248,113,113,.09)}
 /* In-page confirm. The published playground runs in a sandboxed iframe without
    allow-modals, where window.confirm() returns false instantly and alert() does
    nothing at all - no dialog, no error, no console warning. Every guarded action
@@ -479,10 +496,12 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
           <div class="phead"><span class="lbl">Titans roster</span>
             <span class="lbl" id="rosInfo" style="margin-left:auto">&mdash;</span></div>
           <div class="pbody stack">
-            <div id="rosRows" class="stack" style="gap:6px"></div>
-            <div class="row"><button class="btn sm pri" id="rosAdd">+ Add player</button></div>
-            <div class="read">The roster is kept on this iPad and survives every game. Add the whole
-              team once in February and you are done for the year.</div>
+            <div class="rossrc" id="rosSrc"></div>
+            <div id="rosRows" class="stack" style="gap:2px"></div>
+            <div class="read"><b>This is a read-out, not a form.</b> The roster ships with the app,
+              released by the program, so a hitter is one hitter across every app, every iPad and
+              every export. Somebody wrong or missing? Tell Jim &mdash; he releases a corrected
+              roster with the next update, and nothing already charted is disturbed.</div>
           </div>
         </div>
       </div>
@@ -637,14 +656,96 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
 
 <footer id="foot"></footer>
 
+<!-- The master roster, released by Jim out of the Roster Manager. Optional by
+     design: with no file in the folder this 404s, TITANS_ROSTER stays undefined,
+     and the app falls back to whatever was typed in locally before. -->
+<script src="roster.js"></script>
 <script>
 /* ===================================================================
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v34";
+var BUILD = "v37";
 var KEY   = "titans-offense-v1";
-var RKEY  = "titans-offense-roster-v1";
+/* The roster is RELEASED, not typed. roster.js ships in this folder and the app
+   reads it; nobody edits the team on an iPad any more.
+
+   That is an identity decision, not a convenience one. Every export joins on an
+   ID, and when each iPad kept its own list the same kid typed in two places got
+   two IDs and his season quietly split in half. Jim maintains the list in the
+   Roster Manager, which carries each existing ID across releases, and ships it
+   with the update.
+
+   A record carries BOTH hands: "hand" means BATS in this app and THROWS in the
+   Bullpen Chart, and plenty of kids throw right and hit left. Internally this app
+   keeps calling it `hand` (bats) so nothing downstream changed. */
+var RKEY  = "titans-roster-v1";
+var ROSTAMP = "", ROSRC = "none";
+var OLD_RKEY = "titans-offense-roster-v1";
+var CLASSES = [{k:"Fr",l:"Freshman"},{k:"So",l:"Sophomore"},
+               {k:"Jr",l:"Junior"},  {k:"Sr",l:"Senior"}];
+function classLabel(k){
+  for(var i=0;i<CLASSES.length;i++) if(CLASSES[i].k===k) return CLASSES[i].l;
+  return k || "";
+}
+/* ---------- the display name ----------
+   THE RULE: a player reads as his last name alone. He only picks up an initial
+   when somebody else on the roster shares that last name, and the full first name
+   when the initial collides too. Two players with the same last AND first name
+   cannot be released, so there is no fourth case.
+
+   `name` is DERIVED and cached on the record, so every picker, chip, header and
+   export keeps reading p.name and the rule lives in one place.
+
+   Self-contained on purpose: this block is byte-identical in the Roster Manager,
+   the Bullpen Chart and the Offense Chart. Change it in one, change it in all
+   three. Do not make it call a host helper - that is how the three drift. */
+function dnKey(s){ return String(s==null?"":s).trim().toLowerCase(); }
+function displayName(p, list){
+  var last = String(p.last||"").trim(), first = String(p.first||"").trim();
+  if(!last) return first;
+  if(!first) return last;
+  var sameLast = 0, sameInit = 0, li = first.charAt(0).toLowerCase();
+  for(var i=0;i<list.length;i++){
+    var q = list[i];
+    if(q === p || (q.id && q.id === p.id)) continue;
+    if(dnKey(q.last) !== dnKey(last)) continue;
+    sameLast++;
+    if(String(q.first||"").trim().charAt(0).toLowerCase() === li) sameInit++;
+  }
+  if(!sameLast) return last;
+  if(!sameInit) return last + ", " + first.charAt(0).toUpperCase();
+  return last + ", " + first;
+}
+/* Must run after the roster loads, and after any change to it: a second Dieker
+   changes what the FIRST Dieker is called, so no record's name is knowable on
+   its own. */
+function applyNames(list){
+  for(var i=0;i<list.length;i++) list[i].name = displayName(list[i], list);
+  return list;
+}
+function normPlayer(p){
+  if(!p) return {id:uid(), last:"", first:"", name:"", jersey:"", cls:"",
+                 hand:"R", bats:"R", throws:"R"};
+  if(!p.id) p.id = uid();
+  if(p.cls == null) p.cls = p["class"] || "";
+  if(p.jersey == null) p.jersey = "";
+  /* Pre-shared records had one `hand` and it meant bats here. */
+  if(p.bats == null)   p.bats   = p.hand || "R";
+  if(p.throws == null) p.throws = "R";
+  p.hand = p.bats;                 /* the name the rest of this app uses */
+  /* A record from before names were split carries only `name`. Split on a comma,
+     which is unambiguous; otherwise keep it whole as the last name rather than
+     guessing at the order. */
+  if(p.last == null && p.first == null){
+    var nm = String(p.name || "").trim(), c = nm.indexOf(",");
+    if(c > 0){ p.last = nm.slice(0,c).trim(); p.first = nm.slice(c+1).trim(); }
+    else { p.last = nm; p.first = ""; }
+  }
+  if(p.last == null)  p.last = "";
+  if(p.first == null) p.first = "";
+  return p;
+}
 var AKEY  = "titans-offense-archive-v1";
 var LKEY  = "titans-offense-lineup-v1";
 var PROBE = "titans-offense-probe";
@@ -697,7 +798,8 @@ function newPA(spot, pIdx){
   /* Stamp WHO, now. See paHitter. O is not built yet on the very first call. */
   if(typeof O !== "undefined" && O && O.lineup && O.lineup[spot]){
     var h = hitterOf(spot);
-    a.hname = h.name; a.hhand = h.hand || ""; a.hrid = h.rid || "";
+    a.hname = h.name; a.hlast = h.last || ""; a.hfirst = h.first || "";
+    a.hhand = h.hand || ""; a.hrid = h.rid || "";
   }
   return a;
 }
@@ -705,7 +807,11 @@ function newPA(spot, pIdx){
 /* ===================== persistence ===================== */
 function save(){ if(O && O.sample) return;
   try{ localStorage.setItem(KEY, JSON.stringify(O)); }catch(e){} }
-function saveRoster(){ try{ localStorage.setItem(RKEY, JSON.stringify(R)); }catch(e){} }
+/* Kept as a no-op on purpose. Nothing edits the roster here any more, and a
+   function that writes a released roster into local storage is exactly how a stale
+   copy would come back to life later. If something still calls this, it is a bug
+   and silently persisting would hide it. */
+function saveRoster(){ }
 function saveArchive(){ try{ localStorage.setItem(AKEY, JSON.stringify(A)); }catch(e){} }
 function saveLineup(){
   /* The starters, not whoever finished - next game begins with the nine you picked. */
@@ -713,10 +819,39 @@ function saveLineup(){
     return sp.men[0].rid || "";
   }))); }catch(e){}
 }
-function loadAll(){
+/* The released file wins when it is there. The local copy is only a bridge for an
+   iPad that typed its own roster before this version - and it is deliberately NOT
+   written back to from the release, because a frozen copy of an old release that
+   reads like a current one is worse than an honest "no roster". */
+function loadRoster(){
+  var rel = null;
+  try{ rel = window.TITANS_ROSTER; }catch(e){}
+  if(rel && rel.length){
+    /* Copied, not referenced - normPlayer fills in defaults and must not write
+       them into the shipped file's own objects. */
+    R = applyNames(rel.map(function(p){
+      var c = {};
+      for(var k in p) if(Object.prototype.hasOwnProperty.call(p,k)) c[k] = p[k];
+      return normPlayer(c);
+    }));
+    try{ ROSTAMP = String(window.TITANS_ROSTER_STAMP || ""); }catch(e){ ROSTAMP = ""; }
+    /* A sample roster is worse than no roster: it works, so nothing stops a coach
+       charting a whole game against IDs that join up with nothing. */
+    var samp = false;
+    try{ samp = !!window.TITANS_ROSTER_SAMPLE; }catch(e){}
+    ROSRC = samp ? "sample" : "release";
+    return;
+  }
   try{ R = JSON.parse(localStorage.getItem(RKEY)) || []; }catch(e){ R = []; }
+  if(!R.length){
+    try{ R = JSON.parse(localStorage.getItem(OLD_RKEY)) || []; }catch(e){ R = []; }
+  }
+  R = applyNames(R.map(normPlayer));
+  ROSRC = R.length ? "local" : "none";
+}
+function loadAll(){
+  loadRoster();
   try{ A = JSON.parse(localStorage.getItem(AKEY)) || []; }catch(e){ A = []; }
-  if(!R.length) R = seedRoster();
   var g = null;
   try{ g = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
   if(g && g.lineup && g.pas) { O = g; O.lineup = normLineup(O.lineup); return; }
@@ -757,26 +892,69 @@ function countPitches(){
 }
 
 /* ===================== roster ===================== */
-function seedRoster(){ return []; }
 function rosterById(id){
   for(var i=0;i<R.length;i++) if(R[i].id===id) return R[i];
   return null;
 }
+/* Sorted oldest class first, then by name - far faster to find a kid in than
+   release order, and nothing downstream depends on the order. */
+var CLSORD = {Sr:0, Jr:1, So:2, Fr:3};
+function rosterSorted(){
+  return R.slice().sort(function(a,b){
+    var ca = CLSORD[a.cls] == null ? 9 : CLSORD[a.cls];
+    var cb = CLSORD[b.cls] == null ? 9 : CLSORD[b.cls];
+    if(ca !== cb) return ca - cb;
+    /* Sort on last then first, not on the derived label - the label changes the
+       day a second Dieker joins and would silently reorder the table. */
+    var la = String(a.last||"").toLowerCase(), lb = String(b.last||"").toLowerCase();
+    if(la !== lb) return la < lb ? -1 : 1;
+    return String(a.first||"").toLowerCase().localeCompare(String(b.first||"").toLowerCase());
+  });
+}
 function drawRoster(){
-  var h = R.map(function(p,i){
-    return '<div class="row" data-ri="'+i+'">'+
-      '<label class="field" style="flex:2;min-width:120px"><span class="lbl">Name</span>'+
-        '<input data-rf="name" value="'+esc(p.name)+'" placeholder="Last, First"></label>'+
-      '<label class="field" style="flex:0 0 70px"><span class="lbl">#</span>'+
-        '<input data-rf="jersey" value="'+esc(p.jersey)+'" inputmode="numeric"></label>'+
-      '<label class="field" style="flex:0 0 86px"><span class="lbl">Bats</span>'+
-        '<select data-rf="hand">'+["R","L","S"].map(function(x){
-          return '<option'+(p.hand===x?" selected":"")+'>'+x+'</option>'; }).join("")+
-        '</select></label>'+
-      '<button class="btn sm" data-rdel="'+i+'" style="height:38px">Remove</button></div>';
+  var h = rosterSorted().map(function(p){
+    return '<div class="rosrow">'+
+      '<b>'+esc(p.last || "(no name)")+(p.first ? ', '+esc(p.first) : '')+'</b>'+
+      '<span class="sa">'+esc(p.name)+'</span>'+
+      (p.jersey ? '<span class="jn">#'+esc(p.jersey)+'</span>' : '')+
+      '<span class="cl">'+(p.cls ? esc(classLabel(p.cls)) : "\u2014")+'</span>'+
+      '<span class="hd">bats '+esc(p.hand||"R")+' \u00b7 throws '+esc(p.throws||"R")+'</span>'+
+      '</div>';
   }).join("");
-  el("rosRows").innerHTML = h || '<div class="read">No players yet. Add the team once and it sticks.</div>';
+  el("rosRows").innerHTML = h || '<div class="read">No roster in this build.</div>';
   el("rosInfo").textContent = R.length + (R.length===1?" player":" players");
+  drawRosSrc();
+}
+/* Say which roster this iPad is looking at. A coach who cannot tell a released
+   roster from a leftover local one cannot tell whether tonight's game will join up
+   with everybody else's files. */
+function drawRosSrc(){
+  var b = el("rosSrc");
+  if(!b) return;
+  if(ROSRC === "release"){
+    b.className = "rossrc ok";
+    b.innerHTML = '<b>Released roster</b> '+(ROSTAMP ? 'released '+esc(ROSTAMP)+' \u00b7 ' : '')+
+      'the same list every app and every iPad is using.';
+    return;
+  }
+  if(ROSRC === "sample"){
+    b.className = "rossrc bad";
+    b.innerHTML = '<b>SAMPLE roster \u2014 not the real team.</b> These are placeholder names. '+
+      'Do not chart a game against them \u2014 the IDs are meaningless and anything charted '+
+      'here joins up with nothing. Tell Jim the real roster has not been released yet.';
+    return;
+  }
+  if(ROSRC === "local"){
+    b.className = "rossrc warn";
+    b.innerHTML = '<b>Leftover local roster.</b> This is the list somebody typed into this '+
+      'iPad before rosters were released, and it is not shared with anyone. Nothing is lost, '+
+      'but get this iPad onto the current version so its names and IDs line up with everybody '+
+      'else\u2019s.';
+    return;
+  }
+  b.className = "rossrc bad";
+  b.innerHTML = '<b>No roster.</b> This build shipped without one, so there is nobody to put '+
+    'in the lineup. Reload with a signal to pick up the update, and tell Jim if it stays empty.';
 }
 
 /* ===================== lineup ===================== */
@@ -817,9 +995,11 @@ function hitterOf(spot){
    Before this existed the live export resolved the hitter from whoever occupied
    the spot at EXPORT time - one pinch hitter and the starter's whole line moved. */
 function paHitter(a){
-  if(a && a.hname != null) return {name:a.hname, hand:a.hhand||"R", rid:a.hrid||""};
+  if(a && a.hname != null) return {name:a.hname, last:a.hlast||"", first:a.hfirst||"",
+                                   hand:a.hhand||"R", rid:a.hrid||""};
   var h = hitterOf(a ? a.spot : 0);
-  return {name:h.name, hand:h.hand||"R", rid:h.rid||""};
+  return {name:h.name, last:h.last||"", first:h.first||"",
+          hand:h.hand||"R", rid:h.rid||""};
 }
 /* Same person? rid when both have one, otherwise the name they were charted under. */
 function samePerson(x, y){
@@ -1811,7 +1991,10 @@ function drawReport(){
    hitters, so a season roll-up can tell the coach's read from the app's. */
 var COLS = ["Date","Opponent","HomeAway","Charting","Build","Pitcher","PitcherHand",
   "PitcherTags","PitcherNotes","PitcherCarried",
-  "PA","Spot","Hitter","Bats","PitchNo","CountB","CountS","Situation","Pitch",
+  /* Hitter is the display name - "Dieker" or "Dieker, T" depending on who else is
+     on the roster, so it can change between releases and is for reading, not
+     grouping. HitterLast/HitterFirst are the stable text; HitterID is the key. */
+  "PA","Spot","Hitter","HitterLast","HitterFirst","HitterID","Bats","PitchNo","CountB","CountS","Situation","Pitch",
   "Row","Col","InZone","What","Call","UmpOverride","Swing","Chase",
   "PAResult","Traj","HardContact","SprayDir","SprayDepth"];
 function csvOf(game){
@@ -1830,7 +2013,7 @@ function csvOf(game){
       var cb = countBefore(a,i), iz = inZone(x.r,x.c);
       lines.push([game.date, game.opp, game.home, game.who, game.build||BUILD,
         p.name, p.hand, ptg, p.notes||"", p.carried||"",
-        ai+1, a.spot+1, h.name, h.hand||"", i+1, cb.b, cb.s, situOf(cb),
+        ai+1, a.spot+1, h.name, h.last||"", h.first||"", h.rid||"", h.hand||"", i+1, cb.b, cb.s, situOf(cb),
         x.tn||x.t, x.r+1, x.c+1, iz?"Y":"N", MODN[x.m]||x.m,
         x.m==="T" ? (x.call==="S"?"Strike":"Ball") : "", x.ov?"Y":"",
         isSwing(x)?"Y":"", (!iz && isSwing(x))?"Y":"",
@@ -2578,7 +2761,6 @@ function wire(){
   el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
   el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push(newLineupSpot()); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };
-  el("rosAdd").onclick  = function(){ R.push({id:uid(), name:"", jersey:"", hand:"R"}); saveRoster(); render(); };
   el("pAdd").onclick    = function(){ O.pitchers.push(newPitcher("")); save(); render(); };
 
   ["fDate","fOpp","fWho"].forEach(function(id){
@@ -2591,7 +2773,7 @@ function wire(){
 
   document.addEventListener("click", function(e){
     var t = e.target.closest ? e.target.closest("[data-r],[data-mod],[data-ty],"+
-      "[data-res],[data-tr],[data-spot],[data-cp],[data-newp],[data-rdel],[data-pdel],"+
+      "[data-res],[data-tr],[data-spot],[data-cp],[data-newp],[data-pdel],"+
       "[data-hexp],[data-hdel],[data-hv],[data-hp],[data-sv],[data-rp],[data-ptag],"+
       "[data-ppull]") : null;
     if(!t) return;
@@ -2625,9 +2807,6 @@ function wire(){
       save(); render();
       hint("New pitcher added \u2014 name him on the Setup tab", true);
       return;
-    }
-    if(g("data-rdel")!==null && g("data-rdel")!==""){
-      R.splice(+g("data-rdel"),1); saveRoster(); render(); return;
     }
     if(g("data-pdel")!==null && g("data-pdel")!==""){
       var pi = +g("data-pdel");
@@ -2678,11 +2857,6 @@ function wire(){
 
   document.addEventListener("input", function(e){
     var t = e.target, row;
-    if(t.getAttribute("data-rf")){
-      row = t.closest("[data-ri]");
-      R[+row.getAttribute("data-ri")][t.getAttribute("data-rf")] = t.value;
-      saveRoster(); return;
-    }
     if(t.getAttribute("data-lf")){
       row = t.closest("[data-li]");
       /* Setup edits the STARTER. A sub is a game-time action on the Chart tab. */
@@ -2700,7 +2874,6 @@ function wire(){
      while a coach is typing in it eats the keystroke he is on. */
   document.addEventListener("change", function(e){
     var t = e.target;
-    if(t.getAttribute("data-rf")){ drawLineupSetup(); return; }
     if(t.getAttribute("data-lf") || t.getAttribute("data-pf")) drawLineupSetup();
   });
 

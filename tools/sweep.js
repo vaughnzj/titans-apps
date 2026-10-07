@@ -195,6 +195,115 @@ const styled = sel =>
     /* LAST in this list on purpose: it leaves the Order column hidden, which
        would break any check below it that clicks a lineup spot. */
     ["order collapses",  "#btnOrder",                     c("#chartCols"), 'showTab("chart");'],
+    /* ---- the released roster (v36) ---- */
+    /* Same file, same rule as the bullpen: roster.js ships with the app and is a
+       read-out here. window.TITANS_ROSTER is a global set before the app's own
+       script, so every expectation is derived from the shipped file. */
+    ["roster.js shipped",  null,
+       '(function(){ var r=window.TITANS_ROSTER;'+
+       ' return (r && r.length) ? "yes" : "NO ROSTER FILE"; })()',
+       'showTab("setup");', "yes"],
+    ["roster came from it", null,
+       '(function(){ if(R.length!==window.TITANS_ROSTER.length) return R.length+" vs "+window.TITANS_ROSTER.length;'+
+       ' var ids={}; R.forEach(function(p){ ids[p.id]=1; });'+
+       ' var miss=window.TITANS_ROSTER.filter(function(p){ return !ids[p.id]; });'+
+       ' return miss.length ? "missing "+miss.map(function(p){return p.name}).join(",") : "yes"; })()',
+       null, "yes"],
+    ["banner matches the file", null,
+       '(function(){ var b=document.getElementById("rosSrc");'+
+       ' if(!b) return "no banner";'+
+       ' var t=b.textContent.replace(/\\s+/g," ");'+
+       ' if(window.TITANS_ROSTER_SAMPLE){'+
+       '   if(b.className.indexOf("bad")<0) return "sample file but class "+b.className;'+
+       '   return /SAMPLE roster/.test(t) ? "yes" : t.slice(0,50); }'+
+       ' if(b.className.indexOf("ok")<0) return "class "+b.className;'+
+       ' if(!/Released roster/.test(t)) return t.slice(0,40);'+
+       ' return (t.indexOf(window.TITANS_ROSTER_STAMP)>=0) ? "yes" : "no stamp"; })()',
+       null, "yes"],
+    ["sample is called out",  null,
+       '(function(){ if(!window.TITANS_ROSTER_SAMPLE) return "not a sample file";'+
+       ' var t=document.getElementById("rosSrc").textContent;'+
+       ' return /[Dd]o not chart/.test(t) ? "yes" : "no warning"; })()',
+       null, "yes"],
+    /* READ-ONLY, not "mostly". One stray input is a way for an iPad to drift off
+       the released list, which is the whole thing this prevents. */
+    ["roster is read-only", null,
+       'document.querySelectorAll("#rosRows input, #rosRows select, #rosRows button, '+
+       '#rosRows textarea, #rosRows [contenteditable]").length+""', null, "0"],
+    ["add-player is gone", null,
+       '(!!document.getElementById("rosAdd"))+""', null, "false"],
+    ["every released player listed", null,
+       '(function(){ var n=document.querySelectorAll("#rosRows .rosrow").length;'+
+       ' return n===window.TITANS_ROSTER.length ? "all" : n+" of "+window.TITANS_ROSTER.length; })()',
+       null, "all"],
+    /* bats and throws are separate fields and both have to show, because this app
+       needs the bat and the bullpen needs the arm off the same record. */
+    /* The same display rule, checked against what this app renders. The offense
+       roster row prints "Last, First" in bold and the derived name beside it. */
+    ["derived names match the rule", null,
+       '(function(){'+
+       ' var R2=window.TITANS_ROSTER;'+
+       ' function k(s){ return String(s==null?"":s).trim().toLowerCase(); }'+
+       ' function want(p){'+
+       '   var last=String(p.last||"").trim(), first=String(p.first||"").trim();'+
+       '   if(!last) return first;'+
+       '   if(!first) return last;'+
+       '   var sl=0, si=0, li=first.charAt(0).toLowerCase();'+
+       '   R2.forEach(function(q){'+
+       '     if(q.id===p.id) return;'+
+       '     if(k(q.last)!==k(last)) return;'+
+       '     sl++;'+
+       '     if(String(q.first||"").trim().charAt(0).toLowerCase()===li) si++; });'+
+       '   if(!sl) return last;'+
+       '   if(!si) return last+", "+first.charAt(0).toUpperCase();'+
+       '   return last+", "+first; }'+
+       ' var bad=[];'+
+       ' R2.forEach(function(p){'+
+       '   var hit=null;'+
+       '   Array.prototype.forEach.call(document.querySelectorAll("#rosRows .rosrow"),function(d){'+
+       '     var b=d.querySelector("b"), sa=d.querySelector(".sa");'+
+       '     if(!b||!sa) return;'+
+       '     if(b.textContent.trim()===p.last+(p.first?", "+p.first:"")) hit=sa.textContent.trim(); });'+
+       '   if(hit==null){ bad.push(p.last+" not listed"); return; }'+
+       '   if(hit!==want(p)) bad.push(p.last+" shows "+hit+" want "+want(p)); });'+
+       ' return bad.length ? bad.join(" ; ") : "yes"; })()',
+       null, "yes"],
+    ["an initial is actually in use", null,
+       '(function(){'+
+       ' var counts={};'+
+       ' window.TITANS_ROSTER.forEach(function(p){'+
+       '   var k=String(p.last||"").toLowerCase(); counts[k]=(counts[k]||0)+1; });'+
+       ' if(!Object.keys(counts).some(function(k){ return counts[k]>1; }))'+
+       '   return "VACUOUS: no shared last name in this release";'+
+       ' var any=false;'+
+       ' Array.prototype.forEach.call(document.querySelectorAll("#rosRows .rosrow .sa"),'+
+       '   function(sa){ if(/,/.test(sa.textContent)) any=true; });'+
+       ' return any ? "yes" : "no name carries an initial"; })()',
+       null, "yes"],
+    ["export carries hitter last and first", null,
+       '(function(){ var h=csvOf(O).split(/\\r?\\n/)[0];'+
+       ' return (h.indexOf("HitterLast")>=0 && h.indexOf("HitterFirst")>=0 &&'+
+       '         h.indexOf("HitterID")>=0) ? "yes" : h.slice(0,110); })()',
+       null, "yes"],
+    ["both hands shown",  null,
+       '(function(){ var p=window.TITANS_ROSTER.filter(function(x){ return x.bats!==x.throws; })[0];'+
+       ' if(!p) return "no mixed-handed player in the release";'+
+       ' var rows=document.querySelectorAll("#rosRows .rosrow");'+
+       ' for(var i=0;i<rows.length;i++){'+
+       '   if(rows[i].textContent.indexOf(p.name)<0) continue;'+
+       '   var t=rows[i].textContent.replace(/\\s+/g," ");'+
+       '   var want="bats "+p.bats+" · throws "+p.throws;'+
+       '   return t.indexOf(want)>=0 ? "yes" : t+" (want "+want+")"; }'+
+       ' return "row for "+p.name+" not found"; })()',
+       null, "yes"],
+    /* The lineup picker is the consumer: it has to offer the released names. */
+    ["lineup picks off the release", null,
+       '(function(){ var sel=document.querySelectorAll(\'[data-lf]\')[0];'+
+       ' if(!sel) return "no lineup picker";'+
+       ' var ids={}; for(var i=0;i<sel.options.length;i++) if(sel.options[i].value) ids[sel.options[i].value]=1;'+
+       ' var off=window.TITANS_ROSTER.filter(function(p){ return ids[p.id]; });'+
+       ' return off.length ? "yes" : "none of the released players are offered"; })()',
+       null, "yes"],
   ]);
 
   await sweep(b, "BULLPEN CHART", "/bullpen/index.html", [
@@ -279,47 +388,221 @@ const styled = sel =>
        '(function(){ var t=document.getElementById("liveRead").textContent||"";'+
        ' return /no spot called/.test(t) ? "ungraded":t.slice(0,40); })()',
        null, "ungraded"],
-    /* LAST: finishing a scripted card has to lead somewhere. Name two arms, run the
-       first one out of script, and the Chart tab must move to the second. */
+    /* ---- the released roster (v26) ---- */
+    /* The roster SHIPS with the app as roster.js and is read-only on the iPad.
+       window.TITANS_ROSTER is a global set before the app's IIFE, so every
+       expectation below is derived from the shipped file itself rather than
+       hardcoded - the point is that the app reads what was released, whatever
+       was released. */
+    ["roster.js shipped",  null,
+       '(function(){ var r=window.TITANS_ROSTER;'+
+       ' return (r && r.length) ? "yes" : "NO ROSTER FILE"; })()',
+       'document.getElementById("tab-setup").click();', "yes"],
+    /* The banner has to match the file. The repo ships the SAMPLE placeholder, so
+       red-and-shouting is the correct state here; roster-states.js covers a real
+       release, a missing file and a leftover local list. */
+    ["banner matches the file", null,
+       '(function(){ var b=document.getElementById("rosSrc");'+
+       ' if(!b) return "no banner";'+
+       ' var t=b.textContent.replace(/\\s+/g," ");'+
+       ' if(window.TITANS_ROSTER_SAMPLE){'+
+       '   if(b.className.indexOf("bad")<0) return "sample file but class "+b.className;'+
+       '   return /SAMPLE roster/.test(t) ? "yes" : t.slice(0,50); }'+
+       ' if(b.className.indexOf("ok")<0) return "class "+b.className;'+
+       ' if(!/Released roster/.test(t)) return t.slice(0,40);'+
+       ' return (t.indexOf(window.TITANS_ROSTER_STAMP)>=0) ? "yes" : "no stamp: "+t.slice(0,60); })()',
+       null, "yes"],
+    ["sample is called out",  null,
+       '(function(){ if(!window.TITANS_ROSTER_SAMPLE) return "not a sample file";'+
+       ' var t=document.getElementById("rosSrc").textContent;'+
+       ' return /[Dd]o not chart/.test(t) ? "yes" : "no warning"; })()',
+       null, "yes"],
+    ["roster header",     null,
+       '[].map.call(document.querySelectorAll("#teamTbl thead th"),'+
+       'function(o){return o.textContent.trim()}).join("|")', null,
+       "#|Name|Shows as|Class|Throws|Bats"],
+    /* READ-ONLY, not "mostly read-only". A single stray input is a way for one iPad
+       to drift off the released list, which is the whole thing this prevents. */
+    ["roster is read-only", null,
+       'document.querySelectorAll("#teamTbl input, #teamTbl select, #teamTbl button, '+
+       '#teamTbl textarea, #teamTbl [contenteditable]").length+""', null, "0"],
+    ["editing controls are gone", null,
+       '["addPlayer","csvPick","csvFile","pasteOpen","pasteGo","bumpCls"]'+
+       '.filter(function(k){ return !!document.getElementById(k); }).join(",") || "none"',
+       null, "none"],
+    ["every released player listed", null,
+       '(function(){ var rows=document.querySelectorAll("#teamTbl tbody tr").length;'+
+       ' return rows===window.TITANS_ROSTER.length ? "all" : rows+" of "+window.TITANS_ROSTER.length; })()',
+       null, "all"],
+    /* A read-out can afford the full word, and "Senior" is read faster across a
+       gym than "Sr". It also proves the row is rendered text, not a select. */
+    /* THE DISPLAY RULE. Last name alone; an initial only where two players share a
+       last name; the full first name when the initial collides too.
+
+       These compare the RENDERED Shows-as column against the rule computed here
+       from last/first. The first version of this check read window.TITANS_ROSTER's
+       own `name` field, which is written by the Roster Manager - so it passed with
+       the app's rule flattened to "always the last name". It was testing the file,
+       not the app. */
+    ["derived names match the rule", null,
+       '(function(){'+
+       ' var R2=window.TITANS_ROSTER;'+
+       ' function k(s){ return String(s==null?"":s).trim().toLowerCase(); }'+
+       ' function want(p){'+
+       '   var last=String(p.last||"").trim(), first=String(p.first||"").trim();'+
+       '   if(!last) return first;'+
+       '   if(!first) return last;'+
+       '   var sl=0, si=0, li=first.charAt(0).toLowerCase();'+
+       '   R2.forEach(function(q){'+
+       '     if(q.id===p.id) return;'+
+       '     if(k(q.last)!==k(last)) return;'+
+       '     sl++;'+
+       '     if(String(q.first||"").trim().charAt(0).toLowerCase()===li) si++; });'+
+       '   if(!sl) return last;'+
+       '   if(!si) return last+", "+first.charAt(0).toUpperCase();'+
+       '   return last+", "+first; }'+
+       ' var rows=document.querySelectorAll("#teamTbl tbody tr");'+
+       ' if(!rows.length) return "no roster rendered";'+
+       ' var shown={};'+
+       ' Array.prototype.forEach.call(rows,function(tr){'+
+       '   var td=tr.children;'+
+       '   if(td.length<3) return;'+
+       '   shown[td[1].textContent.trim()]=td[2].textContent.trim(); });'+
+       ' var bad=[];'+
+       ' R2.forEach(function(p){'+
+       '   var key=p.last+(p.first?", "+p.first:"");'+
+       '   var got=shown[key];'+
+       '   if(got==null){ bad.push(key+" not listed"); return; }'+
+       '   if(got!==want(p)) bad.push(key+" shows "+got+" want "+want(p)); });'+
+       ' return bad.length ? bad.join(" ; ") : "yes"; })()',
+       null, "yes"],
+    /* And the rule has to be doing something: the shipped file contains a shared
+       last name on purpose, so at least one name must carry an initial. If this
+       goes green on a release with no collision it is vacuous - it says so. */
+    ["an initial is actually in use", null,
+       '(function(){'+
+       ' var counts={};'+
+       ' window.TITANS_ROSTER.forEach(function(p){'+
+       '   var k=String(p.last||"").toLowerCase(); counts[k]=(counts[k]||0)+1; });'+
+       ' var shared=Object.keys(counts).filter(function(k){ return counts[k]>1; });'+
+       ' if(!shared.length) return "VACUOUS: no shared last name in this release";'+
+       ' var cells=document.querySelectorAll("#teamTbl tbody tr");'+
+       ' var any=false;'+
+       ' Array.prototype.forEach.call(cells,function(tr){'+
+       '   var td=tr.children;'+
+       '   if(td.length>=3 && /,/.test(td[2].textContent)) any=true; });'+
+       ' return any ? "yes" : "no name carries an initial"; })()',
+       null, "yes"],
+    ["picker shows the derived name", null,
+       '(function(){ var sel=document.querySelectorAll(\'#rosterTbl [data-f="rid"]\')[0];'+
+       ' if(!sel) return "no picker";'+
+       ' var want=window.TITANS_ROSTER.filter(function(p){ return p.name!==p.last; })[0];'+
+       ' if(!want) return "no collision in the release";'+
+       ' for(var i=0;i<sel.options.length;i++)'+
+       '   if(sel.options[i].value===want.id)'+
+       '     return sel.options[i].text.indexOf(want.name)===0 ? "yes" : sel.options[i].text;'+
+       ' return "not offered"; })()',
+       null, "yes"],
+    ["export carries last and first", null,
+       '(function(){ document.getElementById("tab-report").click();'+
+       ' document.getElementById("expText").value="";'+
+       ' document.getElementById("expCsv").click();'+
+       ' var h=(document.getElementById("expText").value||"").split(/\\r?\\n/)[0];'+
+       ' return (h.indexOf("PitcherLast")>=0 && h.indexOf("PitcherFirst")>=0) ? "yes" : h.slice(0,90); })()',
+       null, "yes"],
+    ["class spelled out",  null,
+       '(function(){ var t=document.getElementById("teamTbl").textContent;'+
+       ' var want={Fr:"Freshman",So:"Sophomore",Jr:"Junior",Sr:"Senior"}, miss=[];'+
+       ' window.TITANS_ROSTER.forEach(function(p){'+
+       '   if(p.cls && t.indexOf(want[p.cls])<0) miss.push(p.cls); });'+
+       ' return miss.length ? "missing "+miss.join("/") : "yes"; })()',
+       null, "yes"],
+    /* The mound picker offers the released roster and nothing else. */
+    ["mound picks off roster", null,
+       '[].map.call(document.querySelectorAll("#rosterTbl thead th"),'+
+       'function(o){return o.textContent.trim()}).join("|")',
+       null, "#|Pitcher|PitchSafe 0–100|Stretch only|Runs|"],
+    ["no jersey field",   null,
+       'document.querySelectorAll(\'#rosterTbl [data-f="num"]\').length+""', null, "0"],
+    ["picker offers the release", null,
+       '(function(){ var sel=document.querySelectorAll(\'#rosterTbl [data-f="rid"]\')[0];'+
+       ' if(!sel) return "no picker";'+
+       ' var ids={}; for(var i=0;i<sel.options.length;i++) if(sel.options[i].value) ids[sel.options[i].value]=1;'+
+       ' var miss=window.TITANS_ROSTER.filter(function(p){ return !ids[p.id]; });'+
+       ' return miss.length ? "not offered: "+miss.map(function(p){return p.name}).join(",") : "all"; })()',
+       null, "all"],
+    /* Picking a name has to bring his class and arm with it, off the released file. */
+    ["picking carries class", null,
+       '(function(){ var sel=document.querySelectorAll(\'#rosterTbl [data-f="rid"]\')[0];'+
+       ' if(!sel) return "no picker";'+
+       ' var p=window.TITANS_ROSTER[0];'+
+       ' sel.value=p.id; sel.dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' var w=document.querySelector("#rosterTbl .whoami");'+
+       ' if(!w) return "no read-out";'+
+       ' var got=w.textContent.replace(/\\s+/g," ").trim();'+
+       ' var want=p.cls+" · "+p.throws+"HP";'+
+       ' return got===want ? "yes" : got+" (want "+want+")"; })()',
+       null, "yes"],
+    /* The same kid cannot be charted twice in one session. */
+    ["no double-booking", null,
+       '(function(){ var sels=document.querySelectorAll(\'#rosterTbl [data-f="rid"]\');'+
+       ' if(sels.length<2) return "need two slots";'+
+       ' var taken=window.TITANS_ROSTER[0].id;'+
+       ' for(var i=0;i<sels[1].options.length;i++)'+
+       '   if(sels[1].options[i].value===taken) return "still offered";'+
+       ' return "gone"; })()',
+       null, "gone"],
+    /* SessionID and PitcherID are the join keys a roll-up needs. A name is not a key. */
+    ["ids in the export", null,
+       '(function(){ document.getElementById("tab-report").click();'+
+       ' document.getElementById("expText").value="";'+
+       ' document.getElementById("expCsv").click();'+
+       ' var h=(document.getElementById("expText").value||"").split(/\\r?\\n/)[0];'+
+       ' return (h.indexOf("SessionID")>=0 && h.indexOf("PitcherID")>=0) ? "yes" : h.slice(0,80); })()',
+       null, "yes"],
+    ["class in the export", null,
+       '(function(){ document.getElementById("tab-report").click();'+
+       ' document.getElementById("expText").value="";'+
+       ' document.getElementById("expCsv").click();'+
+       ' var h=(document.getElementById("expText").value||"").split(/\\r?\\n/)[0];'+
+       ' return (h.indexOf("Class")>=0 && h.indexOf("Jersey")<0) ? "yes" : h.slice(0,80); })()',
+       'document.getElementById("tab-chart").click();'+
+       'document.querySelector(\'#zone button[data-r="2"][data-c="2"]\').click();',
+       "yes"],
+    /* LAST: finishing a scripted card has to lead somewhere. Two arms off the
+       roster, run the first out of card, leave the tab and come back. */
     ["follows the mound",  null,
        '(function(){'+
        ' document.getElementById("tab-setup").click();'+
-       ' var ns=document.querySelectorAll(\'#rosterTbl tbody input[data-f="name"]\');'+
-       ' ns[0].value="A"; ns[0].dispatchEvent(new Event("input",{bubbles:true}));'+
-       ' ns[1].value="B"; ns[1].dispatchEvent(new Event("input",{bubbles:true}));'+
-       ' ns[2].value="C"; ns[2].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' function pickInto(slot, id){'+
+       '   var sel=document.querySelectorAll(\'#rosterTbl [data-f="rid"]\')[slot];'+
+       '   if(!sel) return false;'+
+       '   for(var i=0;i<sel.options.length;i++) if(sel.options[i].value===id){'+
+       '     sel.value=id;'+
+       '     sel.dispatchEvent(new Event("input",{bubbles:true})); return true; }'+
+       '   return false; }'+
+       ' var R2=window.TITANS_ROSTER;'+
+       ' if(R2.length<3) return "need three on the roster";'+
+       ' if(!pickInto(1,R2[1].id)) return "slot 1 failed";'+
+       ' if(!pickInto(2,R2[2].id)) return "slot 2 failed";'+
        ' var ms=document.querySelectorAll(\'[data-f="mode"]\');'+
-       ' ms[0].value="script"; ms[0].dispatchEvent(new Event("input",{bubbles:true}));'+
-       ' ms[1].value="script"; ms[1].dispatchEvent(new Event("input",{bubbles:true}));'+
+       ' for(var m=0;m<3;m++){ if(!ms[m]) continue;'+
+       '   ms[m].value="script"; ms[m].dispatchEvent(new Event("input",{bubbles:true})); }'+
        ' document.getElementById("tab-chart").click();'+
-       /* Put A on screen deliberately, run him past the end of the card, then leave
-          and come back. Earlier checks may already have left him finished, so this
-          asserts the RULE - a finished arm hands over to the next named one - and
-          not a particular starting point. */
-       /* Re-query the strip before every click: each click redraws it, so a NodeList
-          taken earlier is detached and clicking it does nothing. */
        ' function pick(i){ document.querySelectorAll("#strip .pcard")[i].click(); }'+
        ' function on(){ return document.querySelector("#strip .pcard[aria-pressed=true] .nm").textContent; }'+
        ' pick(0);'+
        ' var n=document.querySelectorAll(\'#scriptTbl tbody [data-f="type"]\').length || 1;'+
        ' for(var i=0;i<=n;i++) document.querySelector(\'#zone button[data-r="2"][data-c="2"]\').click();'+
-       ' pick(1); pick(0);'+
-       ' if(on()!=="A") return "could not select A, on "+on();'+
-       /* A is finished and hand-picked, so he keeps the screen - that part is
-          deliberate. His card must still offer the hand-off. */
        ' var nb=document.getElementById("nextArm");'+
-       ' if(!nb) return "no hand-off offered on a finished card";'+
-       ' if(nb.textContent.indexOf("B")<0) return "offered: "+nb.textContent;'+
-       ' nb.click();'+                      /* clears the manual pick, lands on B */
-       ' if(on()!=="B") return "hand-off did not move, on "+on();'+
-       /* NOW the path Jim actually hit: B runs out of card, and simply leaving the
-          tab and coming back has to find C. Nothing is tapped on the strip, so
-          nothing is hand-picked and the app is free to follow the mound. */
+       ' if(!nb) return "no hand-off on a finished card, on "+on();'+
+       ' nb.click();'+
+       ' if(on()!==R2[1].name) return "hand-off landed on "+on();'+
        ' for(var j=0;j<=n;j++) document.querySelector(\'#zone button[data-r="2"][data-c="2"]\').click();'+
        ' document.getElementById("tab-report").click();'+
        ' document.getElementById("tab-chart").click();'+
-       ' return on(); })()',
-       null, "C"],
+       ' return (on()===R2[2].name) ? "yes" : "landed on "+on()+", wanted "+R2[2].name; })()',
+       null, "yes"],
   ]);
 
   await b.close();
