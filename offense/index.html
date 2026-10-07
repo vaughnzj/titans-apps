@@ -466,11 +466,6 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
   </div>
   <div class="notice" id="netBar" hidden></div>
   <div class="notice" id="storeBar" hidden></div>
-  <div class="notice warn" id="sampleBar" hidden>
-    <strong>Sample game loaded</strong>
-    <span>A couple of innings so you can see how the report reads. Nothing here is saved &mdash; tap the button when you are ready to chart for real.</span>
-    <button class="btn sm pri" id="btnReal">Start a real game</button>
-  </div>
   <div class="notice warn" id="unsentBar" hidden></div>
 
   <!-- ===================== SETUP ===================== -->
@@ -543,7 +538,6 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
             </div>
             <div class="row">
               <button class="btn dk" id="btnArchive">Finish &amp; file this game</button>
-              <button class="btn" id="btnSample">Load the sample again</button>
             </div>
             <div class="read" id="setupNote">Filing a game moves it to <b>History</b> and starts a
               clean one. Nothing is ever overwritten &mdash; an unexported game stays recoverable.</div>
@@ -677,7 +671,7 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v39";
+var BUILD = "v40";
 var KEY   = "titans-offense-v1";
 /* The roster is RELEASED, not typed. roster.js ships in this folder and the app
    reads it; nobody edits the team on an iPad any more.
@@ -866,8 +860,26 @@ function loadAll(){
   try{ A = JSON.parse(localStorage.getItem(AKEY)) || []; }catch(e){ A = []; }
   var g = null;
   try{ g = JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+  /* The sample is gone - a released roster is a better demonstration than invented
+     names, and the sample was the thing standing between opening the app and
+     charting. A saved copy on an iPad that never tapped "Start a real game" is
+     DISCARDED rather than loaded: it is somebody else's demo data wearing this
+     season's app. Same call as the bullpen in v21, same reason. */
+  if(g && g.sample) g = null;
   if(g && g.lineup && g.pas) { O = g; O.lineup = normLineup(O.lineup); return; }
-  O = sampleGame();
+  O = freshGame();
+}
+/* What the app opens on now. The starting nine carry forward from the last game
+   filed, which is the one thing the sample was genuinely useful for showing. */
+function freshGame(){
+  var keep = [];
+  try{ keep = JSON.parse(localStorage.getItem(LKEY)) || []; }catch(e){}
+  var g = emptyGame();
+  g.lineup = keep.length ? keep.map(function(id){ return {men:[newMan(id)], cur:0}; })
+                         : blankLineup(9);
+  g.pitchers = [newPitcher("")];
+  g.pas = [newPA(0,0)];
+  return g;
 }
 
 /* Filing a game never destroys it. This is the whole point of the archive:
@@ -988,9 +1000,28 @@ function drawRosSrc(){
 /* A hitter can only occupy one spot, so every name already placed somewhere
    else drops out of this spot's list. The name picked in THIS spot stays in,
    or the select would have nothing to show as selected. */
+/* WHERE A LINEUP SPOT'S PICK ACTUALLY LIVES.
+   Until v31 a spot was flat - {rid, nm, hand} - and three places read `sp.rid`.
+   v31 replaced that with men[] so a pinch hitter could not inherit the starter's
+   at-bats, and normSpot migrates the old field INTO men[0]... but these three
+   readers were never updated. `sp.rid` has been undefined ever since, which meant:
+     - the Setup dropdown snapped back to "- pick -" the moment it redrew
+     - "N of 9 set" always read 0
+     - and the one-spot-per-hitter rule was dead, so the same kid could be put in
+       two spots and have his at-bats split between them
+   All three symptoms, one missing accessor. The Setup screen edits the STARTER,
+   which is men[0]; a sub is a game-time action on the Chart tab. */
+function starterRid(sp){
+  if(!sp) return "";
+  if(sp.men && sp.men.length && sp.men[0]) return sp.men[0].rid || "";
+  return sp.rid || "";          /* a pre-v31 record that has not been normed yet */
+}
 function lineupOptions(sel){
   var used = {};
-  (O.lineup || []).forEach(function(s){ if(s && s.rid && s.rid !== sel) used[s.rid] = 1; });
+  (O.lineup || []).forEach(function(s){
+    var r = starterRid(s);
+    if(r && r !== sel) used[r] = 1;
+  });
   var o = '<option value="">— pick —</option>';
   R.forEach(function(p){
     if(used[p.id]) return;
@@ -1004,11 +1035,11 @@ function drawLineupSetup(){
     return '<div class="row" data-li="'+i+'">'+
       '<span class="lbl" style="flex:0 0 22px;padding-bottom:9px">'+(i+1)+'</span>'+
       '<label class="field" style="flex:1"><span class="lbl">Hitter</span>'+
-        '<select data-lf="rid">'+lineupOptions(sp.rid)+'</select></label></div>';
+        '<select data-lf="rid">'+lineupOptions(starterRid(sp))+'</select></label></div>';
   }).join("");
   el("luRows").innerHTML = h;
   el("luCount").textContent = O.lineup.length + " spots";
-  var named = O.lineup.filter(function(s){ return s.rid; }).length;
+  var named = O.lineup.filter(function(s){ return starterRid(s); }).length;
   el("luInfo").textContent = named + " of " + O.lineup.length + " set";
 }
 function hitterOf(spot){
@@ -2224,7 +2255,7 @@ function drawHistory(){
   }
 
   out += '<div class="panel"><div class="phead"><span class="lbl">Filed games</span>'+
-    (arch() !== A ? '<span class="lbl" style="margin-left:auto;color:var(--inplay)">sample data</span>'
+    (false ? ''
       : (A.length ? '<button class="btn sm" id="histAll" style="margin-left:auto">Export all</button>' : ''))+
     '</div><div>'+
     (arch().length ? arch().map(function(g,i){
@@ -2239,7 +2270,7 @@ function drawHistory(){
         '<button class="btn sm" data-hdel="'+i+'">Delete</button></div>';
     }).join("") : '<div class="pbody read">No filed games yet. The first one lands here when you '+
       'tap <b>Finish &amp; file this game</b>.</div>')+'</div></div>';
-  if(arch() !== A) out += '<div class="read">Those two are part of the sample \u2014 earlier looks at '+
+  if(false) out += '<div class="read">'+
     'the same pitcher, so you can see what the grid is worth after three meetings. They clear '+
     'themselves the moment you start a real game.</div>';
   el("hist").innerHTML = out;
@@ -2283,166 +2314,24 @@ function askFile(onYes){
       "\u2014 nothing is deleted.", "Finish & file", onYes);
 }
 
-/* ===================== sample ===================== */
-/* ===================== sample =====================
-   A simulated 7-inning game against a right-hander who works fastball away
-   early and buries a slider with two strikes, plus two earlier meetings with
-   the same pitcher so the History grid shows what three looks at buys you.
-   Generated once and frozen: every iPad sees the identical sample.
-   Each PA is [spot, pitcherIdx, result, traj, [sprayX,sprayY], [[type,row,col,mod,call,override],...]]
-*/
-var SAMPLE_LU = [["Alvarez","L"],["Brandt","R"],["Chavez","R"],["Doyle","L"],
-                 ["Ellis","R"],["Fisher","R"],["Grant","L"],["Hale","R"],["Ibarra","R"]];
-var SAMPLE_PI = [["Keller","17","R"],["Vance","9","L"]];
-var SAMPLE_CUR = [[0,0,"GO","GB",[97.3,124.5],[["SL",4,1,"T","B",0],["FB",3,3,"T","S",0],["FB",1,0,"T","S",1],["SL",3,0,"X","",0]]],
-[1,0,"GO","GB",[103.7,141.7],[["FB",3,3,"F","",0],["SL",4,3,"T","B",0],["FB",2,4,"X","",0]],1],
-[2,0,"BB","",0,[["FB",2,3,"W","",0],["SL",3,3,"T","S",0],["SL",4,4,"F","",0],["SL",4,3,"T","B",0],["SL",3,3,"T","B",1],["SL",3,4,"T","B",0],["SL",3,4,"T","B",0]]],
-[3,0,"Kc","",0,[["FB",2,1,"T","S",0],["SL",4,0,"T","S",1],["FB",1,2,"T","S",0]]],
-[4,0,"Kc","",0,[["FB",2,3,"F","",0],["FB",2,3,"T","S",0],["FB",2,3,"T","S",0]]],
-[5,0,"GO","GB",[94.9,135.7],[["FB",1,3,"F","",0],["SL",4,4,"T","B",0],["FB",2,2,"T","S",0],["SL",4,4,"F","",0],["SL",4,3,"T","B",0],["SL",3,4,"X","",0]]],
-[6,0,"FO","FB",[142.2,114.6],[["FB",2,1,"T","S",0],["SL",3,0,"T","S",1],["FB",2,0,"X","",0]],1],
-[7,0,"Kc","",0,[["FB",1,4,"W","",0],["CH",2,3,"T","S",0],["SL",4,3,"T","B",0],["SL",3,4,"T","S",1]]],
-[8,0,"HR","FB",[157.3,80.6],[["FB",1,3,"T","S",0],["SL",3,4,"T","S",1],["SL",3,4,"X","",0]],1],
-[0,0,"K","",0,[["FB",1,1,"T","S",0],["FB",1,1,"F","",0],["SL",4,0,"T","B",0],["SL",3,0,"W","",0]]],
-[1,0,"K","",0,[["CB",3,2,"T","S",0],["SL",3,4,"T","S",1],["FB",0,4,"W","",0]]],
-[2,0,"PO","PU",[92.1,136.8],[["FB",1,3,"W","",0],["SL",3,4,"X","",0]]],
-[3,0,"Kc","",0,[["FB",2,0,"T","S",1],["CH",3,2,"T","S",0],["SL",3,1,"T","S",0]]],
-[4,0,"Kc","",0,[["FB",2,4,"T","B",0],["FB",2,1,"T","S",0],["FB",2,3,"T","S",0],["FB",2,4,"T","B",0],["SL",4,4,"T","S",1]]],
-[5,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",3,3,"T","B",1],["FB",1,3,"T","S",0],["SL",3,4,"T","S",1]]],
-[6,0,"Kc","",0,[["FB",2,1,"T","S",0],["FB",2,1,"T","S",0],["FB",1,0,"F","",0],["FB",0,1,"T","B",0],["FB",1,2,"T","S",0]]],
-[7,0,"GO","GB",[92.7,135.0],[["FB",3,3,"T","S",0],["FB",1,4,"T","B",0],["FB",1,2,"F","",0],["SL",4,4,"X","",0]],1],
-[8,0,"PO","PU",[92.0,123.5],[["FB",3,3,"T","S",0],["FB",3,4,"T","S",1],["SL",3,3,"X","",0]]],
-[0,0,"Kc","",0,[["FB",1,1,"F","",0],["FB",2,1,"F","",0],["SL",3,1,"T","S",0]]],
-[1,0,"Kc","",0,[["FB",3,4,"T","B",0],["FB",2,2,"T","S",0],["FB",2,3,"T","S",0],["SL",4,4,"T","S",1]]],
-[2,0,"LO","LD",[126.9,119.7],[["CB",2,2,"X","",0]],1],
-[3,0,"GO","GB",[114.6,143.3],[["FB",3,1,"T","B",1],["FB",2,2,"X","",0]]],
-[4,0,"1B","LD",[62.4,112.6],[["FB",1,3,"X","",0]]],
-[5,0,"Kc","",0,[["FB",2,3,"W","",0],["FB",3,4,"T","S",1],["SL",3,4,"T","B",0],["CH",3,3,"T","S",0]]],
-[6,0,"K","",0,[["FB",3,1,"T","S",0],["FB",3,2,"W","",0],["FB",0,2,"T","B",0],["SL",4,0,"W","",0]]],
-[7,0,"K","",0,[["FB",2,3,"T","S",0],["FB",1,4,"T","B",0],["CH",3,3,"T","B",1],["FB",2,1,"W","",0],["SL",4,3,"W","",0]]],
-[8,1,"Kc","",0,[["CB",4,2,"T","B",0],["FB",2,2,"T","S",0],["FB",2,3,"W","",0],["FB",1,3,"T","S",0]]],
-[0,1,"1B","LD",[89.8,111.8],[["FB",2,1,"X","",0]],1],
-[1,1,"Kc","",0,[["FB",2,3,"T","S",0],["CB",3,2,"T","S",0],["CB",4,2,"T","B",0],["FB",1,3,"F","",0],["FB",1,3,"T","S",0]]],
-[2,1,"FO","FB",[78.1,84.3],[["FB",2,3,"T","S",0],["FB",3,4,"T","B",0],["CB",2,2,"X","",0]],1],
-[3,1,"Kc","",0,[["FB",3,1,"T","S",0],["CB",3,2,"F","",0],["CB",3,2,"F","",0],["FB",1,1,"F","",0],["CB",3,2,"T","S",0]]],
-[4,1,"Kc","",0,[["FB",1,3,"F","",0],["CB",3,2,"W","",0],["FB",1,2,"F","",0],["CB",3,3,"T","S",0]]],
-[5,1,"PO","PU",[82.2,134.9],[["CB",3,1,"T","S",0],["CB",2,2,"T","S",0],["CB",3,3,"T","B",1],["FB",0,3,"T","B",0],["CB",4,2,"X","",0]]]];
-var SAMPLE_P1 = [[0,0,"2B","LD",[140.6,100.2],[["FB",1,1,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","B",0],["CH",3,1,"X","",0]],1],
-[1,0,"LO","LD",[68.5,119.7],[["FB",1,3,"X","",0]],1],
-[2,0,"BB","",0,[["FB",2,3,"T","S",0],["FB",1,4,"T","B",0],["CH",2,2,"T","S",0],["SL",4,4,"T","B",0],["SL",3,4,"T","B",0],["SL",4,4,"T","B",0]]],
-[3,0,"Kc","",0,[["FB",2,1,"T","S",0],["FB",3,1,"F","",0],["SL",3,0,"T","S",1]]],
-[4,0,"HR","FB",[155.0,90.8],[["FB",2,3,"T","S",0],["CH",2,2,"T","S",0],["SL",3,4,"X","",0]],1],
-[5,0,"Kc","",0,[["FB",2,3,"T","S",0],["CH",3,2,"F","",0],["FB",0,3,"T","B",0],["SL",4,3,"F","",0],["SL",3,4,"T","S",1]]],
-[6,0,"LO","LD",[94.6,117.3],[["FB",3,1,"W","",0],["CH",3,2,"X","",0]]],
-[7,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",4,4,"T","S",1],["SL",3,4,"T","S",1]]],
-[8,0,"FO","FB",[63.1,105.7],[["FB",2,3,"X","",0]]],
-[0,0,"SAC","GB",[99.0,128.9],[["FB",1,0,"T","B",0],["FB",3,3,"T","S",0],["CH",3,1,"T","S",0],["SL",4,1,"T","B",0],["FB",1,2,"X","",0]]],
-[1,0,"Kc","",0,[["FB",2,3,"F","",0],["FB",3,4,"T","S",1],["SL",3,3,"T","S",0]]],
-[2,0,"E","GB",[100.5,138.5],[["FB",3,4,"T","S",1],["SL",4,3,"T","B",0],["CH",3,2,"X","",0]]],
-[3,0,"PO","PU",[111.9,129.1],[["FB",1,1,"W","",0],["FB",3,2,"X","",0]]],
-[4,0,"Kc","",0,[["FB",3,3,"T","B",1],["FB",2,2,"T","S",0],["CH",3,3,"T","S",0],["SL",3,4,"T","S",1]]],
-[5,0,"K","",0,[["FB",2,3,"F","",0],["SL",3,3,"T","S",0],["FB",1,3,"W","",0]]],
-[6,0,"GO","GB",[93.2,138.9],[["FB",3,1,"X","",0]]],
-[7,0,"2B","LD",[116.3,90.7],[["FB",3,3,"T","S",0],["SL",3,3,"T","S",0],["SL",3,4,"X","",0]],1],
-[8,0,"K","",0,[["CB",3,2,"T","S",0],["FB",3,2,"F","",0],["SL",3,4,"T","B",0],["SL",3,4,"T","B",0],["CH",4,3,"T","B",0],["SL",3,3,"W","",0]]],
-[0,0,"GO","GB",[99.0,132.4],[["FB",3,1,"X","",0]],1],
-[1,0,"Kc","",0,[["FB",1,3,"T","S",0],["SL",4,3,"F","",0],["SL",3,3,"F","",0],["FB",1,3,"T","S",0]]],
-[2,0,"Kc","",0,[["FB",1,3,"T","S",0],["FB",2,3,"T","S",0],["SL",4,4,"T","B",0],["SL",3,3,"T","S",0]]],
-[3,0,"K","",0,[["FB",3,0,"T","B",0],["FB",2,2,"T","S",0],["FB",3,2,"T","B",1],["FB",2,2,"T","S",0],["FB",2,1,"W","",0]]],
-[4,0,"Kc","",0,[["FB",3,3,"T","S",0],["SL",4,4,"T","B",0],["FB",2,4,"T","B",0],["FB",2,1,"T","S",0],["FB",1,4,"T","S",1]]],
-[5,0,"Kc","",0,[["FB",2,3,"T","S",0],["SL",3,4,"T","S",1],["SL",3,3,"T","S",0]]],
-[6,0,"Kc","",0,[["FB",3,1,"T","B",1],["FB",2,3,"T","S",0],["CH",2,1,"T","S",0],["SL",3,0,"T","S",1]]],
-[7,0,"Kc","",0,[["FB",2,3,"T","S",0],["FB",1,3,"T","S",0],["FB",1,2,"T","S",0]]],
-[8,0,"GO","GB",[82.4,137.9],[["FB",2,3,"T","S",0],["CH",3,2,"X","",0]],1],
-[0,1,"HR","FB",[91.2,73.3],[["FB",2,1,"X","",0]],1],
-[1,1,"BB","",0,[["FB",2,4,"T","B",0],["CB",4,1,"T","B",0],["FB",2,2,"T","S",0],["FB",3,2,"T","S",0],["CB",4,2,"T","B",0],["CB",4,2,"T","B",0]]],
-[2,1,"GO","GB",[112.2,132.1],[["FB",3,3,"T","B",1],["FB",3,1,"T","B",1],["CB",3,2,"T","S",0],["CB",3,2,"W","",0],["FB",1,3,"X","",0]]],
-[3,1,"2B","LD",[97.3,69.7],[["FB",2,1,"T","S",0],["CB",4,2,"T","B",0],["FB",1,0,"T","B",0],["FB",3,3,"T","S",0],["CB",4,1,"T","B",0],["FB",0,1,"X","",0]],1]];
-var SAMPLE_P2 = [[0,0,"K","",0,[["FB",3,1,"W","",0],["SL",3,1,"F","",0],["FB",1,1,"W","",0]]],
-[1,0,"K","",0,[["FB",3,3,"F","",0],["CH",3,2,"T","B",1],["FB",3,3,"T","S",0],["SL",3,3,"W","",0]]],
-[2,0,"GO","GB",[93.3,130.4],[["FB",3,3,"W","",0],["SL",3,3,"X","",0]]],
-[3,0,"2B","LD",[119.8,77.8],[["FB",2,0,"X","",0]],1],
-[4,0,"2B","LD",[135.6,85.2],[["FB",1,3,"X","",0]],1],
-[5,0,"Kc","",0,[["FB",2,4,"T","S",1],["CH",2,3,"F","",0],["CH",3,3,"T","S",0]]],
-[6,0,"Kc","",0,[["FB",3,1,"F","",0],["SL",4,0,"T","B",0],["FB",1,2,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","S",1]]],
-[7,0,"FO","FB",[83.5,96.3],[["FB",2,3,"X","",0]]],
-[8,0,"GO","GB",[101.4,136.0],[["FB",2,4,"X","",0]],1],
-[0,0,"BB","",0,[["SL",4,1,"T","B",0],["FB",2,2,"T","S",0],["CH",2,1,"T","S",0],["SL",4,1,"T","B",0],["SL",3,0,"T","B",0],["SL",4,0,"T","B",0]]],
-[1,0,"FO","FB",[45.5,98.1],[["FB",3,3,"X","",0]],1],
-[2,0,"Kc","",0,[["FB",2,3,"F","",0],["SL",4,4,"T","B",0],["FB",2,4,"T","S",1],["SL",4,4,"T","S",1]]],
-[3,0,"HR","FB",[138.7,78.6],[["FB",1,0,"T","S",1],["CH",3,1,"F","",0],["SL",3,1,"X","",0]],1],
-[4,0,"Kc","",0,[["FB",2,3,"T","S",0],["FB",3,2,"F","",0],["SL",3,4,"T","B",0],["SL",4,3,"T","B",0],["CH",3,3,"T","S",0]]],
-[5,0,"1B","LD",[136.9,110.9],[["FB",3,4,"T","S",1],["SL",3,3,"F","",0],["SL",4,3,"T","B",0],["FB",1,4,"T","B",0],["SL",3,4,"T","B",0],["CH",3,2,"X","",0]]],
-[6,0,"FO","FB",[63.5,88.3],[["FB",1,0,"T","B",0],["FB",2,2,"T","S",0],["SL",4,1,"T","B",0],["FB",2,3,"T","S",0],["FB",1,1,"X","",0]],1],
-[7,0,"GO","GB",[116.6,128.8],[["FB",3,3,"T","B",1],["FB",3,2,"T","S",0],["SL",3,3,"X","",0]]],
-[8,0,"PO","PU",[91.7,122.0],[["FB",1,3,"T","S",0],["FB",1,3,"X","",0]]],
-[0,0,"GO","GB",[96.0,139.0],[["FB",3,1,"X","",0]]],
-[1,0,"Kc","",0,[["FB",1,3,"F","",0],["FB",3,2,"T","S",0],["SL",3,4,"F","",0],["SL",3,4,"T","S",1]]],
-[2,0,"GO","GB",[91.8,127.5],[["FB",2,3,"T","S",0],["FB",3,3,"T","S",0],["SL",4,3,"T","B",0],["CH",3,3,"T","B",1],["SL",4,3,"X","",0]],1],
-[3,0,"Kc","",0,[["FB",2,1,"T","S",0],["SL",4,0,"T","B",0],["FB",1,1,"T","S",0],["SL",4,0,"T","S",1]]],
-[4,0,"LO","LD",[110.5,116.0],[["FB",3,4,"F","",0],["FB",2,3,"T","S",0],["CH",4,3,"X","",0]],1],
-[5,0,"K","",0,[["FB",2,4,"T","S",1],["CH",2,3,"W","",0],["SL",4,4,"W","",0]]],
-[6,0,"PO","PU",[81.7,133.4],[["FB",1,1,"X","",0]]],
-[7,1,"PO","PU",[80.8,129.5],[["FB",2,3,"T","S",0],["FB",3,3,"X","",0]]],
-[8,1,"GO","GB",[100.7,141.0],[["FB",2,3,"T","S",0],["CB",3,2,"T","B",1],["FB",2,4,"T","B",0],["FB",2,2,"X","",0]]],
-[0,1,"FO","FB",[111.6,91.9],[["CB",3,3,"X","",0]]],
-[1,1,"Kc","",0,[["FB",3,4,"T","S",1],["CB",2,1,"T","S",0],["CB",4,2,"T","B",0],["CB",3,2,"T","S",0]]],
-[2,1,"K","",0,[["CB",2,1,"T","S",0],["FB",2,4,"T","B",0],["FB",3,2,"T","S",0],["FB",1,2,"W","",0]]]];
+/* ===================== no sample =====================
+   The frozen two-innings demo (SAMPLE_LU / SAMPLE_PI / SAMPLE_CUR / SAMPLE_P1 /
+   SAMPLE_P2, sampleGame, buildSample, demoArchive) was deleted here once the
+   released roster shipped. Real names in a real roster demonstrate the app better
+   than invented ones, and the sample had started to cost more than it taught:
 
-function buildSample(rows, date, opp, home){
-  var g = emptyGame();
-  g.date = date; g.opp = opp; g.home = home; g.who = "Coach V";
-  g.lineup = SAMPLE_LU.map(function(x){ return {men:[newMan("", x[0], x[1])], cur:0}; });
-  g.pitchers = SAMPLE_PI.map(function(x){
-    var p = newPitcher(x[0]); p.jersey = x[1]; p.hand = x[2]; return p;
-  });
-  g.pas = rows.map(function(d){
-    var a = newPA(d[0], d[1]);
-    a.result = d[2]; a.traj = d[3] || ""; a.hard = !!d[6];
-    if(d[4]) a.spray = {x:d[4][0], y:d[4][1]};
-    a.hname = SAMPLE_LU[d[0]][0]; a.hhand = SAMPLE_LU[d[0]][1];
-    d[5].forEach(function(x){
-      a.pitches.push({t:x[0], tn:x[0], r:x[1], c:x[2], m:x[3],
-                      call:(x[4]||""), ov:!!x[5]});
-    });
-    return a;
-  });
-  g.cp = g.pas[g.pas.length-1].p;
-  g.cur = g.pas.length-1;
-  return g;
-}
-function sampleGame(){
-  var g = buildSample(SAMPLE_CUR, "Sat 4/18", "Rock Canyon", "H");
-  g.sample = true;
-  return g;
-}
-/* Two earlier meetings, shown only while the sample is up and the real archive
-   is empty. Held in memory, never written to storage, never exported as real. */
-var DEMO = null;
-function demoArchive(){
-  if(DEMO) return DEMO;
-  DEMO = [ buildSample(SAMPLE_P2, "Sun 4/5", "Rock Canyon", "H"),
-           buildSample(SAMPLE_P1, "Sun 3/22", "Rock Canyon", "A") ];
-  DEMO.forEach(function(g){ g.filed = Date.now(); g.sent = true; g.build = BUILD; g.demo = true; });
-  return DEMO;
-}
-/* The archive History is looking at: the real one, or the demo while the
-   sample is loaded and nothing real has been filed. */
-function arch(){ return (O && O.sample && !A.length) ? demoArchive() : A; }
+     - it was the reason the app did not open ready to chart
+     - a lineup spot holding a TYPED name (the sample's shape) exercised a
+       different code path than a roster pick, so the Setup dropdown's real bug
+       hid behind it
+     - arch() silently served invented games to the History tab, the carried
+       reads and the Pull button whenever the sample was loaded
 
-/* The sample is a demo, full stop. It never turns into a real game by
-   accident - the only way out is the button, which starts a clean one. */
-function startReal(){
-  var keep = [];
-  try{ keep = JSON.parse(localStorage.getItem(LKEY)) || []; }catch(e){}
-  var g = emptyGame();
-  g.lineup = keep.length ? keep.map(function(id){ return {men:[newMan(id)], cur:0}; })
-                         : blankLineup(9);
-  g.pitchers = [newPitcher("")];
-  g.pas = [newPA(0,0)];
-  O = g; save(); render();
-  showTab("setup");
-}
+   If a demo is ever wanted again it should be a filed game in History, not a
+   parallel code path through the live one. */
+
+function arch(){ return A; }
+
 /* A lineup SPOT is not a hitter. A pinch hitter takes the spot and keeps his own
    at-bats; NFHS lets a starter re-enter once, in his own spot, so the men who
    have occupied a spot are a LIST and `cur` points at whoever is in it now.
@@ -2730,7 +2619,6 @@ function render(){
   try{
     el("fDate").value = O.date; el("fOpp").value = O.opp;
     el("fWho").value = O.who;  el("fHome").value = O.home;
-    el("sampleBar").hidden = !O.sample;
     if(tab==="setup"){ drawRoster(); drawLineupSetup(); drawPitchersSetup(); }
     if(tab==="chart"){
       drawPChips(); drawTypes(); drawZone(); drawSeq(); drawMods();
@@ -2775,16 +2663,6 @@ function wire(){
   el("btnSub").onclick    = subOpen;
   el("btnOrder").onclick  = function(){ O.hideLU = !O.hideLU; save(); render(); };
   el("umpFlip").onclick   = flipUmp;
-  el("btnReal").onclick   = startReal;
-  el("btnSample").onclick = function(){
-    function go(){ if(countPitches()) archiveGame(true); O = sampleGame(); render(); }
-    if(countPitches()){
-      ask("Load the sample?\n\nThe game you have charted is filed to History first "+
-          "\u2014 nothing is lost.", "Load sample", go);
-      return;
-    }
-    go();
-  };
   el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
   el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push(newLineupSpot()); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };

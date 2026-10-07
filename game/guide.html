@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Pitch Chart Coach's Guide</h1>
       <p>Everything you need to chart a game on the iPad. Read it once before you go, then keep it open on your phone for the first inning.</p>
-      <div class="meta">App v17 &nbsp;&middot;&nbsp; September 2026 &nbsp;&middot;&nbsp; Game day</div>
+      <div class="meta">App v18 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
     </div>
   </div>
 
@@ -209,7 +209,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Before you start</span>
-      <p>It holds <b>one game at a time</b>. Starting a new game erases the last one. Export before you start the next.</p>
+      <p>It charts <b>one game at a time</b>, and <b>filing a game never deletes it</b> &mdash; it moves to <b>History</b>, where it keeps an Export button for as long as you want it. Export anyway; History is the safety net, not the delivery.</p>
     </div>
   </section>
 
@@ -227,7 +227,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v17</b>. If it shows two numbers in amber, like <code>v15 &ne; v14</code>, that iPad has downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v18</b>. If it shows two numbers in amber, like <code>v15 &ne; v14</code>, that iPad has downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -246,15 +246,40 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
   <section>
     <h2>60 seconds before first pitch</h2>
     <ul>
-      <li>Tap <b>Start real game</b>. The app opens on a sample game so you can see it filled in, and nothing saves until you clear it.</li>
-      <li>Fill in the date, the opponent and your starter's name across the top.</li>
+      <li>Fill in the date and the opponent across the top, then <b>pick your starter</b> from the drop-down on the first mound chip &mdash; our pitchers come off the roster now, there is nothing to type.</li>
       <li>Type the opposing lineup down the left: name, jersey, position, and R or L. Tap a row to select that hitter, tap again to type in the box.</li>
       <li>The lineup defaults to <b>9 spots</b>. Use the minus and plus at the bottom to go up to <b>12</b> if they bat a longer order. A spot that already has a name or a pitch in it won't drop.</li>
       <li>Tap <b>&#9668; Lineup</b> in the header once the lineup is in. It collapses the left column and gives the charting side more room.</li>
     </ul>
     <div class="note">
       <span class="lab">Use the return key</span>
-      <p>Return walks you forward: date, opponent, then every lineup field top to bottom. Type, hit return, keep typing. The key says <b>next</b> until the last field and then <b>done</b>, which drops the keyboard. It works the same down the pitcher names and down the IP/R/ER card at the end. Nothing needs to be &ldquo;saved&rdquo; on the way &mdash; every keystroke is already written.</p>
+      <p>Return walks you forward: date, opponent, then every lineup field top to bottom. Type, hit return, keep typing. The key says <b>next</b> until the last field and then <b>done</b>, which drops the keyboard. It works the same down the IP/R/ER card at the end. Nothing needs to be &ldquo;saved&rdquo; on the way &mdash; every keystroke is already written.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Our pitchers come off the roster</h2>
+    <p class="sub">New in v18. The mound chips at the top of the chart screen are <b>drop-downs</b>, not name fields.</p>
+    <ul>
+      <li>Tap the chip, pick the arm. His class and which way he throws come with him &mdash; nothing to type, nothing to spell.</li>
+      <li>A pitcher already on another chip <b>drops off the list</b>, so the same kid can't be charted twice in one game.</li>
+      <li>Somebody wrong, missing or graduated? Tell Jim. <b>Nothing already charted is disturbed</b> &mdash; a pitcher taken off a later roster keeps his name on the chip and keeps his pitches.</li>
+      <li>A corrected roster <b>does not need an app update</b>. Open the app once with signal and it picks up the current roster on its own. With no signal it keeps the one it has.</li>
+    </ul>
+    <p>The <b>Setup</b> screen has an <b>Our pitchers</b> panel at the top that says which roster this iPad is holding. It is a read-out, not a form.</p>
+    <ul>
+      <li><b>Released roster</b> in green &mdash; the real team, and the same list the bullpen chart and the offense chart are using. This is what you want.</li>
+      <li><b>SAMPLE roster &mdash; not the real team</b> in red &mdash; placeholders. It will let you chart, which is why it shouts. Stop and tell Jim.</li>
+      <li><b>Leftover roster from another app</b> in amber &mdash; this iPad is behind. Get it on the current version before the next game.</li>
+      <li><b>No roster</b> in red &mdash; there is nobody to put on the mound. Reload with signal; tell Jim if it stays empty.</li>
+    </ul>
+    <div class="note">
+      <span class="lab">Why it matters</span>
+      <p>The roster is what makes a pitcher <i>one</i> pitcher across all three apps. The export now carries his ID alongside his name, so the bullpen work he did in January and the innings he throws in April land on the same kid &mdash; no matching spellings by hand.</p>
+    </div>
+    <div class="note">
+      <span class="lab">Their hitters are still typed</span>
+      <p>The opposing lineup is typed, the same as always. They are not our players and never will be on our roster.</p>
     </div>
   </section>
 
@@ -324,7 +349,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li>For anything he hit, tap the <b>spray chart</b> where the ball ended up. Hits and errors also want a trajectory: GB, LD, FB or PU. Everything else fills its own trajectory in.</li>
       <li>Tap <b>Next Batter</b>. It turns gold once a result is in, so a gold button means the app is waiting on you.</li>
       <li>Tap the out dots in the count bar as outs happen. The app has no idea what inning it is.</li>
-      <li>When you change pitchers, tap the new pitcher's chip at the top. Nothing detects a pitching change.</li>
+      <li>When you change pitchers, tap <b>+ Reliever</b> at the top, pick him off the drop-down, then tap his chip to make him the man on the mound. Nothing detects a pitching change.</li>
     </ul>
     <div class="note">
       <span class="lab">Nothing moves on its own</span>
@@ -418,8 +443,8 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li>The header line records which app build produced the file.</li>
     </ul>
     <div class="note">
-      <span class="lab">Export before you start the next game</span>
-      <p>The game lives in the iPad's storage and the next game overwrites it. Nothing is sent anywhere, so the export is the only copy that leaves the device.</p>
+      <span class="lab">Nothing leaves the iPad on its own</span>
+      <p>Everything lives in the iPad's storage. <b>File</b> keeps the game in History; <b>Export</b> is the only thing that gets it off the device. Do both.</p>
     </div>
   </section>
 

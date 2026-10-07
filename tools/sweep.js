@@ -41,6 +41,31 @@ async function sweep(b, app, path, controls) {
   await pg.close();
 }
 
+/* ---- A CHOICE HAS TO SURVIVE THE REDRAW ----
+   Every check above asks "did clicking this change something". None of them asked
+   "is the choice still there a moment later", and that gap hid a real bug for
+   several releases: the offense lineup dropdown saved the pick to sp.men[0].rid
+   while the renderer read sp.rid, so the select snapped back to "- pick -" on
+   every redraw. The control was alive. The screen was lying.
+
+   sticks(sel, n) picks the nth real option in a <select>, fires input AND change
+   (the redraw hangs off one or the other depending on the app), and then re-reads
+   the element FRESH from the DOM - the old reference may have been replaced by the
+   redraw, and reading it would prove nothing. */
+const sticks = (sel, nth) => `(function(){
+  var s = document.querySelectorAll(${JSON.stringify(sel)})[${nth || 0}];
+  if(!s) return "no such select";
+  var want = null;
+  for(var i=0;i<s.options.length;i++) if(s.options[i].value){ want = s.options[i].value; break; }
+  if(!want) return "nothing to pick";
+  s.value = want;
+  s.dispatchEvent(new Event("input",{bubbles:true}));
+  s.dispatchEvent(new Event("change",{bubbles:true}));
+  var fresh = document.querySelectorAll(${JSON.stringify(sel)})[${nth || 0}];
+  if(!fresh) return "the select vanished";
+  return fresh.value === want ? "stuck" : "SNAPPED BACK to " + JSON.stringify(fresh.value);
+})()`;
+
 const t = s => `(document.querySelector(${JSON.stringify(s)})||{}).textContent||"∅"`;
 const c = s => `(document.querySelector(${JSON.stringify(s)})||{}).className||"∅"`;
 const n = s => `document.querySelectorAll(${JSON.stringify(s)}).length`;
@@ -100,7 +125,12 @@ const styled = sel =>
     ["hard contact",     "#hardBtn",                      c("#hardBtn")],
     ["result",           "#results button:nth-child(5)",  t("#results button.on")],
     ["undo",             "#btnUndo",                      t("#seq")],
-    ["batter strip",     "#scoutPick button:nth-child(1)",c("#scoutPick button:nth-child(1)")],
+    /* Button 1 is ALREADY the batter at the plate on a fresh game, so clicking it
+       changes nothing and the check read as dead - which is what it did the moment
+       the sample game (which had the lineup part-way through) was removed. Probe
+       button 2: it carries no class until it is picked. No fixture needed, which
+       makes it a better check than the one that leaned on the demo. */
+    ["batter strip",     "#scoutPick button:nth-child(2)", c("#scoutPick button:nth-child(2)")],
     ["scout tag",        "#tagsP button:nth-child(1)",    c("#tagsP button:nth-child(1)")],
     ["position seg",     "#posSeg button:nth-child(3)",   c("#posSeg button:nth-child(3)")],
     ["report tab",       '#tabs button[data-tab="mix"]',  'document.getElementById("tab-mix").style.display'],
@@ -115,6 +145,87 @@ const styled = sel =>
        null, "filled"],
     ["setup screen",      "#btnSetup",                     'document.getElementById("v-setup").hidden+""'],
     ["setup rows",        null,                            n("#suRows tr"), null, 9],
+    /* ---- the released roster (v18) ---- */
+    /* The last app to stop typing our own players. Until now the game-side export
+       could not be joined to the bullpen's PitcherID without matching spellings by
+       hand - and that join is what answers "does January show up in April". */
+    ["roster.js shipped",  null,
+       '(function(){ var r=window.TITANS_ROSTER;'+
+       ' return (r && r.length) ? "yes" : "NO ROSTER FILE"; })()', null, "yes"],
+    ["pitcher chips are pickers", null,
+       '(function(){ var sel=document.querySelectorAll("#pitchers select[data-pick]");'+
+       ' var txt=document.querySelectorAll("#pitchers input");'+
+       ' if(!sel.length) return "no picker";'+
+       ' return txt.length ? "a text field is still there" : "picker only"; })()',
+       null, "picker only"],
+    ["picker offers the release", null,
+       '(function(){ var sel=document.querySelectorAll("#pitchers select[data-pick]")[0];'+
+       ' if(!sel) return "no picker";'+
+       ' var ids={}; for(var i=0;i<sel.options.length;i++) if(sel.options[i].value) ids[sel.options[i].value]=1;'+
+       ' var miss=window.TITANS_ROSTER.filter(function(p){ return !ids[p.id]; });'+
+       ' return miss.length ? "not offered: "+miss.map(function(p){return p.name}).join(",") : "all"; })()',
+       null, "all"],
+    /* The same display rule as the other two apps, checked against what this app
+       renders into the picker rather than against the file's own `name` field. */
+    ["derived names match the rule", null,
+       '(function(){'+
+       ' var R2=window.TITANS_ROSTER;'+
+       ' function k(x){ return String(x==null?"":x).trim().toLowerCase(); }'+
+       ' function want(p){'+
+       '   var last=String(p.last||"").trim(), first=String(p.first||"").trim();'+
+       '   if(!last) return first;'+
+       '   if(!first) return last;'+
+       '   var sl=0, si=0, li=first.charAt(0).toLowerCase();'+
+       '   R2.forEach(function(q){ if(q.id===p.id) return;'+
+       '     if(k(q.last)!==k(last)) return; sl++;'+
+       '     if(String(q.first||"").trim().charAt(0).toLowerCase()===li) si++; });'+
+       '   if(!sl) return last;'+
+       '   if(!si) return last+", "+first.charAt(0).toUpperCase();'+
+       '   return last+", "+first; }'+
+       ' var sel=document.querySelectorAll("#pitchers select[data-pick]")[0];'+
+       ' var bad=[];'+
+       ' R2.forEach(function(p){'+
+       '   var found=null;'+
+       '   for(var i=0;i<sel.options.length;i++) if(sel.options[i].value===p.id) found=sel.options[i].text;'+
+       '   if(found==null){ bad.push(p.last+" not offered"); return; }'+
+       '   if(found.indexOf(want(p))!==0) bad.push(found+" want "+want(p)); });'+
+       ' return bad.length ? bad.join(" ; ") : "yes"; })()',
+       null, "yes"],
+    ["pitcher pick sticks", null, sticks('#pitchers select[data-pick]'), null, "stuck"],
+    ["no double-booking an arm", null,
+       '(function(){'+
+       /* "+ Reliever" is the only way to a second chip from out here. */
+       ' var add=document.querySelector("#pitchers .addp");'+
+       ' if(add) add.click();'+
+       ' var sels=document.querySelectorAll("#pitchers select[data-pick]");'+
+       ' if(sels.length<2) return "need two chips";'+
+       ' var taken=sels[0].value;'+
+       ' if(!taken) return "chip 1 is not set";'+
+       ' for(var i=0;i<sels[1].options.length;i++)'+
+       '   if(sels[1].options[i].value===taken) return "STILL OFFERED";'+
+       ' return "gone"; })()',
+       null, "gone"],
+    ["banner matches the file", null,
+       '(function(){ var b=document.getElementById("rosSrc");'+
+       ' if(!b) return "no banner";'+
+       ' var t=b.textContent.replace(/\\s+/g," ");'+
+       ' if(window.TITANS_ROSTER_SAMPLE){'+
+       '   if(b.className.indexOf("bad")<0) return "sample file but class "+b.className;'+
+       '   return /SAMPLE roster/.test(t) ? "yes" : t.slice(0,50); }'+
+       ' if(b.className.indexOf("ok")<0) return "class "+b.className;'+
+       ' return /Released roster/.test(t) ? "yes" : t.slice(0,50); })()',
+       'document.getElementById("btnSetup").click();', "yes"],
+    ["export carries the pitcher ID", null,
+    /* exportText() is inside the IIFE too. Open the export panel and read the
+       textarea it fills - the same trick the bullpen suite uses. */
+       '(function(){'+
+       ' var b=document.getElementById("btnExport2"); if(b) b.click();'+
+       ' var t=document.getElementById("exportText");'+
+       ' if(!t) return "no export textarea";'+
+       ' var h=(t.value||"").split(/\\r?\\n/).filter(function(l){ return /^Spot\\t/.test(l); })[0]||"";'+
+       ' return (h.indexOf("PitcherID")>=0 && h.indexOf("PitcherLast")>=0 &&'+
+       '         h.indexOf("ClassName")>=0) ? "yes" : (h.slice(0,120)||"no pitch-log header"); })()',
+       null, "yes"],
     /* Carried reads have to be visibly marked as carried, or the charter treats
        a read from six weeks ago as something somebody saw this afternoon. */
     ["carried-read bar",  null,                            '(!!document.getElementById("carriedBar"))+""', null, "true"],
@@ -147,17 +258,36 @@ const styled = sel =>
     /* needs an at-bat to exist at that spot to jump to */
     ["lineup spot",      "[data-spot='2']",               t("#paWho"),
        'O.pas=[newPA(2,0), newPA(0,0)]; O.cur=1; render();'],
-    ["mound chip",       "#pChips [data-cp='1']",         t("#pChips .pchip.on"), 'O.cp=0; render();'],
+    /* Two opposing pitchers to switch between. The sample used to supply them;
+       now the check builds its own, which is the better test anyway - it no
+       longer depends on a demo fixture existing. */
+    ["mound chip",       "#pChips [data-cp='1']",         t("#pChips .pchip.on"),
+       'O.pitchers=[newPitcher("Zed Keller"),newPitcher("Zed Vance")]; O.cp=0; render();'],
     ["tab: report",      "#tab-report",                   'document.getElementById("v-report").hidden+""'],
     ["tab: history",     "#tab-history",                  'document.getElementById("v-history").hidden+""'],
     /* History mirrors the Setup tab's tags and notes. It must be a MIRROR - the
        moment an entry control appears here there are two places to set a tag and
        no answer to which one is current. */
+    /* The History reads panel needs a FILED game whose pitcher carries a tag.
+       That used to come from the demo archive, which arch() served whenever the
+       sample was loaded - so these four checks were reading invented games. They
+       now file a real one first: chart a pitch, tag the pitcher, file it. */
     ["reads on the header", null,
        `(function(){ var h = document.querySelector("#hist .phead.withreads");
           return h && h.querySelector(".rtag") && /What to expect/.test(h.textContent)
             ? "yes" : "NO"; })()`,
-       'showTab("history");', "yes"],
+       `(function(){
+          O.opp = "Zed Opponent";
+          O.pitchers = [newPitcher("Zed Keller")];
+          O.pitchers[0].tags = {POUNDS:true};
+          O.pitchers[0].notes = "sits fastball early";
+          O.cp = 0;
+          O.pas = [newPA(0,0)];
+          O.cur = 0;
+          logPitch(2,2);
+          archiveGame(true);
+          showTab("history");
+        })()`, "yes"],
     ["header may wrap",   null,
        `getComputedStyle(document.querySelector("#hist .phead.withreads")).flexWrap`,
        null, "wrap"],
@@ -238,6 +368,31 @@ const styled = sel =>
        null, "all"],
     /* bats and throws are separate fields and both have to show, because this app
        needs the bat and the bullpen needs the arm off the same record. */
+    ["lineup pick sticks", null, sticks('[data-lf="rid"]'), 'showTab("setup");', "stuck"],
+    /* And the one-spot-per-hitter rule rides on the same accessor, so it belongs
+       in the same place: a kid placed in spot 1 must not be offered in spot 2. */
+    ["no double-booking a hitter", null,
+       '(function(){ var a=document.querySelectorAll(\'[data-lf="rid"]\')[0];'+
+       ' var b=document.querySelectorAll(\'[data-lf="rid"]\')[1];'+
+       ' if(!a||!b) return "need two spots";'+
+       ' if(!a.value) return "spot 1 is not set";'+
+       ' for(var i=0;i<b.options.length;i++) if(b.options[i].value===a.value) return "STILL OFFERED";'+
+       ' return "gone"; })()',
+       null, "gone"],
+    /* Count from the MODEL, not from the selects. The first version of this check
+       compared the counter against the dropdowns and stayed GREEN with the bug in:
+       both sides read empty, so they agreed on being wrong. A check whose two
+       sides share the same failure is not a check. */
+    ["the set counter agrees", null,
+       '(function(){'+
+       ' var set=0;'+
+       ' (O.lineup||[]).forEach(function(sp){'+
+       '   var r = (sp && sp.men && sp.men[0]) ? (sp.men[0].rid||"") : (sp && sp.rid || "");'+
+       '   if(r) set++; });'+
+       ' var txt=document.getElementById("luInfo").textContent;'+
+       ' return txt.indexOf(set+" of ")===0 ? "agrees"'+
+       '   : txt+" but the model has "+set+" set"; })()',
+       null, "agrees"],
     /* Same collapse in this app: the lineup is what gets set on this screen, and
        the roster was pushing it off the bottom. */
     ["roster list collapse", null,
@@ -433,6 +588,8 @@ const styled = sel =>
        ' var t=document.getElementById("rosSrc").textContent;'+
        ' return /[Dd]o not chart/.test(t) ? "yes" : "no warning"; })()',
        null, "yes"],
+    ["mound pick sticks",  null, sticks('#rosterTbl [data-f="rid"]'),
+       'document.getElementById("tab-setup").click();', "stuck"],
     /* The panel is collapsed by default. Sixty-six players is ~2,200px of list
        sitting directly above the mound list a coach starts a session with, and you
        pick arms off a dropdown - so the list is reference, not the screen. */

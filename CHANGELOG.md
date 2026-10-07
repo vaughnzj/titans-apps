@@ -18,17 +18,22 @@ old one — tap the amber stamp to fix it.
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
 | **Bullpen Chart** | **v29** | v27 — **v28 and v29 waiting to be pushed** |
-| **Pitch Chart** (game) | **v17** | v17 ✅ |
-| **Offense Chart** | **v39** | v37 — **v38 and v39 waiting to be pushed** |
+| **Pitch Chart** (game) | **v18** | v17 — **v18 waiting to be pushed** |
+| **Offense Chart** | **v40** | v37 — **v38, v39 and v40 waiting to be pushed** |
 
-**`roster.js` is new in this push** and has to go into **both** `bullpen/` and `offense/` — the
-same file, twice. A service worker can only cache files inside its own folder, so one shared copy
-at the repo root would work online and vanish the moment an iPad lost signal.
+**All three apps now read the roster**, so `roster.js` needs a copy in `bullpen/`, `offense/`
+**and `game/`** — the same file, three times. A service worker can only cache files inside its own
+folder, so one shared copy at the repo root would work online and vanish the moment an iPad lost
+signal. `game/roster.js` is the new one in this push.
 
-**What ships today is the SAMPLE roster.** Both apps show a red *SAMPLE roster — not the real team*
-banner until the real one is released, which is safe to push but not safe to chart against. The
-first job is: fill in `Titans-Roster-Template.xlsx` → upload it in the Roster Manager → download
-`roster.js` → drop it in both folders → bump both cache names.
+**Do not overwrite `bullpen/roster.js` or `offense/roster.js`.** The copies already live on GitHub
+are the real 66-player release. The copy in the working folder is the 4-player SAMPLE. Push
+`game/roster.js`, then copy one of the live files over it — or download a fresh `roster.js` out of
+the Roster Manager and drop it into all three folders at once.
+
+**No cache bump is needed for a roster change.** Since v28/v38 the roster is fetched from the
+network first, so a corrected roster reaches every iPad on the next open with signal. A cache bump
+is only for app code.
 
 ---
 
@@ -153,7 +158,7 @@ typing a name.
   they read the same saved roster. Whatever the Offense Chart already had is adopted automatically —
   nothing to retype. Fixing a spelling once fixes it everywhere, including in sessions already filed.
   **The Pitch Chart is not wired in yet** — it still types our pitchers free-form. Same origin, so
-  it's a small change, but it hasn't been made.
+  it's a small change, but it hasn't been made. *(Done in Pitch Chart v18, Oct 7.)*
 - **Class** is Fr / So / Jr / Sr, a picked list. This is the field a peer comparison needs: a
   sophomore measured against sophomores says far more than one measured against the program.
   **Move everyone up a class** handles June. *(Changed Oct 7: the bump now removes graduating
@@ -250,6 +255,34 @@ execution grading.
 
 ## Pitch Chart (game)
 
+### v18 · Oct 7, 2026
+**Headline:** You pick your pitchers off the roster now instead of typing their names — and the
+sample game is gone, so the app opens ready to chart.
+
+- **The mound chips are drop-downs.** Tap the chip, pick the arm; his class and throwing hand come
+  with him. A pitcher already on another chip drops off the list, so the same kid can't be charted
+  twice in one game.
+- **Roster-only, on purpose.** There is no name field to fall back on. With the whole roster in the
+  app there is nothing a typed name can do except spell somebody wrong, and a misspelling is how a
+  pitcher's winter work stops lining up with his spring.
+- **The export carries `PitcherID`,** plus `PitcherLast`, `PitcherFirst`, `Class`, `ClassName` and
+  `Throws`. `Pitcher` is still there but it is the display label — group a season roll-up on
+  `PitcherID`, which is the same ID the bullpen chart files. This is the join that answers *does
+  what we build in January show up in April*, and until now it needed spellings matched by hand.
+- **An `Our pitchers` panel on Setup** says which roster this iPad is holding — green for the real
+  release, red for the SAMPLE, amber for a leftover from another app, red for none at all. Same
+  four states and the same wording as the other two apps.
+- **A pitcher dropped from a later roster keeps his name and his pitches.** His chip reads
+  *"Dieker (not on the roster)"* and the export still carries his ID, so the session still joins up
+  with the work he did while he was on it.
+- **The sample game is gone.** It opens on a clean game that saves from the first pitch. A saved
+  sample left on an iPad that never tapped *Start real game* is discarded rather than loaded. Same
+  call as the bullpen in v21 and the Offense Chart in v40, same reason: a released roster
+  demonstrates the app better than invented names, and the sample was the thing standing between
+  opening the app and charting.
+- The guide gained a section on all of this, and the two places it still claimed the next game
+  overwrites the last one — untrue since History was added in v16 — are fixed.
+
 ### v17 · Oct 5, 2026
 **Headline:** Enter the other team's lineup before first pitch, and pull it forward from the last
 time you played them — scouting notes and tags included.
@@ -288,6 +321,32 @@ Not logged at the time.
 ---
 
 ## Offense Chart
+
+### v40 · Oct 7, 2026
+**Headline:** Fixed — picking a name in a lineup spot now stays picked. And the sample game is
+gone, so the app opens ready to chart with last game's order already in it.
+
+- **The lineup bug.** Tap a spot's drop-down on Setup, pick a kid, and he snapped straight back to
+  *— pick —*. The counter also sat on *0 of 9 set* no matter what you picked, and the rule that
+  stops the same kid being put in two spots had quietly stopped working.
+
+  What happened: in **v31** a lineup spot stopped being one player and became a list, so that a
+  pinch hitter could not inherit the starter's at-bats. The migration moved the old field into the
+  new list correctly — but three places that *read* it were never updated, and had been reading a
+  field that nothing has written since. It rendered perfectly and was wrong. There is now one
+  function that answers "who is the starter in this spot", all three call it, and the sweep has a
+  new kind of check — *a choice survives the redraw* — in all three apps, because every check it
+  had only ever proved a control **changed** something, not that the change **stuck**.
+
+- **The sample game is gone.** It opens on a clean game with **last game's batting order already
+  loaded**, which is the one thing the sample was genuinely useful for showing. A saved sample on
+  an iPad that never tapped *Start a real game* is discarded rather than loaded.
+- **History is the real archive, full stop.** It used to fall back to a demo archive whenever the
+  sample was loaded and nothing had been filed, which meant the History tab, the carried reads
+  *and* the Pull button could all have been reading invented games.
+- Worth saying plainly: the sample is part of why the lineup bug lived as long as it did. A spot
+  holding a **typed** name — the sample's shape — went through different code than a roster pick,
+  so the broken path was never the one on screen when the app opened.
 
 ### v39 · Oct 7, 2026
 **Headline:** Same as the bullpen — the roster list is folded away, the banner stays.
@@ -421,7 +480,9 @@ deferred.
 **Releasing a roster — three steps, no version numbers** *(since Bullpen v28 / Offense v38)*:
 
 1. Edit in the Roster Manager and download `roster.js`.
-2. Drop it into `bullpen/` **and** `offense/` in the repo and push.
+2. Drop it into `bullpen/`, `offense/` **and** `game/` in the repo and push. All three, every
+   time: a folder that gets missed keeps the roster it already had, says so only in its own
+   banner, and its exports stop joining to the other two.
 3. Add a line to the table below saying what changed and why.
 
 That's it. The apps check the server for `roster.js` before falling back to their saved copy, so a
@@ -452,7 +513,7 @@ unique"*, and nothing blocked the release. Verified by test before fixing.
 **What it is now.** Identity is the **pair**. `roster.js` carries `last` and `first`; `name` is
 **derived** and the apps recompute it on load rather than trusting the file.
 
-**The display rule**, in one place, byte-identical in the Roster Manager and both apps:
+**The display rule**, in one place, byte-identical in the Roster Manager and all three apps:
 
 | Situation | Shows as |
 |---|---|
@@ -520,28 +581,34 @@ order is ever flipped back.
 
 | Date | Players | What changed |
 |---|---|---|
-| 2026-10-07 | — | *No real roster released yet.* Both apps ship a **sample** `roster.js` so they have something to read; it flags itself and both apps show a red **SAMPLE roster — not the real team** banner telling coaches not to chart against it. The first real release goes on the next line. |
+| 2026-10-07 | — | *No real roster released yet.* Each app ships a **sample** `roster.js` so it has something to read; it flags itself and the app shows a red **SAMPLE roster — not the real team** banner telling coaches not to chart against it. The first real release goes on the next line. |
 
 ---
 
 ## Keeping this up to date
 
 Add an entry **in the same pass that bumps the version** — it's part of shipping, not paperwork
-afterwards. Five things already move together (`index.html`, `sw.js`'s `CACHE`, the `BUILD`
-constant, the guide's `App v_` line, and the version inside the guide's "Which version am I on?"
-callout). Both the bullpen and the offense chart now also list `roster.js` in `sw.js`, and the
-bullpen lists `templates.js`. This file is the last one.
+afterwards. Five places move together (`index.html`'s `BUILD`, `sw.js`'s `CACHE`, the guide's
+`App v__` line, the version inside the guide's "Which version am I on?" callout, and this file —
+both its standings table and a new entry). All three apps list `roster.js` in `sw.js`; the bullpen
+also lists `templates.js`.
 
-**Before you push, run both test scripts** — not just the sweep:
+**`BUILD` and `CACHE` must match exactly.** The app compares the number baked into `index.html`
+against the cache name it is being served from, so bumping one without the other shows a permanent
+amber `v27 ≠ v28 · tap to fix` on every iPad that tapping cannot clear.
+
+**Before you push, run the test scripts** — the sweep alone is not enough:
 
 ```
+python3 tools/version-audit.py   # all five version locations, all three apps
 cd titans-apps && python3 -m http.server 8807 &
-node tools/sweep.js            # every control still does something
-node tools/roster-states.js    # released / missing / leftover-local roster
+node tools/sweep.js              # every control still does something
+node tools/roster-states.js      # the four roster states, in all three apps
 ```
 
 `sweep.js` stays green through a bug that silently breaks roster identity, which is exactly why
-`roster-states.js` exists. Both have been proved to fail by reintroducing the bugs they cover.
+`roster-states.js` exists. After touching any `sw.js`, also run `tools/swcache/` — once per app.
+Every check in all of them has been proved to fail by reintroducing the bug it covers.
 
 Write the **headline** for a coach who has never seen the code: what he can now do, or what stopped
 being wrong. Put the version numbers and column names in the detail bullets underneath.

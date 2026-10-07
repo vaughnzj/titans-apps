@@ -137,6 +137,103 @@ const bannerFull = sel => `(function(){ var b=document.getElementById(${JSON.str
     await pg.context().close();
   }
 
+  /* The Pitch Chart has no roster TABLE - just the banner on the Setup screen and
+     the pickers on the mound chips - so it gets its own block rather than a fifth
+     parameter on the loop above. Same four states, same four colours. */
+  {
+    const open = 'document.getElementById("btnSetup").click();';
+    const opts = '(function(){ var s=document.querySelector(\'#pitchers select[data-pick]\');'+
+      ' if(!s) return "no picker";'+
+      ' var n=0; for(var i=0;i<s.options.length;i++) if(s.options[i].value) n++;'+
+      ' return n; })()';
+
+    console.log("\nGAME — roster.js is there");
+    let pg = await page(b, "/game/index.html", RELEASED);
+    let ev = js => pg.evaluate(js);
+    is("reads the released file", await ev('window.TITANS_ROSTER.length'), 2);
+    is("  both arms are on the picker", await ev(opts), 2);
+    await ev(open); await pg.waitForTimeout(300);
+    is("  banner is green", /^rossrc ok/.test(await ev(banner("rosSrc"))), true);
+    is("  names the release date", /2026-03-01/.test(await ev(banner("rosSrc"))), true);
+    /* Same rule as the other two: a release is never copied into local storage, or
+       a later build shipped without roster.js serves a frozen one and looks current. */
+    is("  NOT written to local storage", await ev('localStorage.getItem("titans-roster-v1")'), null);
+    is("  no page errors", pg.__errs.join("|"), "");
+    await pg.context().close();
+
+    console.log("\nGAME — roster.js is the shipped SAMPLE");
+    pg = await page(b, "/game/index.html", SAMPLE); ev = js => pg.evaluate(js);
+    await ev(open); await pg.waitForTimeout(300);
+    is("the sample loads", await ev('window.TITANS_ROSTER.length'), 1);
+    is("  banner is RED, not green", /rossrc bad/.test(await ev(banner("rosSrc"))), true);
+    is("  says it is a sample", /SAMPLE roster/.test(await ev(banner("rosSrc"))), true);
+    is("  tells them not to chart it", /[Dd]o not chart/.test(await ev(bannerFull("rosSrc"))), true);
+    is("  no page errors", pg.__errs.join("|"), "");
+    await pg.context().close();
+
+    /* Roster-only was Jim's call, which means no roster is now no pitcher at all -
+       there is no text field to fall back on. The banner has to say that much. */
+    console.log("\nGAME — roster.js is missing");
+    pg = await page(b, "/game/index.html", null); ev = js => pg.evaluate(js);
+    is("app still loads", await ev('document.readyState'), "complete");
+    is("  the picker is empty", await ev(opts), 0);
+    await ev(open); await pg.waitForTimeout(300);
+    is("  banner says no roster", /^rossrc bad/.test(await ev(banner("rosSrc"))), true);
+    is("  and says there is nobody to pitch", /[Nn]obody to put on the mound/.test(await ev(bannerFull("rosSrc"))), true);
+    is("  no page errors", pg.__errs.join("|"), "");
+    await pg.context().close();
+
+    console.log("\nGAME — roster.js missing, another app left a list on this iPad");
+    pg = await page(b, "/game/index.html", null); ev = js => pg.evaluate(js);
+    await ev(`localStorage.setItem("titans-roster-v1", JSON.stringify(
+      [{id:"loc001", last:"Local", first:"Zed", cls:"Jr", throws:"R", bats:"R", jersey:""}]));`);
+    await pg.reload({ waitUntil:"load" }); await pg.waitForTimeout(1100);
+    is("the leftover arm is offered", await ev(opts), 1);
+    await ev(open); await pg.waitForTimeout(300);
+    is("  banner warns in amber", /^rossrc warn/.test(await ev(banner("rosSrc"))), true);
+    is("  and calls it leftover", /[Ll]eftover roster/.test(await ev(banner("rosSrc"))), true);
+    is("  no page errors", pg.__errs.join("|"), "");
+    await pg.context().close();
+
+    /* The data-losing case, Pitch Chart edition: pitches charted against an arm who
+       is off the next release. His name stays on the chip; the pitches stay his. */
+    console.log("\nGAME — a pitcher dropped from a later release");
+    pg = await page(b, "/game/index.html", RELEASED); ev = js => pg.evaluate(js);
+    await ev(`(function(){ var s=document.querySelector('#pitchers select[data-pick]');
+      s.value="rel0001"; s.dispatchEvent(new Event("change",{bubbles:true})); })()`);
+    await pg.waitForTimeout(300);
+    await ev('(function(){ var z=document.querySelectorAll("#zone button"); z[4].click(); z[12].click(); })()');
+    await pg.waitForTimeout(400);
+    const gsaved = await ev('localStorage.getItem("dugout-pitch-chart-v2")');
+    is("two pitches charted", await ev('(document.getElementById("sPitches")||{}).textContent||"none"'), "2");
+    is("  stored against his ID", /rel0001/.test(String(gsaved)), true);
+
+    const gctx = await b.newContext({ viewport:{width:1280,height:1200}, serviceWorkers:"block" });
+    await gctx.route("**/roster.js", r => r.fulfill({ status:200, contentType:"application/javascript", body:WITHOUT_ZEB }));
+    pg = await gctx.newPage();
+    const gerrs = []; pg.on("pageerror", e => gerrs.push(String(e)));
+    await pg.goto(BASE + "/game/index.html", { waitUntil:"load" });
+    await pg.waitForTimeout(600);
+    ev = js => pg.evaluate(js);
+    await ev(`localStorage.setItem("dugout-pitch-chart-v2", ${JSON.stringify(gsaved)});`);
+    await pg.reload({ waitUntil:"load" }); await pg.waitForTimeout(1200);
+    is("he is off the new release", await ev('window.TITANS_ROSTER.length'), 1);
+    is("  his name is STILL on the chip", await ev(
+       '(function(){ var s=document.querySelector(\'#pitchers select[data-pick]\');'+
+       ' return s ? s.options[s.selectedIndex].text.replace(/\\s+/g," ").trim() : "no picker"; })()'),
+       "Zeb Released (not on the roster)");
+    is("  his pitches are still there", await ev(
+       '(document.getElementById("sPitches")||{}).textContent||"none"'), "2");
+    /* And the export still carries the ID, so the session joins up with the bullpen
+       work he did while he WAS on the roster. */
+    is("  the export still has his ID", await ev(
+       '(function(){ var b=document.getElementById("btnExport2"); if(b) b.click();'+
+       ' var t=document.getElementById("exportText");'+
+       ' return (t && (t.value||"").indexOf("rel0001")>=0) ? "yes" : "GONE"; })()'), "yes");
+    is("  no page errors", gerrs.join("|"), "");
+    await gctx.close();
+  }
+
   /* The one that actually loses work. Chart a pitcher, then come back on a release
      he is no longer part of: his name must still be on the slot. */
   console.log("\nBULLPEN — a pitcher dropped from a later release");

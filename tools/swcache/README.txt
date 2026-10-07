@@ -15,10 +15,14 @@ Why it needs its own harness:
     why server.py exists: touch a file called ".delay" with a number of seconds
     and every roster.js response stalls that long. That is the gym-wifi case.
 
-SETUP
-  mkdir -p tools/swcache/site
-  cp bullpen/* tools/swcache/site/
+SETUP — run it once per app. All three have roster.js on the network-first path now.
+  rm -rf tools/swcache/site && mkdir -p tools/swcache/site
+  cp bullpen/* tools/swcache/site/              (or offense/* or game/*)
   node tools/swcache/roster-freshness.js        (it starts and stops the server)
+
+  Copy the WHOLE folder. The worker caches its file list as a unit, so one missing
+  file means the install fails silently and step 3 reports a cache-first failure
+  that is really a bad copy. The suite now checks for that up front and says so.
 
 WHAT IT COVERS, in order
   1  First load: the worker installs and caches roster v1.

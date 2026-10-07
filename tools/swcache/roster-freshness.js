@@ -51,11 +51,30 @@ const IDX = fs.readFileSync(path.join(SITE, "index.html"), "utf8");
 const PREFIX = (SW.match(/var CACHE = "(titans-[a-z]+-)/) || [])[1];
 const BUILD = (IDX.match(/var BUILD = "([^"]+)"/) || [])[1];
 if (!PREFIX || !BUILD) { console.log("site/ does not look like one of the apps"); process.exit(1); }
+/* A HALF-COPIED site/ is the trap here, and it does not look like one. The worker's
+   addAll() rejects as a unit, so one missing file means the install fails, the page
+   is never controlled, and the suite reports step 3 as "index.html came from the
+   server" - a cache-first failure that is really a copy that forgot guide.html.
+   Check the worker's own manifest against the folder before any of that. */
+{
+  const want = (SW.match(/var FILES = \[([^\]]*)\]/) || ["", ""])[1]
+    .split(",").map(s => s.trim().replace(/^["']|["']$/g, ""))
+    .filter(f => f && f !== "./");
+  const missing = want.filter(f => !fs.existsSync(path.join(SITE, f.replace(/^\.\//, ""))));
+  if (missing.length) {
+    console.log("site/ is missing " + missing.join(", ") +
+      "\nThe worker caches these as a unit - copy the WHOLE app folder:\n" +
+      "  rm -rf tools/swcache/site && mkdir -p tools/swcache/site && cp " +
+      PREFIX.replace(/^titans-|-$/g, "") + "/* tools/swcache/site/");
+    process.exit(1);
+  }
+}
 const APP = PREFIX.replace(/^titans-|-$/g, "");
-/* The bullpen's Setup is a tab button; the offense app exposes showTab(). */
-const OPEN_SETUP = APP === "offense"
-  ? 'showTab("setup")'
-  : 'document.getElementById("tab-setup").click()';
+/* Three apps, three ways in: the bullpen's Setup is a tab button, the offense app
+   exposes showTab(), and the Pitch Chart toggles a Setup button. */
+const OPEN_SETUP = APP === "offense" ? 'showTab("setup")'
+                 : APP === "game"    ? 'document.getElementById("btnSetup").click()'
+                 :                     'document.getElementById("tab-setup").click()';
 console.log("testing " + APP + " " + BUILD);
 
 let srv = null;
