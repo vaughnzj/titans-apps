@@ -17,9 +17,9 @@ old one — tap the amber stamp to fix it.
 
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
-| **Bullpen Chart** | **v30** | v29 — **v30 waiting to be pushed** |
-| **Pitch Chart** (game) | **v21** | **v20** — **v21 waiting to be pushed** |
-| **Offense Chart** | **v41** | v40 — **v41 waiting to be pushed** |
+| **Bullpen Chart** | **v31** | v29 — **v30 and v31 waiting to be pushed** |
+| **Pitch Chart** (game) | **v22** | **v20** — **v21 and v22 waiting to be pushed** |
+| **Offense Chart** | **v42** | v40 — **v41 and v42 waiting to be pushed** |
 
 Verified live Oct 8 against the Pages URLs: bullpen v29, offense v40, game v18, and
 `game/roster.js` serving the 66-player release stamped 2026-10-07 with no sample flag.
@@ -41,6 +41,36 @@ is only for app code.
 ---
 
 ## Bullpen Chart
+
+### v31 · Oct 9, 2026
+**Headline:** A red **Erase everything on this iPad** button, for testing. It deletes the session in
+progress *and everything in History*, which nothing else in the app does.
+
+- **Why:** Jim, testing through the back half of the season — *"if I am testing during a game
+  between now and the winter I need to be able to clear and start over."* Every other control
+  protects History on purpose; this is the one that does not, and it is the only one.
+- **It names the cost before it does anything**, counted from what is actually there: the session in
+  progress with its pitch count, how many filed sessions are in History, and **how many of those have
+  never been exported** — the only genuinely unrecoverable part. It points at History's Export
+  button as the way out, and **Cancel is the button it opens on**.
+- **The roster is never touched.** It ships with the app, is read-only, and its storage key is
+  *shared with the other two apps* — wiping it here would silently change their banners. Only this
+  app's own keys go: `titans-bullpen-v1, titans-bullpen-archive-v1`.
+- **It reloads rather than re-renders.** Half the app's state lives in module variables, and a
+  render would write them straight back into the storage just emptied.
+- Same control, same wording and same warning in all three apps, per the shared-ritual rule.
+
+- **It has a switch, and the switch is the point.** Jim: *"Make this a feature that is easily
+  turned on and off for testing purposes. It will NOT exist once we get to the real charting."*
+  One line, `var ALLOW_WIPE = true;`, sitting **immediately above `BUILD`** — bumping the version
+  is the one ritual that happens before every push, so the flag cannot ship without being read.
+- **`false` hides the block, disables the button and never binds the handler.** Jim's call on the
+  shape: *"Should just disable the button / and hide it."* Three independent reasons nothing
+  happens, so none of them is load-bearing alone, and flipping back to `true` restores the control
+  with nothing to put back. The suite proves **both positions** by serving the app with the flag
+  actually flipped, rather than by reading the branch and believing it.
+- **`tools/version-audit.py` shouts about it.** Any app with the flag on prints
+  `!!! ERASE EVERYTHING IS ON` and a reminder, so the pre-push check surfaces it every time.
 
 ### v30 · Oct 9, 2026
 **Headline:** The version number in the guide's footer was wrong, and had been for
@@ -273,6 +303,36 @@ execution grading.
 
 ## Pitch Chart (game)
 
+### v22 · Oct 9, 2026
+**Headline:** A red **Erase everything on this iPad** button, for testing. It deletes the game in
+progress *and everything in History*, which nothing else in the app does.
+
+- **Why:** Jim, testing through the back half of the season — *"if I am testing during a game
+  between now and the winter I need to be able to clear and start over."* Every other control
+  protects History on purpose; this is the one that does not, and it is the only one.
+- **It names the cost before it does anything**, counted from what is actually there: the game in
+  progress with its pitch count, how many filed games are in History, and **how many of those have
+  never been exported** — the only genuinely unrecoverable part. It points at History's Export
+  button as the way out, and **Cancel is the button it opens on**.
+- **The roster is never touched.** It ships with the app, is read-only, and its storage key is
+  *shared with the other two apps* — wiping it here would silently change their banners. Only this
+  app's own keys go: `dugout-pitch-chart-v2, dugout-pitch-chart-archive-v1`.
+- **It reloads rather than re-renders.** Half the app's state lives in module variables, and a
+  render would write them straight back into the storage just emptied.
+- Same control, same wording and same warning in all three apps, per the shared-ritual rule.
+
+- **It has a switch, and the switch is the point.** Jim: *"Make this a feature that is easily
+  turned on and off for testing purposes. It will NOT exist once we get to the real charting."*
+  One line, `var ALLOW_WIPE = true;`, sitting **immediately above `BUILD`** — bumping the version
+  is the one ritual that happens before every push, so the flag cannot ship without being read.
+- **`false` hides the block, disables the button and never binds the handler.** Jim's call on the
+  shape: *"Should just disable the button / and hide it."* Three independent reasons nothing
+  happens, so none of them is load-bearing alone, and flipping back to `true` restores the control
+  with nothing to put back. The suite proves **both positions** by serving the app with the flag
+  actually flipped, rather than by reading the branch and believing it.
+- **`tools/version-audit.py` shouts about it.** Any app with the flag on prints
+  `!!! ERASE EVERYTHING IS ON` and a reminder, so the pre-push check surfaces it every time.
+
 ### v21 · Oct 9, 2026
 **Headline:** The outs count themselves. Tap a strikeout or a ground out on the result pad and a
 dot lights up — you no longer have to remember to tap the dots as well, and the third out opens
@@ -486,6 +546,49 @@ Not logged at the time.
 ---
 
 ## Offense Chart
+
+### v42 · Oct 9, 2026
+**Headline:** A red **Erase everything on this iPad** button, for testing. It also fixes a warning
+that was quietly weaker in this app than in the other two. It deletes the game in
+progress *and everything in History*, which nothing else in the app does.
+
+- **Why:** Jim, testing through the back half of the season — *"if I am testing during a game
+  between now and the winter I need to be able to clear and start over."* Every other control
+  protects History on purpose; this is the one that does not, and it is the only one.
+- **It names the cost before it does anything**, counted from what is actually there: the game in
+  progress with its pitch count, how many filed games are in History, and **how many of those have
+  never been exported** — the only genuinely unrecoverable part. It points at History's Export
+  button as the way out, and **Cancel is the button it opens on**.
+- **The roster is never touched.** It ships with the app, is read-only, and its storage key is
+  *shared with the other two apps* — wiping it here would silently change their banners. Only this
+  app's own keys go: `titans-offense-v1, titans-offense-archive-v1, titans-offense-lineup-v1`.
+- **It reloads rather than re-renders.** Half the app's state lives in module variables, and a
+  render would write them straight back into the storage just emptied.
+- Same control, same wording and same warning in all three apps, per the shared-ritual rule.
+
+- **It has a switch, and the switch is the point.** Jim: *"Make this a feature that is easily
+  turned on and off for testing purposes. It will NOT exist once we get to the real charting."*
+  One line, `var ALLOW_WIPE = true;`, sitting **immediately above `BUILD`** — bumping the version
+  is the one ritual that happens before every push, so the flag cannot ship without being read.
+- **`false` hides the block, disables the button and never binds the handler.** Jim's call on the
+  shape: *"Should just disable the button / and hide it."* Three independent reasons nothing
+  happens, so none of them is load-bearing alone, and flipping back to `true` restores the control
+  with nothing to put back. The suite proves **both positions** by serving the app with the flag
+  actually flipped, rather than by reading the branch and believing it.
+- **`tools/version-audit.py` shouts about it.** Any app with the flag on prints
+  `!!! ERASE EVERYTHING IS ON` and a reminder, so the pre-push check surfaces it every time.
+
+- **Fixed, and found by the test rather than by reading:** this app's erase warning never told you
+  that filed games had **never been exported** — the one genuinely unrecoverable part. It called
+  `unsentCount()`, which is the bullpen's and the game's name for that count and **does not exist
+  here**, inside a `try/catch`. The `ReferenceError` was swallowed and the count silently stayed 0.
+  Two filed games that had never left the iPad, and the control that destroys them said nothing.
+  It counts `A.filter(g => g.sent === false)` now, like the History nag already did.
+- **Why it hid:** the warning test only ever saw the *empty-History* branch, because a fresh test
+  page has nothing filed — and that branch happens to contain the word "History" too, so the check
+  looked like it was reading the real wording. The suite now seeds two unexported records with
+  `addInitScript` before the app boots, so the branch a charter actually sees is the branch tested.
+  **A check that only ever renders the empty state is testing the empty state.**
 
 ### v41 · Oct 9, 2026
 **Headline:** The version number in the guide's footer was wrong, and had been for

@@ -37,6 +37,7 @@ def check(label, got, want):
         fail.append(label)
 
 
+testing = []
 chlog = read("CHANGELOG.md") or ""
 readme = read("README.txt") or ""
 
@@ -85,9 +86,25 @@ for folder, name in APPS:
     # And that the version has its own entry, not just a table cell.
     check("changelog has a %s entry" % build, ("### %s ·" % build) in chlog, True)
 
+    # TESTING FLAG. Not a failure - it is meant to be on right now - but it must
+    # never be pushed for a real game unnoticed, and the version bump is the one
+    # ritual that happens before every push. So it is reported here, loudly.
+    wipe = re.search(r'var ALLOW_WIPE = (true|false);', idx)
+    if wipe and wipe.group(1) == "true":
+        testing.append(name)
+        print("  !!!  ERASE EVERYTHING IS ON".ljust(46) +
+              "testing only - flip ALLOW_WIPE to false before a real game")
+    elif wipe:
+        print("  ok   erase-everything is off".ljust(46) + "ALLOW_WIPE = false")
+    else:
+        check("ALLOW_WIPE present", False, True)
+
     # The roster file every app now needs a copy of, inside its own folder.
     check("roster.js in the folder", os.path.exists(os.path.join(ROOT, folder, "roster.js")), True)
     check("  and in the worker's file list", '"./roster.js"' in sw, True)
 
 print("\n" + ("%d MISMATCHED: %s" % (len(fail), ", ".join(fail)) if fail else "every version location agrees"))
+if testing:
+    print("!!! ERASE EVERYTHING IS ON in: " + ", ".join(testing))
+    print("    Fine for testing. Flip ALLOW_WIPE to false in each before the first real game.")
 sys.exit(1 if fail else 0)

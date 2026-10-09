@@ -541,6 +541,10 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
             </div>
             <div class="read" id="setupNote">Filing a game moves it to <b>History</b> and starts a
               clean one. Nothing is ever overwritten &mdash; an unexported game stays recoverable.</div>
+            <div id="wipeBox" class="row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+              <button class="btn" id="btnWipe" style="flex:0 0 auto;color:var(--strike);border-color:var(--strike)">Erase everything on this iPad</button>
+              <p class="tiny" style="flex:1 1 240px;align-self:center;margin:0">Puts this iPad back to how the app ships: the game in progress <b>and everything in History</b>, gone for good. For testing &mdash; <b>Finish &amp; file</b> is how a real game ends. The roster is not affected.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -671,7 +675,25 @@ footer{max-width:1500px;margin:0 auto;padding:0 16px 28px;color:var(--text-3);fo
    Titans Offense Chart — how the other team is pitching us.
    Plain ES5 on purpose: these run on whatever iPad is in the bag.
    =================================================================== */
-var BUILD = "v41";
+/* ======================= TESTING ONLY =======================
+   ALLOW_WIPE shows "Erase everything on this iPad" on the Setup tab. Jim asked
+   for it to test through the back half of the season: "if I am testing during a
+   game between now and the winter I need to be able to clear and start over."
+
+   >>> FLIP THIS TO false BEFORE THE FIRST REAL GAME. <<<
+
+   It sits here, against BUILD, on purpose: bumping the version is the one ritual
+   that happens before every push, so this line cannot be shipped without being
+   read. version-audit.py also prints a loud line for any app that has it on.
+
+   false hides the block, disables the button and never binds the handler - three
+   independent reasons nothing happens, and flipping back to true restores the
+   control with nothing to put back.
+   To delete the feature outright rather than switch it off, remove this flag,
+   gateWipe(), wipeEverything(), WIPE_KEYS, the #wipeBox markup and its listener. */
+var ALLOW_WIPE = true;
+
+var BUILD = "v42";
 var KEY   = "titans-offense-v1";
 /* The roster is RELEASED, not typed. roster.js ships in this folder and the app
    reads it; nobody edits the team on an iPad any more.
@@ -913,6 +935,78 @@ function countPitches(){
   var n = 0;
   O.pas.forEach(function(a){ n += a.pitches.length; });
   return n;
+}
+
+
+/* ---------- Erase everything on this iPad ----------
+   The only control in any of the three apps that destroys FILED records. Jim
+   asked for it to test through the back half of the season: "if I am testing
+   during a game between now and the winter I need to be able to clear and start
+   over."
+
+   Three rules it is built on:
+     1. It names the cost before doing anything, including how many filed
+        games have never been exported - the only genuinely unrecoverable
+        part.
+     2. It clears THIS app's keys and nothing else. The roster is untouched: it
+        ships with the app, is read-only, and its storage key is SHARED with the
+        other two apps, so wiping it here would silently change their banners.
+     3. It RELOADS rather than re-renders. Half this app's state lives in module
+        variables, and a render would write them straight back into the storage
+        just emptied. */
+var WIPE_KEYS = ["titans-offense-v1", "titans-offense-archive-v1", "titans-offense-lineup-v1"];
+/* OFF: hide the block AND disable the button AND never bind the handler. Jim's
+   call - "should just disable the button / and hide it" - and it keeps the flag
+   a true switch: flipping it back on restores the control with nothing to put
+   back. Three independent reasons nothing happens, so none of them is load-
+   bearing on its own: it is not on screen, it would refuse a tap, and there is
+   no handler behind it. */
+function gateWipe(bind){
+  var box = document.getElementById("wipeBox");
+  var btn = document.getElementById("btnWipe");
+  if(!ALLOW_WIPE){
+    if(box) box.hidden = true;
+    if(btn) btn.disabled = true;
+    return;
+  }
+  if(box) box.hidden = false;
+  if(btn) btn.disabled = false;
+  bind();
+}
+function wipeEverything(){
+  var filed = 0, unsent = 0, live = 0;
+  try{ filed = (A || []).length; }catch(e){}
+  /* This app has no unsentCount() - that is the bullpen's and the game's name
+     for it. It called one anyway, inside a try/catch, so the ReferenceError was
+     swallowed and the count silently stayed 0: two filed games that had never
+     left the iPad, and the one control that destroys them said nothing about it.
+     Found by making the warning test render the filed branch instead of the
+     empty-History branch it had always seen. */
+  try{ unsent = A.filter(function(g){ return g.sent === false; }).length; }catch(e){}
+  try{ live = countPitches(); }catch(e){}
+
+  var bits = [];
+  if(live)  bits.push("the game in progress (" + live + " charted pitch" + (live===1?"":"es") + ")");
+  if(filed) bits.push(filed + " filed game" + (filed===1?"":"s") + " in History");
+
+  var msg = "Erase everything on this iPad?\n\n";
+  msg += bits.length
+       ? ("This deletes " + bits.join(" and ") + ".\n\n")
+       : "Nothing is charted and History is empty, so this just puts the app back to how it ships.\n\n";
+  if(unsent){
+    msg += unsent + " of those " + (unsent===1 ? "has" : "have") +
+           " never been exported. Tap Cancel and export " + (unsent===1?"it":"them") +
+           " from History first if you want " + (unsent===1?"it":"them") + ".\n\n";
+  }
+  msg += "Gone for good. Nothing is uploaded first.\n\n" +
+         "The roster is not affected \u2014 it ships with the app.";
+
+  ask(msg, "Erase everything", function(){
+    for(var i=0;i<WIPE_KEYS.length;i++){
+      try{ localStorage.removeItem(WIPE_KEYS[i]); }catch(e){}
+    }
+    try{ location.reload(); }catch(e){}
+  });
 }
 
 /* ===================== roster ===================== */
@@ -2663,7 +2757,8 @@ function wire(){
   el("btnSub").onclick    = subOpen;
   el("btnOrder").onclick  = function(){ O.hideLU = !O.hideLU; save(); render(); };
   el("umpFlip").onclick   = flipUmp;
-  el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
+  gateWipe(function(){ el("btnWipe").onclick = wipeEverything; });
+el("btnArchive").onclick = function(){ askFile(function(){ archiveGame(); }); };
   el("luPlus").onclick  = function(){ if(O.lineup.length<12){ O.lineup.push(newLineupSpot()); save(); render(); } };
   el("luMinus").onclick = function(){ if(O.lineup.length>1){ O.lineup.pop(); save(); render(); } };
   el("pAdd").onclick    = function(){ O.pitchers.push(newPitcher("")); save(); render(); };

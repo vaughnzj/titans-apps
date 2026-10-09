@@ -211,6 +211,126 @@ async function migration(b) {
   await pg.close();
 }
 
+/* ---- the erase warning, with something actually filed ----
+   On a fresh page the warning takes its EMPTY-History branch, and that branch
+   happens to contain the word "History" too - so a check that only ever saw it
+   stayed green through a mutation that gutted the branch a real charter sees.
+   The filed-count branch has to be RENDERED to be tested, and the archive has to
+   exist before the app boots, so it is seeded with addInitScript exactly as the
+   v5 migration suite does. Two filed records, neither exported. */
+async function wipeWarning(b) {
+  const APPS = [
+    { name:"BULLPEN CHART", path:"/bullpen/index.html", key:"titans-bullpen-archive-v1" },
+    { name:"OFFENSE CHART", path:"/offense/index.html", key:"titans-offense-archive-v1" },
+    { name:"PITCH CHART",   path:"/game/index.html",    key:"dugout-pitch-chart-archive-v1" },
+  ];
+  console.log("\nERASE WARNING · with two unexported records filed");
+  for (const app of APPS) {
+    const ctx = await b.newContext({ viewport:{width:1280,height:1100}, serviceWorkers:"block" });
+    const two = JSON.stringify([
+      { filed: Date.now(), sent: false, opp:"Seeded", date:"4-18" },
+      { filed: Date.now(), sent: false, opp:"Seeded", date:"4-19" },
+    ]);
+    await ctx.addInitScript(([k, v]) => { try { localStorage.setItem(k, v); } catch(e) {} }, [app.key, two]);
+    const pg = await ctx.newPage();
+    const errs = []; pg.on("pageerror", e => errs.push(String(e)));
+    await pg.goto(BASE + app.path, { waitUntil:"load" });
+    await pg.waitForTimeout(1400);
+    let got;
+    try {
+      got = await pg.evaluate(`(function(){
+        var b = document.getElementById("btnWipe");
+        if(!b) return "no control";
+        b.click();
+        var p = document.querySelector(".askwrap .askbox p");
+        if(!p) return "no warning";
+        var t = p.textContent;
+        var counts = /2 filed/.test(t);
+        var unsent = /never been exported/.test(t);
+        var roster = t.indexOf("roster is not affected") >= 0;
+        var no = document.querySelector(".askwrap [data-no]"); if(no) no.click();
+        return (counts ? "counts 2" : "NO COUNT")
+             + ", " + (unsent ? "warns unsent" : "NO UNSENT WARNING")
+             + ", " + (roster ? "roster safe" : "NO ROSTER NOTE");
+      })()`);
+    } catch(e) { got = "probe threw: " + e.message; }
+    checks++;
+    const want = "counts 2, warns unsent, roster safe";
+    const ok = got === want;
+    console.log((ok ? "  ok   " : "  MISS ") + app.name.padEnd(22) + got + (ok ? "" : "   (expected " + want + ")"));
+    if (!ok) fails++;
+    if (errs.length) { console.log("  page errors: " + errs.join(" | ")); fails += errs.length; }
+    await pg.close();
+  }
+}
+
+/* ---- the switch in its OFF position, end to end ----
+   gateWipe() lives inside the IIFE in two of the three apps, so it cannot be
+   called from a probe, and asserting on the source would only prove the source.
+   Instead each app is SERVED with ALLOW_WIPE flipped to false - the real file,
+   the real boot - and the result is read off the page. This is the position the
+   apps ship in for the spring, so it is the one worth proving.
+
+   Jim's call on what OFF means: "Should just disable the button" / "and hide
+   it." So: hidden, disabled, and no handler behind it. */
+async function wipeOff(b) {
+  const APPS = [
+    { name:"BULLPEN CHART", path:"/bullpen/index.html" },
+    { name:"OFFENSE CHART", path:"/offense/index.html" },
+    { name:"PITCH CHART",   path:"/game/index.html" },
+  ];
+  console.log("\nALLOW_WIPE = false · served with the switch off");
+  for (const app of APPS) {
+    const ctx = await b.newContext({ viewport:{width:1280,height:1100}, serviceWorkers:"block" });
+    const pg = await ctx.newPage();
+    const errs = []; pg.on("pageerror", e => errs.push(String(e)));
+    let flipped = false;
+    await pg.route(BASE + app.path, async route => {
+      const res = await route.fetch();
+      let body = await res.text();
+      const before = body;
+      body = body.replace("var ALLOW_WIPE = true;", "var ALLOW_WIPE = false;");
+      flipped = body !== before;
+      route.fulfill({ response: res, body });
+    });
+    await pg.goto(BASE + app.path, { waitUntil:"load" });
+    await pg.waitForTimeout(1400);
+    let got;
+    if (!flipped) { got = "the flag was never flipped - anchor missed"; }
+    else {
+      try {
+        got = await pg.evaluate(`(function(){
+          var box = document.getElementById("wipeBox");
+          var btn = document.getElementById("btnWipe");
+          if(!box || !btn) return "control missing entirely";
+          /* box.hidden is the property the gate actually sets, and it has to be
+             asserted directly. Rendered-visibility alone is useless here: in two
+             of the apps #wipeBox lives on the Setup tab, which is already not
+             rendered when the app opens, so "not visible" was true whether or
+             not OFF did anything - and a mutation that dropped the hide slipped
+             straight through. Both are checked now: the flag, and the pixels. */
+          var shown = (box.hidden !== true)
+                   || box.offsetParent !== null || box.getClientRects().length > 0;
+          var clicked = false;
+          btn.addEventListener("click", function(){ clicked = true; }, {once:true});
+          /* a real tap: a disabled button must not even deliver the event */
+          try { btn.click(); } catch(e) {}
+          return (shown ? "STILL SHOWING" : "hidden")
+               + ", " + (btn.disabled ? "disabled" : "STILL ENABLED")
+               + ", " + (document.querySelector(".askwrap") ? "IT OPENED THE DIALOG" : "no dialog");
+        })()`);
+      } catch(e) { got = "probe threw: " + e.message; }
+    }
+    checks++;
+    const want = "hidden, disabled, no dialog";
+    const ok = got === want;
+    console.log((ok ? "  ok   " : "  MISS ") + app.name.padEnd(22) + got + (ok ? "" : "   (expected " + want + ")"));
+    if (!ok) fails++;
+    if (errs.length) { console.log("  page errors: " + errs.join(" | ")); fails += errs.length; }
+    await pg.close();
+  }
+}
+
 (async () => {
   const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium" });
 
@@ -1352,6 +1472,101 @@ async function migration(b) {
       '      + ", outs gave back " + (o1 - o2); })()',
       null, "K scored 1 plusplus, kept 1, outs gave back 1"],
   ]);
+
+  /* ====== ERASE EVERYTHING ON THIS IPAD (all three apps) ======
+     The only control in any of them that destroys FILED records, so it gets its
+     own page per app and is driven to the point of the confirm WITHOUT tapping
+     it - the dialog's wording is the product here, and a check that actually
+     erased would also be testing Playwright's storage rather than the app.
+
+     The one thing that IS exercised for real is the key list: it must clear this
+     app's own keys and leave the shared roster key and the other apps' data
+     alone. That is done directly against localStorage, which is what the handler
+     does too. */
+  for (const app of [
+    { name:"BULLPEN CHART", path:"/bullpen/index.html", noun:"session",
+      archive:"titans-bullpen-archive-v1",
+      mine:["titans-bullpen-v1","titans-bullpen-archive-v1"] },
+    { name:"OFFENSE CHART", path:"/offense/index.html", noun:"game",
+      archive:"titans-offense-archive-v1",
+      mine:["titans-offense-v1","titans-offense-archive-v1","titans-offense-lineup-v1"] },
+    { name:"PITCH CHART",   path:"/game/index.html",    noun:"game",
+      archive:"dugout-pitch-chart-archive-v1",
+      mine:["dugout-pitch-chart-v2","dugout-pitch-chart-archive-v1"] },
+  ]) {
+    await sweep(b, app.name + " · erase everything", app.path, [
+      ["the control is there", null,
+        '(function(){ var b=document.getElementById("btnWipe");'+
+        ' return b ? b.textContent.trim() : "MISSING"; })()',
+        null, "Erase everything on this iPad"],
+      /* Convention 18: a native dialog would be a dead button in the playground. */
+      ["it warns through ask(), not a native dialog", null,
+        '(function(){ document.getElementById("btnWipe").click();'+
+        ' var w=document.querySelector(".askwrap .askbox");'+
+        ' return w ? "overlay" : "NOTHING OPENED"; })()',
+        null, "overlay"],
+      ["the warning names what goes", null,
+        '(function(){ var t=document.querySelector(".askwrap .askbox p").textContent;'+
+        ' var want=["Erase everything on this iPad?","History","Gone for good",'+
+        '           "roster is not affected"];'+
+        ' var miss=want.filter(function(w){ return t.indexOf(w)<0; });'+
+        ' return miss.length ? "missing: "+miss.join(" | ") : "says it all"; })()',
+        null, "says it all"],
+      /* The key list, exercised for real against localStorage - the same thing
+         the handler does - rather than by tapping Confirm and reloading. */
+      ["the roster key and the other apps survive", null,
+        '(function(){'+
+        /* seed a shared roster and one key belonging to each OTHER app */
+        '  localStorage.setItem("titans-roster-v1","ROSTER");'+
+        '  localStorage.setItem("titans-bullpen-archive-v1","B");'+
+        '  localStorage.setItem("titans-offense-archive-v1","O");'+
+        '  localStorage.setItem("dugout-pitch-chart-archive-v1","G");'+
+        '  var mine=' + JSON.stringify(app.mine) + ';'+
+        '  mine.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });'+
+        '  var survivors=["titans-roster-v1","titans-bullpen-archive-v1",'+
+        '                 "titans-offense-archive-v1","dugout-pitch-chart-archive-v1"]'+
+        '    .filter(function(k){ return mine.indexOf(k)<0 && localStorage.getItem(k)===null; });'+
+        '  var left=mine.filter(function(k){ return localStorage.getItem(k)!==null; });'+
+        '  if(left.length) return "not cleared: "+left.join(",");'+
+        '  return survivors.length ? "WIPED TOO: "+survivors.join(",") : "roster and siblings intact"; })()',
+        null, "roster and siblings intact"],
+      /* WIPE_KEYS is the list the handler actually uses. Read it off the source
+         so the check cannot drift from the code it is about - two of the three
+         apps wrap everything in an IIFE, so it is not reachable as a variable. */
+      ["WIPE_KEYS matches this app, and holds no roster key", null,
+        '(function(){'+
+        '  var m=document.documentElement.innerHTML.match(/var WIPE_KEYS = (\\[[^\\]]*\\])/);'+
+        '  if(!m) return "no WIPE_KEYS";'+
+        '  var got=JSON.parse(m[1].replace(/\x27/g,\'"\'));'+
+        '  var want=' + JSON.stringify(app.mine) + ';'+
+        '  if(got.join(",")!==want.join(",")) return "got "+got.join(",");'+
+        '  return got.some(function(k){ return /roster/.test(k); })'+
+        '       ? "A ROSTER KEY IS IN THE LIST" : "exact"; })()',
+        null, "exact"],
+      /* ---- THE SWITCH ----
+         Jim: "Make this a feature that is easily turned on and off for testing
+         purposes. It will NOT exist once we get to the real charting." So the
+         flag has to be one line, findable, and OFF has to mean gone from the
+         page rather than merely hidden - a destructive control that is only
+         display:none is still a tap target and still a node in the DOM. */
+      ["ALLOW_WIPE is one findable line", null,
+        '(function(){'+
+        '  var m=document.documentElement.innerHTML.match(/var ALLOW_WIPE = (true|false);/g);'+
+        '  return m ? (m.length===1 ? m[0] : m.length+" of them") : "NO FLAG"; })()',
+        null, "var ALLOW_WIPE = true;"],
+      ["it sits against BUILD, where releases look", null,
+        '(function(){'+
+        '  var src=document.documentElement.innerHTML;'+
+        '  var f=src.indexOf("var ALLOW_WIPE"), b=src.indexOf("var BUILD =");'+
+        '  if(f<0||b<0) return "missing";'+
+        '  return (b>f && b-f < 1400) ? "adjacent" : "far apart ("+(b-f)+" chars)"; })()',
+        null, "adjacent"],
+
+    ]);
+  }
+
+  await wipeWarning(b);
+  await wipeOff(b);
 
   await migration(b);
 
