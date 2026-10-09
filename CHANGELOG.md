@@ -17,9 +17,9 @@ old one — tap the amber stamp to fix it.
 
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
-| **Bullpen Chart** | **v29** | **v29** — up to date |
-| **Pitch Chart** (game) | **v19** | v18 — **v19 waiting to be pushed** |
-| **Offense Chart** | **v40** | **v40** — up to date |
+| **Bullpen Chart** | **v30** | v29 — **v30 waiting to be pushed** |
+| **Pitch Chart** (game) | **v20** | **v19** — **v20 waiting to be pushed** |
+| **Offense Chart** | **v41** | v40 — **v41 waiting to be pushed** |
 
 Verified live Oct 8 against the Pages URLs: bullpen v29, offense v40, game v18, and
 `game/roster.js` serving the 66-player release stamped 2026-10-07 with no sample flag.
@@ -41,6 +41,21 @@ is only for app code.
 ---
 
 ## Bullpen Chart
+
+### v30 · Oct 9, 2026
+**Headline:** The version number in the guide's footer was wrong, and had been for
+twenty-one releases. Nothing else changed.
+
+- It said **app v8** at the bottom of the guide while the top of the same page said
+  **v29**. Two different version numbers on one page is the exact confusion the build
+  stamp exists to prevent, so it is worth a release on its own.
+- **Why it rotted:** `tools/version-audit.py` checked five version locations and the footer
+  was not one of them. Every other location has a symptom when it goes wrong — the app nags,
+  or a coach follows the wrong instructions. A footer nobody reads has no symptom at all, so
+  nothing ever caught it. **It is the sixth location now**, and it was proved failable before
+  being trusted.
+- All three apps were stale in the same way at the same time: bullpen said v8, offense v27,
+  the Pitch Chart v14. All three are fixed in one push.
 
 ### v29 · Oct 7, 2026
 **Headline:** The roster list is folded away by default. The banner that tells you *which* roster
@@ -258,6 +273,21 @@ execution grading.
 
 ## Pitch Chart (game)
 
+### v20 · Oct 9, 2026
+**Headline:** The version number in the guide's footer was wrong, and had been for
+five releases. Nothing else changed.
+
+- It said **app v14** at the bottom of the guide while the top of the same page said
+  **v19**. Two different version numbers on one page is the exact confusion the build
+  stamp exists to prevent, so it is worth a release on its own.
+- **Why it rotted:** `tools/version-audit.py` checked five version locations and the footer
+  was not one of them. Every other location has a symptom when it goes wrong — the app nags,
+  or a coach follows the wrong instructions. A footer nobody reads has no symptom at all, so
+  nothing ever caught it. **It is the sixth location now**, and it was proved failable before
+  being trusted.
+- All three apps were stale in the same way at the same time: bullpen said v8, offense v27,
+  the Pitch Chart v14. All three are fixed in one push.
+
 ### v19 · Oct 9, 2026
 **Headline:** The app knows about innings. The third out stops you and asks how many runs scored
 and how many were earned; **IP, R and ER are no longer typed in at the end** — they are computed,
@@ -404,6 +434,21 @@ Not logged at the time.
 ---
 
 ## Offense Chart
+
+### v41 · Oct 9, 2026
+**Headline:** The version number in the guide's footer was wrong, and had been for
+thirteen releases. Nothing else changed.
+
+- It said **app v27** at the bottom of the guide while the top of the same page said
+  **v40**. Two different version numbers on one page is the exact confusion the build
+  stamp exists to prevent, so it is worth a release on its own.
+- **Why it rotted:** `tools/version-audit.py` checked five version locations and the footer
+  was not one of them. Every other location has a symptom when it goes wrong — the app nags,
+  or a coach follows the wrong instructions. A footer nobody reads has no symptom at all, so
+  nothing ever caught it. **It is the sixth location now**, and it was proved failable before
+  being trusted.
+- All three apps were stale in the same way at the same time: bullpen said v8, offense v27,
+  the Pitch Chart v14. All three are fixed in one push.
 
 ### v40 · Oct 7, 2026
 **Headline:** Fixed — picking a name in a lineup spot now stays picked. And the sample game is
@@ -671,9 +716,10 @@ order is ever flipped back.
 ## Keeping this up to date
 
 Add an entry **in the same pass that bumps the version** — it's part of shipping, not paperwork
-afterwards. Five places move together (`index.html`'s `BUILD`, `sw.js`'s `CACHE`, the guide's
-`App v__` line, the version inside the guide's "Which version am I on?" callout, and this file —
-both its standings table and a new entry). All three apps list `roster.js` in `sw.js`; the bullpen
+afterwards. **Six** places move together (`index.html`'s `BUILD`, `sw.js`'s `CACHE`, the guide's
+`App v__` line, the version inside the guide's "Which version am I on?" callout, **the guide's own
+footer**, and this file — both its standings table and a new entry). The footer was the one nobody
+was checking, and it had gone stale in all three apps at once; `version-audit.py` covers it now. All three apps list `roster.js` in `sw.js`; the bullpen
 also lists `templates.js`.
 
 **`BUILD` and `CACHE` must match exactly.** The app compares the number baked into `index.html`

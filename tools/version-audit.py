@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 """Every place a version number is written, checked against every other place.
 
-Why this exists: a version lives in FIVE files per app, and two of them have to
+Why this exists: a version lives in SIX places per app, and two of them have to
 agree exactly or the app shows a permanent amber `v27 != v28 - tap to fix` that
 tapping cannot clear - stampBuild() compares BUILD against the cache-name suffix,
 so bumping one without the other is a bug you ship to every iPad. The other three
 are documentation, and a guide that describes the wrong build is how a coach ends
 up following steps for a screen he does not have.
+
+The sixth, the guide's own footer, was added Oct 9 2026 after it turned out to be
+stale in ALL THREE apps simultaneously - by fifteen, thirteen and five releases.
+It had no symptom, which is why it rotted: every other location is either read by
+the app or read by a coach. A check only covers what it looks at.
 
     python3 tools/version-audit.py          (from the repo root)
 
@@ -64,8 +69,16 @@ for folder, name in APPS:
         check("guide masthead", "v" + mast.group(1) if mast else None, build)
         callout = re.search(r'describes <b>v([0-9]+)</b>', gd)
         check("guide version callout", "v" + callout.group(1) if callout else None, build)
+        # 5. The guide's own footer. This was NOT checked until Oct 9 and had gone
+        #    stale in all three apps at once - bullpen v8 against a source of v29,
+        #    offense v27 against v40, game v14 against v19. Nobody reads a footer,
+        #    which is exactly why it rotted: it is the only version location with
+        #    no symptom. Two different version numbers on one page is the precise
+        #    confusion the build stamp exists to prevent.
+        foot = re.search(r'<footer>[^<]*?app v([0-9]+)', gd)
+        check("guide footer", "v" + foot.group(1) if foot else None, build)
 
-    # 5. The changelog's standings table, which is what Jim reads before a push.
+    # 6. The changelog's standings table, which is what Jim reads before a push.
     row = re.search(r'\*\*%s\*\*[^|]*\|([^|]*)\|' % re.escape(name), chlog)
     said = re.search(r'v([0-9]+)', row.group(1)) if row else None
     check("changelog standings row", "v" + said.group(1) if said else None, build)
