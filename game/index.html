@@ -1248,12 +1248,16 @@ function syncOuts(a){
      undoing a result after the inning rolled - is already handled by the clamp
      below, which floors the new inning's count at zero. */
   G.outs = Math.max(0, (G.outs || 0) + (want - had));
-  if(G.outs >= 3) setTimeout(maybeEndInning, 0);
+  /* Deliberately does NOT open the prompt. Tapping a result is not the end of
+     the at-bat for a batted ball - the spray chart and the trajectory come
+     after it - and a blocking overlay there steals the taps that finish the
+     play. Jim, on v21: "it advances to the pop-up before I am able to enter in
+     the spray chart." The inning ends at Next Batter instead; see nextAB(). */
 }
 
-/* Deferred by a tick on purpose: the handler that changed the result still has
-   its own render() and save() to run, and the overlay should open on top of a
-   settled screen rather than one about to be redrawn underneath it. */
+/* Called from the two places an inning can actually end: Next Batter, and a tap
+   on the third out dot. Both call it AFTER their own render() and save(), so the
+   overlay opens on top of a settled screen. */
 function maybeEndInning(){
   if(!G || G.outs < 3) return;
   if(document.querySelector(".askwrap")) return;      // one prompt at a time
@@ -1755,6 +1759,12 @@ function nextAB(){
   if(!curAB().result){ flashNext(); return; }
   closeAndAdvance();
   render(); save();
+  /* THE end of the at-bat, and so the end of the inning when the third out is
+     on the board. Firing on the result instead would cut across the spray chart
+     and the trajectory, which are tapped after it. Tapping the third DOT still
+     fires immediately - that gesture is a direct statement that the inning is
+     over, rather than a statement about one at-bat. */
+  maybeEndInning();
 }
 function flashNext(){
   var n = document.getElementById("nextBtn");

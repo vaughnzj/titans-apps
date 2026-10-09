@@ -1278,17 +1278,54 @@ async function migration(b) {
       '(function(){ __T.qa("#outs .outdot")[0].click();'+
       ' return "outs=" + __T.outsOn(); })()',
       null, "outs=0"],
+    /* ---- THE PROMPT WAITS FOR THE REST OF THE AT-BAT ----
+       The bug v21 shipped with for about an hour: tapping GO for the third out
+       opened the overlay immediately, on top of the spray chart the charter
+       still had to tap. Jim: "it advances to the pop-up before I am able to
+       enter in the spray chart." A batted ball is not finished when the result
+       is tapped - the spray point and the trajectory come after it - so the
+       inning now ends at Next Batter. */
+    /* Three batted-ball outs, and the THIRD one must not open anything: the spray
+       chart and the trajectory are still to be tapped on that at-bat. */
+    ["a third out on a batted ball waits", null,
+      '(function(){'+
+      ' __T.next(); __T.pitch(); __T.pitch(); __T.res("GO");'+
+      ' __T.next(); __T.pitch(); __T.pitch(); __T.res("FO");'+
+      ' __T.next(); __T.pitch(); __T.pitch(); __T.res("LO");'+
+      /* WAIT a tick before asserting the absence. The first version read the
+         overlay synchronously and stayed green when the trigger was put back on
+         the result tap, because that fires on a deferred tick - it was asserting
+         "not yet" and calling it "never". Proving a NEGATIVE needs the wait more
+         than proving a positive does. */
+      ' return __T.after(function(){'+
+      '   return "outs=" + __T.outsOn()'+
+      '        + (__T.box() ? " OVERLAY TOO EARLY" : " no overlay")'+
+      '        + (__T.q("#diamond") ? " spray reachable" : " spray gone"); }); })()',
+      null, "outs=3 no overlay spray reachable"],
+    ["and opens on Next Batter", null,
+      '(function(){ __T.next();'+
+      ' return __T.box() ? "overlay" : "NEVER OPENED"; })()',
+      null, "overlay"],
+    ["dismissing it leaves two outs", null,
+      '(function(){ __T.q("#innBack").click();'+
+      ' return "outs=" + __T.outsOn() + " inn=" + __T.inn(); })()',
+      null, "outs=2 inn=2"],
+
     /* The correction a dropped third strike actually needs: the K counted an out,
        the batter reached, and one tap on the dots puts it right - without
        reopening the at-bat or losing the strikeout from the pitcher's line. */
+    /* Stated as a DELTA, not as absolute counts: this check inherits whatever the
+       checks above it left on the dots, and an absolute number here would only be
+       testing the fixture. */
     ["a dropped third strike is one tap to fix", null,
       '(function(){ __T.next(); __T.pitch(); __T.pitch(); __T.pitch(); __T.res("K");'+
-      ' var auto=__T.outsOn();'+
-      ' __T.qa("#outs .outdot")[0].click();'   /* tapping dot 1 while it IS 1 clears to 0 */
-      + ' var fixed=__T.outsOn();'+
+      ' var before=__T.outsOn();'+
+      /* tapping the dot that already IS the count takes it back one */
+      ' __T.qa("#outs .outdot")[before-1].click();'+
+      ' var after=__T.outsOn();'+
       ' var still=__T.summary().filter(function(r){ return +r[2] > 0; }).length;'+
-      ' return "auto="+auto+" fixed="+fixed+" pitcherRows="+still; })()',
-      null, "auto=1 fixed=0 pitcherRows=1"],
+      ' return "K put on 1, tap took off "+(before-after)+", pitcherRows="+still; })()',
+      null, "K put on 1, tap took off 1, pitcherRows=1"],
     /* ---- AO3+ KEEPS THE OUT, AND THAT IS A DECISION, NOT A BUG ----
        Jim: "I'm ok with crediting an AO3+ out there. The pitcher did their job."
        The dot above was just tapped back off, so the INNING has no out - and the
@@ -1308,12 +1345,12 @@ async function migration(b) {
       ' var start=pp();'+
       ' __T.next(); __T.pitch(); __T.pitch(); __T.pitch(); __T.res("K");'+
       ' var scored=pp(), o1=__T.outsOn();'+
-      ' __T.qa("#outs .outdot")[0].click();'+        /* hand the inning its out back */
+      ' __T.qa("#outs .outdot")[o1-1].click();'+     /* hand the inning its out back */
       ' var after=pp(), o2=__T.outsOn();'+
       ' return "K scored " + (scored - start) + " plusplus"'+
       '      + ", kept " + (after - start)'+
-      '      + ", outs " + o1 + "->" + o2; })()',
-      null, "K scored 1 plusplus, kept 1, outs 1->0"],
+      '      + ", outs gave back " + (o1 - o2); })()',
+      null, "K scored 1 plusplus, kept 1, outs gave back 1"],
   ]);
 
   await migration(b);

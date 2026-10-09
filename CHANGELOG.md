@@ -283,6 +283,12 @@ the inning prompt on its own.
   happened"* is indistinguishable from broken, and that is the only verdict that counts.
 - **All nine out results advance the count**, `DP` by two. Jim's call, made knowing that two of
   them can be worth nothing.
+- **The prompt waits for Next Batter.** The first cut of this opened it the moment the result was
+  tapped, which on a batted ball lands on top of the spray chart the charter still has to tap —
+  Jim, within the hour: *"it advances to the pop-up before I am able to enter in the spray chart."*
+  A result tap is not the end of the at-bat; **Next Batter is**, and that is where the inning now
+  ends. Tapping the third out **dot** still opens it immediately, because that gesture says *the
+  inning is over* rather than saying what one at-bat did.
 - **The two the app cannot judge**, both now named in the guide:
   - **A dropped third strike.** You tap `K`, the catcher doesn't hold it, the batter reaches. Still
     a strikeout for the pitcher — leave the result and tap the lit dot to take the out back off.
