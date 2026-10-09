@@ -195,7 +195,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <div class="eyebrow">Legend Titans Baseball</div>
       <h1>Pitch Chart Coach's Guide</h1>
       <p>Everything you need to chart a game on the iPad. Read it once before you go, then keep it open on your phone for the first inning.</p>
-      <div class="meta">App v20 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
+      <div class="meta">App v21 &nbsp;&middot;&nbsp; October 2026 &nbsp;&middot;&nbsp; Game day</div>
     </div>
   </div>
 
@@ -227,7 +227,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
     <div class="note">
       <span class="lab">Which version am I on?</span>
-      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v20</b>. If it shows two numbers in amber, like <code>v15 &ne; v14</code>, that iPad has downloaded an update but is still showing the old one &mdash; see below.</p>
+      <p>The build is printed in the header, right after &ldquo;Pitch Chart.&rdquo; This guide describes <b>v21</b>. If it shows two numbers in amber, like <code>v15 &ne; v14</code>, that iPad has downloaded an update but is still showing the old one &mdash; see below.</p>
     </div>
 
     <h3 class="upd">Getting a new version</h3>
@@ -362,13 +362,21 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     <h2>Innings, runs and earned runs</h2>
     <p class="sub">New in v19. The app used to know nothing about innings and you typed IP, R and ER off the scorebook on the drive home. Now you answer one question per inning, while you still remember it, and the app works the rest out.</p>
     <ul>
-      <li><b>The out dots are in the count bar, beside the inning number.</b> Tap dot 1, 2, 3 as the outs come. Tapping the dot that already <i>is</i> the count takes it back one, so a mis-count is one tap to fix.</li>
+      <li><b>The outs count themselves.</b> Tap <code>K</code>, <code>GO</code>, <code>FO</code>, <code>LO</code>, <code>PO</code>, <code>FC</code> or <code>SAC</code> on the result pad and a dot lights up. <code>DP</code> lights two. You do not have to do anything else.</li>
+      <li><b>The dots are still yours when it gets it wrong.</b> They sit in the count bar beside the inning number. Tap dot 1, 2 or 3 to set the count directly; tapping the dot that already <i>is</i> the count takes it back one. Undoing a result takes its out back off too.</li>
       <li><b>The third out stops the app and asks about the inning.</b> You cannot chart past it. That is on purpose &mdash; the number is easy to get right now and impossible to reconstruct in the car.</li>
       <li><b>Scoreless inning: one tap.</b> <b>NO RUNS</b> and you are back in the game, on the next inning, outs cleared. No confirm.</li>
       <li><b>Runs: tap the number.</b> Earned fills in to match, because most runs are earned. If one of them was not, tap the lower number on the Earned row and confirm. Earned can never be more than runs &mdash; those buttons go grey.</li>
       <li><b>More than one pitcher threw that inning?</b> You get a row per arm with plus and minus on each, and <i>the app builds that list itself</i> from who actually threw. The inning total underneath is the sum of your rows; there is nothing to total up yourself.</li>
       <li><b>The inning number has its own plus and minus</b> in the count bar. You should never need it &mdash; confirming an inning rolls it &mdash; but if the app and the scoreboard disagree, that is how you line them up.</li>
     </ul>
+    <div class="note">
+      <span class="lab">Two results that do not always mean an out</span>
+      <p>The app counts an out for all nine out results, which is right nearly every time. Two of them can be worth <b>nothing</b>, and it cannot tell:</p>
+      <p><b>A dropped third strike.</b> You tap <code>K</code>, the catcher does not hold it, the batter reaches. It is still a strikeout for the pitcher &mdash; leave the result alone and <b>tap the lit dot to take the out back off</b>. He keeps the K and the AO3+ credit; only the inning&rsquo;s out count changes.</p>
+      <p><b>A fielder&rsquo;s choice where nobody is retired.</b> The fielder goes for the lead runner and does not get him. Same fix: tap the dot back.</p>
+      <p>Everything else is honest &mdash; a muffed grounder or a dropped fly is scored <code>E</code>, not <code>GO</code> or <code>FO</code>, so those really did produce the out they name.</p>
+    </div>
     <div class="warn">
       <span class="lab">Ended an inning by mistake?</span>
       <p><b>Wrong &mdash; back to 2 outs</b> is the left button on that prompt. It puts the outs back to two, leaves the inning where it was, and writes nothing. Tapping outside the box or hitting escape does the same. You can never get stuck in it.</p>
@@ -451,6 +459,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
       <li><b>In the count bar:</b> the inning, and the three out dots. Both are tappable.</li>
       <li><b>On the Game tab, live:</b> every arm's IP, pitches and <b>P/IP</b>. P/IP is the one to look at mid-game &mdash; it tells you whether he is going to finish the inning.</li>
       <li><b>AO3+</b> is our stat for forcing action. An at-bat gets a plus if it ended in 3 pitches or fewer, or we were ahead after 3. It gets a second plus if it produced an out. The grid splits all 4 combinations.</li>
+      <li><b>A dropped third strike still counts as an AO3+ out</b>, even after you tap the out dot back off. That is on purpose: the pitcher did his job and the ball got away from the catcher. AO3+ counts at-bats he <i>finished</i>; the dots and IP count outs that <i>happened</i>. The two are not meant to tie out.</li>
       <li><b>Mix</b> shows the percentage of each pitch type that pitcher has thrown.</li>
       <li><b>Pitch Sequencing</b> under the zone is the hitter's page: a plain-language read, every pitch he's seen on one grid, a table by pitch type, and each of his at-bats pitch by pitch.</li>
       <li>The read line calls out where he swings and misses and where he does damage, for example <i>misses up and away</i>. It needs a few pitches before it says anything.</li>
@@ -497,7 +506,7 @@ footer{margin-top:44px;padding-top:16px;border-top:1px solid var(--rule);
     </ul>
   </section>
 
-  <footer>Legend Titans Pitch Chart &middot; app v20 &middot; Guide prepared for game day</footer>
+  <footer>Legend Titans Pitch Chart &middot; app v21 &middot; Guide prepared for game day</footer>
 
 </div>
 </body>

@@ -1010,6 +1010,11 @@ async function migration(b) {
       }
       return f.el.querySelectorAll("button")[1].disabled ? "capped" : "plus still live";
     }
+    /* The end-of-inning prompt opens on a deferred tick, so the handler that
+       charted the third out can finish its own render and save first. A probe
+       that fires it and reads it in one synchronous pass reads too early - this
+       is the wait, and pg.evaluate resolves the promise for us. */
+    function after(fn){ return new Promise(function(res){ setTimeout(function(){ res(fn()); }, 60); }); }
     function exported(){
       var b = q("#btnExport2"); if(b) b.click();
       var t = q("#exportText");
@@ -1029,14 +1034,16 @@ async function migration(b) {
     return {q:q, qa:qa, arm:arm, addArm:addArm, pitch:pitch, res:res, next:next, ab:ab,
             outs:outs, outsOn:outsOn, inn:inn, box:box, head:head,
             ledger:ledger, summary:summary, set:set, cur:cur, capped:capped,
-            field:field, exported:exported, block:block};
+            field:field, exported:exported, block:block, after:after};
   })(); "ready"`;
 
   await sweep(b, "PITCH CHART · innings", "/game/index.html", [
     /* Inning 1: one arm, three strikeouts. Three at-bat outs, so computed IP is
        exactly 1.0 and anything else in the summary strip is arithmetic on it. */
     ["fixture builds inning 1", null,
-      '(function(){ __T.arm(0,0); __T.ab("K"); __T.ab("K"); __T.ab("K");'+
+      /* TWO outs, not three. In v21 charting the third would fire the prompt
+         here, inside the fixture, instead of in the check that tests it. */
+      '(function(){ __T.arm(0,0); __T.ab("K"); __T.ab("K");'+
       ' var L=__T.ledger();'+
       ' return (L.length===1 && L[0][0]==="1" && L[0][6]==="\\u2014") ? "yes"'+
       '      : JSON.stringify(L); })()',
@@ -1049,8 +1056,12 @@ async function migration(b) {
       ' return (__T.qa("#innLedger tr.open").length===0 && t.indexOf("in amber")<0)'+
       '        ? "quiet" : "NAGGING"; })()',
       null, "quiet"],
+    /* v21: CHARTING the third out is the trigger a charter actually uses. The
+       dots are still a trigger too - "NO RUNS closes it in one tap" below gets
+       to three by tapping - so both ways into the prompt stay covered. */
     ["third out fires the prompt", null,
-      '(function(){ __T.outs(3); return __T.box() ? "overlay" : "NOTHING OPENED"; })()',
+      '(function(){ __T.ab("GO"); return __T.after(function(){'+
+      '   return __T.box() ? "overlay" : "NOTHING OPENED"; }); })()',
       null, "overlay"],
     /* Convention 18: the playground sandbox has no allow-modals, so a native
        dialog would be a dead button there and work perfectly on the iPad. */
@@ -1097,12 +1108,13 @@ async function migration(b) {
     ["two pitchers get a row each", null,
       '(function(){ __T.ab("K");'+
       ' __T.addArm(); __T.arm(1,1); __T.ab("GO"); __T.ab("FO");'+
-      ' __T.outs(3);'+
-      ' if(!__T.box()) return "no overlay";'+
-      ' var names=__T.qa(".inrow b").map(function(x){ return x.textContent; });'+
-      ' var want=[window.TITANS_ROSTER[0].name, window.TITANS_ROSTER[1].name];'+
-      ' return names.join(",")===want.join(",") ? "both"'+
-      '      : "rows: "+names.join(",")+" want "+want.join(","); })()',
+      /* the FO is the third out and opens the prompt by itself in v21 */
+      ' return __T.after(function(){'+
+      '   if(!__T.box()) return "no overlay";'+
+      '   var names=__T.qa(".inrow b").map(function(x){ return x.textContent; });'+
+      '   var want=[window.TITANS_ROSTER[0].name, window.TITANS_ROSTER[1].name];'+
+      '   return names.join(",")===want.join(",") ? "both"'+
+      '        : "rows: "+names.join(",")+" want "+want.join(","); }); })()',
       null, "both"],
     ["two pitchers get steppers", null,
       '(function(){ var n=window.TITANS_ROSTER[0].name;'+
@@ -1213,6 +1225,95 @@ async function migration(b) {
       ' return (__T.qa("#histList .hrow").length === before) ? "asked, unfiled"'+
       '      : "IT FILED ANYWAY"; })()',
       null, "asked, unfiled"],
+  ]);
+
+  /* ====== THE OUT COUNT FOLLOWS THE RESULT PAD (game v21) ======
+     Its own sweep() call and its own clean game, because these checks are about
+     the out count itself and the innings block above spends it.
+
+     Why this exists: through v20 the dots were tapped by hand and a charted
+     strikeout moved nothing. Jim, first time through: the prompt "doesn't seem
+     to work" - he charted three outs and nothing happened, which is
+     indistinguishable from broken. Auto-advance on all nine out results was his
+     call, knowing two of them can be worth zero (a dropped third strike and an
+     all-safe FC) and are corrected on the dots. */
+  await sweep(b, "PITCH CHART · outs follow the result pad", "/game/index.html", [
+    ["an out result moves the dots", null,
+      '(function(){ __T.arm(0,0); __T.ab("K"); return "outs=" + __T.outsOn(); })()',
+      GINN, "outs=1"],
+    ["a hit moves nothing", null,
+      '(function(){ __T.ab("1B"); return "outs=" + __T.outsOn(); })()',
+      null, "outs=1"],
+    /* DP is worth two, and that number now lives in ONE place - OUT_RESULT - so
+       the dots, the inning ledger and computed IP cannot disagree about it. It
+       used to be a ternary at each call site, with the map itself saying 1. */
+    ["a double play is worth two", null,
+      '(function(){ var mid=__T.outsOn(); __T.ab("DP");'+
+      ' return mid + " + DP = " + __T.outsOn(); })()',
+      null, "1 + DP = 3"],
+    ["reaching three that way fires the prompt", null,
+      '(function(){ return __T.box() ? "overlay" : "NOTHING"; })()',
+      null, "overlay"],
+    ["the ledger agrees with the dots", null,
+      '(function(){ __T.q("#innNoRuns").click();'+
+      ' var r=__T.ledger()[0];'+
+      ' return "P=" + r[2] + " outs=" + __T.outsOn() + " inn=" + __T.inn(); })()',
+      null, "P=9 outs=0 inn=2"],
+    /* Undo is the other half of auto-advance: taking the result back has to take
+       the out back off the board, or a corrected mis-tap leaves a phantom out. */
+    ["undo takes the out back off", null,
+      '(function(){ __T.pitch(); __T.pitch(); __T.pitch(); __T.res("GO");'+
+      ' var after=__T.outsOn(); __T.q("#btnUndo").click();'+
+      ' return after + " then " + __T.outsOn(); })()',
+      null, "1 then 0"],
+    /* A mis-tap corrected to another result moves by the DIFFERENCE. This is the
+       whole reason it is a delta and not an increment: tapping GO, then 1B, then
+       FO must end on one out, not three. */
+    ["changing the result moves by the difference", null,
+      '(function(){ __T.res("GO"); var a=__T.outsOn();'+
+      ' __T.res("1B"); var b2=__T.outsOn(); __T.res("FO");'+
+      ' return a + " -> " + b2 + " -> " + __T.outsOn(); })()',
+      null, "1 -> 0 -> 1"],
+    ["the dots still override by hand", null,
+      '(function(){ __T.qa("#outs .outdot")[0].click();'+
+      ' return "outs=" + __T.outsOn(); })()',
+      null, "outs=0"],
+    /* The correction a dropped third strike actually needs: the K counted an out,
+       the batter reached, and one tap on the dots puts it right - without
+       reopening the at-bat or losing the strikeout from the pitcher's line. */
+    ["a dropped third strike is one tap to fix", null,
+      '(function(){ __T.next(); __T.pitch(); __T.pitch(); __T.pitch(); __T.res("K");'+
+      ' var auto=__T.outsOn();'+
+      ' __T.qa("#outs .outdot")[0].click();'   /* tapping dot 1 while it IS 1 clears to 0 */
+      + ' var fixed=__T.outsOn();'+
+      ' var still=__T.summary().filter(function(r){ return +r[2] > 0; }).length;'+
+      ' return "auto="+auto+" fixed="+fixed+" pitcherRows="+still; })()',
+      null, "auto=1 fixed=0 pitcherRows=1"],
+    /* ---- AO3+ KEEPS THE OUT, AND THAT IS A DECISION, NOT A BUG ----
+       Jim: "I'm ok with crediting an AO3+ out there. The pitcher did their job."
+       The dot above was just tapped back off, so the INNING has no out - and the
+       pitcher must still hold the ++. The two numbers answer different questions
+       and are not meant to reconcile; this check is here so that nobody "fixes"
+       the disagreement later without first changing that call. */
+    /* Asserts the INVARIANT, not a running total: the ++ count is cumulative for
+       the pitcher, so the thing to prove is that taking the inning's out back
+       does not move it. A raw number here would only be testing the fixture. */
+    ["AO3+ keeps the out the inning gave back", null,
+      /* Reads ++ BEFORE the strikeout as well as after. The first version only
+         compared across the dot tap, which is unchanged whether or not a K is
+         credited - true, but not the thing the check is named after, and it
+         stayed green through the exact mutation it exists to stop. */
+      '(function(){'+
+      ' function pp(){ var e=document.querySelector("#ao3pp b"); return e ? +e.textContent : -1; }'+
+      ' var start=pp();'+
+      ' __T.next(); __T.pitch(); __T.pitch(); __T.pitch(); __T.res("K");'+
+      ' var scored=pp(), o1=__T.outsOn();'+
+      ' __T.qa("#outs .outdot")[0].click();'+        /* hand the inning its out back */
+      ' var after=pp(), o2=__T.outsOn();'+
+      ' return "K scored " + (scored - start) + " plusplus"'+
+      '      + ", kept " + (after - start)'+
+      '      + ", outs " + o1 + "->" + o2; })()',
+      null, "K scored 1 plusplus, kept 1, outs 1->0"],
   ]);
 
   await migration(b);

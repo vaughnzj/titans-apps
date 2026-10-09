@@ -18,7 +18,7 @@ old one — tap the amber stamp to fix it.
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
 | **Bullpen Chart** | **v30** | v29 — **v30 waiting to be pushed** |
-| **Pitch Chart** (game) | **v20** | **v19** — **v20 waiting to be pushed** |
+| **Pitch Chart** (game) | **v21** | **v20** — **v21 waiting to be pushed** |
 | **Offense Chart** | **v41** | v40 — **v41 waiting to be pushed** |
 
 Verified live Oct 8 against the Pages URLs: bullpen v29, offense v40, game v18, and
@@ -272,6 +272,52 @@ execution grading.
 ---
 
 ## Pitch Chart (game)
+
+### v21 · Oct 9, 2026
+**Headline:** The outs count themselves. Tap a strikeout or a ground out on the result pad and a
+dot lights up — you no longer have to remember to tap the dots as well, and the third out opens
+the inning prompt on its own.
+
+- **Why:** the first person to use v19 charted three outs, saw no prompt, and reported the feature
+  as broken. It wasn't — the dots were manual by design — but *"I charted three outs and nothing
+  happened"* is indistinguishable from broken, and that is the only verdict that counts.
+- **All nine out results advance the count**, `DP` by two. Jim's call, made knowing that two of
+  them can be worth nothing.
+- **The two the app cannot judge**, both now named in the guide:
+  - **A dropped third strike.** You tap `K`, the catcher doesn't hold it, the batter reaches. Still
+    a strikeout for the pitcher — leave the result and tap the lit dot to take the out back off.
+  - **A fielder's choice where nobody is retired.** Same fix.
+
+  Everything else is honest: a muffed grounder or a dropped fly is scored `E`, not `GO` or `FO`.
+- **The dots stay in charge.** They set the count directly, tapping the dot that already *is* the
+  count takes it back one, and **undoing a result takes its out back off**. A prompt opened by a
+  wrong count still has *Wrong — back to 2 outs*.
+- **It moves by the difference, never by an increment.** Tapping `GO`, then `1B`, then `FO` on the
+  same at-bat ends on **one** out, not three. Each at-bat records what it has already put on the
+  board, so a result that is changed, undone or reclassified by a mod button moves the count by the
+  delta. There is a sweep check for exactly that sequence.
+- **`DP` is worth 2 in one place now.** `OUT_RESULT` said `DP:1` while two call sites carried their
+  own `(result === "DP" ? 2 : 1)`. The map is the single source of truth, so the dots, the inning
+  ledger and computed IP cannot disagree about a double play.
+- **Removed on the way:** an inning guard inside the new code that nothing could reach — result
+  edits are refused while reviewing, so an at-bat from a closed inning cannot be changed at all —
+  and which sat *before* the add, so bumping the inning mid-at-bat silently stopped auto-advance.
+  It prevented less than it broke. **A guard that cannot fire is the same mistake as a check that
+  cannot fail.**
+
+**AO3+ deliberately keeps the out.** A dropped third strike stays a plus even after you tap the
+dot back off, and so does an all-safe FC. Jim's call: *"I'm ok with crediting an AO3+ out there.
+The pitcher did their job."* It is the same principle as priority #3 in the review deck — the error
+belongs to the defense, not to the arm.
+
+So the two numbers answer different questions and **are not meant to reconcile**: the dots and IP
+count outs that *happened*; AO3+ counts at-bats the pitcher *finished*. Anybody totalling strikeouts
+against the inning log's `Outs` column will find a gap, and the gap is the point. Said plainly in
+the guide for the same reason it is said here — otherwise the first person to notice it files it as
+a bug.
+
+This also retires the *K, reached* 17th result that was floated for it: the only thing left for it
+to fix is the inning out count, which one tap on a dot already handles.
 
 ### v20 · Oct 9, 2026
 **Headline:** The version number in the guide's footer was wrong, and had been for

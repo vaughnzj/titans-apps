@@ -1214,7 +1214,51 @@ function drawRosSrc(){
    forcing action), or we're ahead in the count after three.
    Component 2: the at-bat produced an out, by any route.
    Charged to whoever threw the first pitch of the at-bat. */
-var OUT_RESULT = {K:1, Kc:1, GO:1, FO:1, LO:1, PO:1, FC:1, DP:1, SAC:1};
+/* How many outs each result is worth. DP is 2 here rather than being a ternary
+   at each call site - the number lived in two places and the map disagreed with
+   both of them. Truthiness still works for the "is this an out" tests. */
+var OUT_RESULT = {K:1, Kc:1, GO:1, FO:1, LO:1, PO:1, FC:1, DP:2, SAC:1};
+
+/* ---------- the out count follows the result pad (v21) ----------
+   Until v21 the dots were tapped by hand and a charted strikeout moved nothing.
+   Jim, first time through: the prompt "doesn't seem to work" - he charted three
+   outs and nothing happened, which is indistinguishable from broken.
+
+   Two of the nine results can be worth ZERO outs and the app cannot tell:
+     - K / Kc on a dropped third strike, batter reaches
+     - FC where the fielder got nobody
+   Both are rare, both are one tap on the dots to correct, and a prompt fired by
+   mistake already has "Wrong - back to 2 outs". Charging a tap on EVERY out to
+   spare those two is the trade that was wrong.
+
+   Everything goes through the DELTA, never a bare increment: a result that is
+   changed, cleared by Undo, or reclassified by a mod button moves the count by
+   the difference. a.outAdv is what this at-bat has already put on the board. */
+function syncOuts(a){
+  var want = a.result ? (OUT_RESULT[a.result] || 0) : 0;
+  var had  = a.outAdv || 0;
+  if(want === had) return;
+  a.outAdv = want;
+  /* There was an inning guard here - "only move the dots for the inning this
+     at-bat was thrown in" - and it came out, because nothing could reach it and
+     it caused a worse bug than it prevented. Result edits are refused while
+     reviewing(), so an at-bat from a closed inning cannot be changed at all; and
+     the guard sat before the add, so bumping the inning mid-at-bat with the Inn
+     stepper silently stopped auto-advance for that at-bat. The case it was for -
+     undoing a result after the inning rolled - is already handled by the clamp
+     below, which floors the new inning's count at zero. */
+  G.outs = Math.max(0, (G.outs || 0) + (want - had));
+  if(G.outs >= 3) setTimeout(maybeEndInning, 0);
+}
+
+/* Deferred by a tick on purpose: the handler that changed the result still has
+   its own render() and save() to run, and the overlay should open on top of a
+   settled screen rather than one about to be redrawn underneath it. */
+function maybeEndInning(){
+  if(!G || G.outs < 3) return;
+  if(document.querySelector(".askwrap")) return;      // one prompt at a time
+  promptInning(G.inning || 1, false);
+}
 
 function ao3Of(a){
   if(!a.result || !a.pitches.length) return null;      // still live
@@ -1230,6 +1274,17 @@ function ao3Of(a){
     }
     ao3 = s > b;
   }
+  /* DELIBERATE, and it is the one place AO3+ and the inning out count disagree.
+     A dropped third strike is a K here - a plus - even though the batter reached
+     and the dot gets tapped back off. Jim's call: "I'm ok with crediting an AO3+
+     out there. The pitcher did their job." Same principle as priority #3 in the
+     review deck - the error belongs to the defense, not to the arm. An all-safe
+     FC reads the same way.
+
+     So the two numbers answer different questions and are not meant to tie out:
+     the dots and IP count outs that HAPPENED, AO3+ counts at-bats the pitcher
+     FINISHED. Anyone reconciling K's against the inning log's Outs will find a
+     gap here, and the gap is the feature. */
   var out = !!OUT_RESULT[a.result];
   return {ao3:ao3, out:out, state:(ao3?"+":"-")+(out?"+":"-")};
 }
@@ -1485,12 +1540,16 @@ function liveCount(a){
    a.auto marks the result as the app's rather than the charter's. That flag and
    the logic that clears it on a reclassify were already here, wired to nothing. */
 function autoClose(a){
-  if(a.result) return;
+  /* Reconciles the out count on every exit, not just when it closes an at-bat:
+     six handlers call this, and some of them have just CLEARED an auto result
+     and need the out taken back off the board. */
+  if(a.result){ syncOuts(a); return; }
   var last = a.pitches[a.pitches.length-1];
-  if(!last || last.q) return;                 // Step 2 still outstanding
+  if(!last || last.q){ syncOuts(a); return; }   // Step 2 still outstanding
   var c = countOf(a);
   if(c.s >= 3){ a.result = (last.t === "S") ? "Kc" : "K"; a.auto = true; }
   else if(c.b >= 4){ a.result = "BB"; a.auto = true; }
+  syncOuts(a);
 }
 
 function pendingPitch(a){
@@ -1598,7 +1657,8 @@ function reclass(mod){
   if(reviewing()){ nudge("Reviewing — tap Back to the plate first"); return; }
   var a = curAB();
   if(mod==="UNDO"){
-    if(a.result){ a.result=null; a.auto=false; render(); save(); return; }  // step 1: reopen
+    if(a.result){ a.result=null; a.auto=false; syncOuts(a);                 // takes the out back off
+                  render(); save(); return; }                               // step 1: reopen
     a.pitches.pop();                                                        // step 2: drop pitch
     autoClose(a);
     render(); save(); return;
@@ -1667,6 +1727,7 @@ function setResult(k){
   var pend2 = pendingPitch(a);
   if(pend2) delete pend2.q;
   a.result = k; a.auto = false;
+  syncOuts(a);                                       // an out result moves the dots itself
   render(); save();                                  // you close the at-bat; Next Batter moves it on
 }
 
@@ -1818,7 +1879,7 @@ function pitcherStats(i){
         else if(a.result==="E") r.err++;
         /* A double play is one at-bat and TWO outs. Nothing consumed this count
            before innings existed; IP does now, so it has to be right. */
-        else if(OUT_RESULT[a.result]) r.outs += (a.result === "DP" ? 2 : 1);
+        else if(OUT_RESULT[a.result]) r.outs += OUT_RESULT[a.result];
       }
     });
   });
@@ -1860,7 +1921,7 @@ function inningRows(){
         if(a.result === "K" || a.result === "Kc") r2.k++;
         else if(a.result === "BB" || a.result === "HBP") r2.fb++;
         else if(HITS[a.result]) r2.h++;
-        if(OUT_RESULT[a.result]) r2.outs += (a.result === "DP" ? 2 : 1);
+        if(OUT_RESULT[a.result]) r2.outs += OUT_RESULT[a.result];
       }
     });
   });
@@ -2827,8 +2888,8 @@ function renderBatter(){
       d.setAttribute("aria-label", (i+1)+(i ? " outs" : " out"));
       d.addEventListener("click", function(){
         var want = (G.outs === i+1) ? i : i+1;
-        if(want === 3){ G.outs = 3; render(); save(); promptInning(G.inning, false); return; }
         G.outs = want; render(); save();
+        maybeEndInning();            // same ending as an auto-advanced third out
       });
       o.appendChild(d);
     })(i);
@@ -3717,7 +3778,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v20";
+var BUILD = "v21";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;
