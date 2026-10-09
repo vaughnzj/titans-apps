@@ -109,6 +109,108 @@ const styled = sel =>
   ' return (n>80 && painted)+"";' +
   '})()';
 
+/* ---- a game charted on v5 still opens, and still exports ----
+   Every other check builds its game through the UI, which means every pitch it
+   makes carries an inning. The one case that cannot be built that way is the one
+   that will actually be in somebody's iPad on update day: a game charted before
+   innings existed. Seeded into localStorage before the page loads, because the
+   app reads it once on boot.
+
+   A pre-v6 pitch deliberately gets NO inning - a made-up one is worse than an
+   empty cell - so the assertion is that the app opens, charts on, and exports
+   that pitch with a blank Inning rather than a guess. */
+async function migration(b) {
+  const KEY = "dugout-pitch-chart-v2";
+  const v5 = {
+    v:5, date:"2026-04-02", opp:"Old Build", notes:"",
+    pitchers:[{name:"Legacy Arm", rid:"", last:"Arm", first:"Legacy", cls:"Sr", hand:"R",
+               ip:"2.0", r:"3", er:"2"},
+              {},{},{},{}],
+    curP:0, shown:1, curB:0, liveB:0, lastClosed:null,
+    outs:1, nextType:"FB", hideLeft:false, spots:9,
+    lineup: Array.from({length:12}, (_, i) => ({
+      num:i+1, cur:0,
+      men:[{num:i+1, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{},
+            carried:null, cur:0,
+            abs:[ i === 0
+              ? {pitches:[{r:2,c:2,t:"S",k:"FB",p:0,q:1},{r:1,c:3,t:"B",k:"CH",p:0,q:1}],
+                 result:"K", auto:false, spray:null, traj:null, hard:false}
+              : {pitches:[], result:null, auto:false, spray:null, traj:null, hard:false} ]}]
+    }))
+  };
+  const ctx = await b.newContext({ viewport:{width:1280,height:1100}, serviceWorkers:"block" });
+  await ctx.addInitScript(([k, g]) => {
+    try { localStorage.setItem(k, g); } catch(e) {}
+  }, [KEY, JSON.stringify(v5)]);
+  const pg = await ctx.newPage();
+  const errs = []; pg.on("pageerror", e => errs.push(String(e)));
+  await pg.goto(BASE + "/game/index.html", { waitUntil:"load" });
+  await pg.waitForTimeout(1400);
+  console.log("\nPITCH CHART · a v5 game on a v19 build");
+
+  const probes = [
+    ["it opens at all", '(document.getElementById("fOpp")||{}).value', "Old Build"],
+    ["the inning box reads 1", '(document.getElementById("innNow")||{}).textContent', "1"],
+    /* The old pitch has no inning, so it cannot appear in a ledger keyed by one.
+       An empty ledger with a game loaded is the correct answer here, not a bug. */
+    ["the ledger does not invent one",
+      '(function(){ var t=document.getElementById("innLedger");'+
+      ' if(!t) return "no ledger";'+
+      ' return document.querySelectorAll("#innLedger tbody tr").length === 0'+
+      '        ? "empty" : "INVENTED A ROW"; })()', "empty"],
+    ["the summary still reads the pitches",
+      '(function(){ var r=document.querySelectorAll("#innSummary tbody tr")[0];'+
+      ' return r ? r.cells[2].textContent : "no summary row"; })()', "2"],
+    ["the export leaves Inning blank",
+      '(function(){ var b=document.getElementById("btnExport2"); if(b) b.click();'+
+      ' var t=document.getElementById("exportText"); if(!t) return "no textarea";'+
+      ' var L=(t.value||"").split(/\\r?\\n/);'+
+      ' var hi=-1; for(var i=0;i<L.length;i++) if(/^Inning\\tSpot\\t/.test(L[i])){ hi=i; break; }'+
+      ' if(hi<0) return "no pitch-log header";'+
+      ' var row=L[hi+1]||"";'+
+      ' return row.split("\\t")[0] === "" ? "blank" : "stamped "+row.split("\\t")[0]; })()',
+      "blank"],
+    /* The point of migrating rather than refusing: charting continues. A pitch
+       logged now gets inning 1 and the ledger starts from here. */
+    ["charting on from here works",
+      /* The seeded at-bat is CLOSED - it has a result - and the app refuses to log
+         into a closed at-bat, correctly. Next batter first, which is what the
+         charter would do too. */
+      '(function(){ document.getElementById("nextBtn").click();'+
+      ' document.querySelector(\'#zone .cell:nth-child(13)\').click();'+
+      ' var r=document.querySelectorAll("#innLedger tbody tr")[0];'+
+      ' return r ? r.cells[0].textContent : "still empty"; })()', "1"],
+    /* The step that actually exercises the migration. Everything above survives a
+       missing G.innings because every reader guards with (G.innings||[]) - but
+       commit() has to PUSH, and pushing onto undefined throws. So close an inning
+       on the migrated game: without the migration this is a page error, not a
+       wrong number, and a check that never closes one proves nothing. */
+    ["an inning can be closed on it",
+      '(function(){ document.querySelector(\'#results button[data-res="K"]\').click();'+
+      ' document.getElementById("nextBtn").click();'+
+      ' [].slice.call(document.querySelectorAll("#outs .outdot"))[2].click();'+
+      ' var box=document.querySelector(".askwrap .inbox");'+
+      ' if(!box) return "no prompt";'+
+      ' document.getElementById("innNoRuns").click();'+
+      ' var r=document.querySelectorAll("#innLedger tbody tr")[0];'+
+      ' if(!r) return "no ledger row";'+
+      ' return "R="+r.cells[6].textContent+" inn="'+
+      '        +document.getElementById("innNow").textContent; })()',
+      "R=0 inn=2"],
+  ];
+  for (const [name, probe, want] of probes) {
+    let v;
+    try { v = await pg.evaluate(probe); }
+    catch(e){ v = "probe threw: " + e.message; }
+    checks++;
+    const ok = String(v) === String(want);
+    console.log((ok ? "  ok   " : "  MISS ") + name.padEnd(32) + v + " (expected " + want + ")");
+    if (!ok) fails++;
+  }
+  if (errs.length) { console.log("  page errors: " + errs.join(" | ")); fails += errs.length; }
+  await pg.close();
+}
+
 (async () => {
   const b = await chromium.launch({ executablePath:"/opt/pw-browsers/chromium" });
 
@@ -222,7 +324,11 @@ const styled = sel =>
        ' var b=document.getElementById("btnExport2"); if(b) b.click();'+
        ' var t=document.getElementById("exportText");'+
        ' if(!t) return "no export textarea";'+
-       ' var h=(t.value||"").split(/\\r?\\n/).filter(function(l){ return /^Spot\\t/.test(l); })[0]||"";'+
+       /* The pitch-log header gained Inning in front of Spot in v19, so this used
+          to anchor on /^Spot\t/ and found nothing. Anchor on the column that is
+          actually the subject of the check instead of the one that happens to be
+          first. */
+       ' var h=(t.value||"").split(/\\r?\\n/).filter(function(l){ return /\\tPitcherID\\t/.test(l) && /ZoneRow/.test(l); })[0]||"";'+
        ' return (h.indexOf("PitcherID")>=0 && h.indexOf("PitcherLast")>=0 &&'+
        '         h.indexOf("ClassName")>=0) ? "yes" : (h.slice(0,120)||"no pitch-log header"); })()',
        null, "yes"],
@@ -807,6 +913,309 @@ const styled = sel =>
        ' return (on()===R2[2].name) ? "yes" : "landed on "+on()+", wanted "+R2[2].name; })()',
        null, "yes"],
   ]);
+
+
+  /* ====================== INNINGS (game v19) ======================
+     Its own sweep() call, which means its own browser context and a clean
+     localStorage - the checks build ONE game up in order and each asserts the
+     state at its point in that game, so they are not independent and must not be
+     reordered. That is deliberate: the bug this feature can actually have is a
+     sequence bug (the third out opening an overlay while the out dots keep their
+     own idea of the count), and a suite of isolated checks is exactly the shape
+     that misses it.
+
+     Everything goes through the DOM. The app is inside an IIFE so there is no G
+     to poke at from out here - and that is the right way round: a fixture that
+     set G directly would have passed over the out-dot handler entirely. */
+  const GINN = `window.__T = (function(){
+    function q(s){ return document.querySelector(s); }
+    function qa(s){ return [].slice.call(document.querySelectorAll(s)); }
+    function arm(chip, nth){
+      var s = qa("#pitchers select[data-pick]")[chip];
+      if(!s) return "no chip " + chip;
+      var id = window.TITANS_ROSTER[nth].id;
+      s.value = id;
+      s.dispatchEvent(new Event("change",{bubbles:true}));
+      return "ok";
+    }
+    function addArm(){ var a = q("#pitchers .addp"); if(a) a.click(); }
+    function pitch(){ q('#zone .cell:nth-child(13)').click(); }
+    function res(k){ var b = q('#results button[data-res="' + k + '"]'); if(b) b.click(); }
+    function next(){ var b = q("#nextBtn"); if(b) b.click(); }
+    function ab(k, n){ for(var i=0;i<(n||3);i++) pitch(); res(k); next(); }
+    function outs(n){ qa("#outs .outdot")[n-1].click(); }
+    function outsOn(){ return qa("#outs .outdot.on").length; }
+    function inn(){ return (q("#innNow")||{}).textContent; }
+    function box(){ return q(".askwrap .inbox"); }
+    function head(){ var b = box(); return b ? b.querySelector(".inhead").textContent : ""; }
+    function rows(sel){
+      return qa(sel + " tbody tr").map(function(tr){
+        return [].slice.call(tr.cells).map(function(td){ return td.textContent; });
+      });
+    }
+    function ledger(){ return rows("#innLedger .inntbl"); }
+    function summary(){ return rows("#innSummary .sumtbl"); }
+    /* The overlay's pads and steppers both label themselves, so one accessor
+       reaches either shape - which is what lets the layout-switch check and the
+       cap check be about behaviour rather than about markup. */
+    function field(label, armRow){
+      var scope = (armRow == null) ? box()
+                : qa(".inrow").filter(function(r){ return r.querySelector("b").textContent === armRow; })[0];
+      if(!scope) return null;
+      var pads = [].slice.call(scope.querySelectorAll(".inpad"))
+        .filter(function(d){ return d.querySelector(".lab").textContent === label; })[0];
+      if(pads) return {kind:"pad", el:pads};
+      var st = [].slice.call(scope.querySelectorAll(".instep"))
+        .filter(function(d){ return d.querySelector(".sl").textContent === label; })[0];
+      return st ? {kind:"step", el:st} : null;
+    }
+    function set(label, v, armRow){
+      var f = field(label, armRow);
+      if(!f) return "no " + label + " field";
+      if(f.kind === "pad"){
+        var b = [].slice.call(f.el.querySelectorAll("button"))
+          .filter(function(x){ return x.getAttribute("data-v") === String(v); })[0];
+        if(!b) return "no " + label + " button " + v;
+        if(b.disabled) return label + " " + v + " is disabled";
+        b.click(); return "ok";
+      }
+      /* Re-query the stepper on every click. draw() rebuilds the whole body, so
+         the node we are holding is detached the moment we use it once - the same
+         trap Convention 19 is about, in the fixture rather than the app. */
+      var guard = 0;
+      while(cur(label, armRow) < v && guard++ < 40){
+        var up = field(label, armRow); if(!up) return label + " field vanished";
+        up.el.querySelectorAll("button")[1].click();
+      }
+      while(cur(label, armRow) > v && guard++ < 40){
+        var dn = field(label, armRow); if(!dn) return label + " field vanished";
+        dn.el.querySelectorAll("button")[0].click();
+      }
+      return cur(label, armRow) === v ? "ok" : label + " stuck at " + cur(label, armRow);
+    }
+    function cur(label, armRow){
+      var f = field(label, armRow);
+      if(!f) return -1;
+      if(f.kind === "step") return parseInt(f.el.querySelector(".v").textContent, 10);
+      var on = f.el.querySelector("button.on");
+      return on ? parseInt(on.getAttribute("data-v"), 10) : -1;
+    }
+    function capped(label, above, armRow){
+      var f = field(label, armRow);
+      if(!f) return "no field";
+      if(f.kind === "pad"){
+        var bad = [].slice.call(f.el.querySelectorAll("button")).filter(function(x){
+          return parseInt(x.getAttribute("data-v"),10) > above && !x.disabled; });
+        return bad.length ? "still live: " + bad.map(function(x){return x.textContent}).join(",") : "capped";
+      }
+      return f.el.querySelectorAll("button")[1].disabled ? "capped" : "plus still live";
+    }
+    function exported(){
+      var b = q("#btnExport2"); if(b) b.click();
+      var t = q("#exportText");
+      return t ? (t.value || "") : "";
+    }
+    /* Pull one tab-separated block out of the export by its header line, so a
+       check can assert on the INNING LOG without matching the pitch rows too. */
+    function block(title){
+      var L = exported().split(/\\r?\\n/), out = [], on = false;
+      for(var i=0;i<L.length;i++){
+        if(!on){ if(L[i].indexOf(title) === 0) on = true; continue; }
+        if(/^[A-Z][A-Z ]{3,}/.test(L[i]) && L[i].indexOf("\\t") < 0) break;
+        if(L[i].indexOf("\\t") >= 0) out.push(L[i].split("\\t"));
+      }
+      return out;
+    }
+    return {q:q, qa:qa, arm:arm, addArm:addArm, pitch:pitch, res:res, next:next, ab:ab,
+            outs:outs, outsOn:outsOn, inn:inn, box:box, head:head,
+            ledger:ledger, summary:summary, set:set, cur:cur, capped:capped,
+            field:field, exported:exported, block:block};
+  })(); "ready"`;
+
+  await sweep(b, "PITCH CHART · innings", "/game/index.html", [
+    /* Inning 1: one arm, three strikeouts. Three at-bat outs, so computed IP is
+       exactly 1.0 and anything else in the summary strip is arithmetic on it. */
+    ["fixture builds inning 1", null,
+      '(function(){ __T.arm(0,0); __T.ab("K"); __T.ab("K"); __T.ab("K");'+
+      ' var L=__T.ledger();'+
+      ' return (L.length===1 && L[0][0]==="1" && L[0][6]==="\\u2014") ? "yes"'+
+      '      : JSON.stringify(L); })()',
+      GINN, "yes"],
+    /* The in-progress inning has no entry either, and must NOT nag. This is the
+       distinction the first build got wrong: amber meant "no entry", which is
+       true of the inning being charted right now. */
+    ["the live inning is not amber", null,
+      '(function(){ var t=__T.q("#innLedger").textContent;'+
+      ' return (__T.qa("#innLedger tr.open").length===0 && t.indexOf("in amber")<0)'+
+      '        ? "quiet" : "NAGGING"; })()',
+      null, "quiet"],
+    ["third out fires the prompt", null,
+      '(function(){ __T.outs(3); return __T.box() ? "overlay" : "NOTHING OPENED"; })()',
+      null, "overlay"],
+    /* Convention 18: the playground sandbox has no allow-modals, so a native
+       dialog would be a dead button there and work perfectly on the iPad. */
+    ["the prompt is in-page, not native", null,
+      '(function(){ var b=__T.box();'+
+      ' return (b && b.className.indexOf("askbox")>=0 && b.closest(".askwrap"))'+
+      '        ? "in-page" : "not an ask() overlay"; })()',
+      null, "in-page"],
+    ["one pitcher gets pads", null,
+      '(function(){ var r=__T.field("Runs"), e=__T.field("Earned");'+
+      ' return (r&&e&&r.kind==="pad"&&e.kind==="pad") ? "pads"'+
+      '      : ("runs="+(r?r.kind:"none")+" earned="+(e?e.kind:"none")); })()',
+      null, "pads"],
+    ["earned pre-selects the runs", null,
+      '(function(){ __T.set("Runs",2); return __T.cur("Earned")===2 ? "2"'+
+      '      : "earned is "+__T.cur("Earned"); })()',
+      null, "2"],
+    ["earned cannot exceed runs", null,
+      '__T.capped("Earned", 2)', null, "capped"],
+    /* ---- THE ONE THAT MUST NEVER REGRESS ----
+       A blocking overlay with no way out is a trap. The charter WILL tap to three
+       outs by mistake, mid-correction. Back must restore two outs, leave the
+       inning where it was, and write nothing - including nothing from the runs
+       that were tapped in before the mis-tap was noticed. */
+    ["Wrong — back to 2 outs", null,
+      '(function(){ __T.q("#innBack").click();'+
+      ' var L=__T.ledger();'+
+      ' return [ __T.box() ? "overlay still up" : "closed",'+
+      '          "outs=" + __T.outsOn(),'+
+      '          "inn=" + __T.inn(),'+
+      '          "R=" + (L[0]||[])[6] ].join(" "); })()',
+      null, "closed outs=2 inn=1 R=—"],
+    ["NO RUNS closes it in one tap", null,
+      '(function(){ __T.outs(3);'+
+      ' if(!__T.box()) return "the prompt did not come back";'+
+      ' __T.q("#innNoRuns").click();'+
+      ' var L=__T.ledger();'+
+      ' return [ __T.box() ? "still up" : "closed", "R="+(L[0]||[])[6],'+
+      '          "ER="+(L[0]||[])[7], "outs="+__T.outsOn(), "inn="+__T.inn()'+
+      '        ].join(" "); })()',
+      null, "closed R=0 ER=0 outs=0 inn=2"],
+    /* Inning 2: the starter throws to one hitter, a reliever finishes it. The
+       rows have to be BUILT from who actually threw, not chosen by anyone. */
+    ["two pitchers get a row each", null,
+      '(function(){ __T.ab("K");'+
+      ' __T.addArm(); __T.arm(1,1); __T.ab("GO"); __T.ab("FO");'+
+      ' __T.outs(3);'+
+      ' if(!__T.box()) return "no overlay";'+
+      ' var names=__T.qa(".inrow b").map(function(x){ return x.textContent; });'+
+      ' var want=[window.TITANS_ROSTER[0].name, window.TITANS_ROSTER[1].name];'+
+      ' return names.join(",")===want.join(",") ? "both"'+
+      '      : "rows: "+names.join(",")+" want "+want.join(","); })()',
+      null, "both"],
+    ["two pitchers get steppers", null,
+      '(function(){ var n=window.TITANS_ROSTER[0].name;'+
+      ' var f=__T.field("Runs", n);'+
+      ' return (f && f.kind==="step") ? "steppers" : "got "+(f?f.kind:"nothing"); })()',
+      null, "steppers"],
+    /* The inning total is the SUM of the rows and nothing else - no input, no
+       second place a number can be typed and disagree with itself. */
+    ["the inning total is a read-out", null,
+      '(function(){ var a=window.TITANS_ROSTER[0].name, c=window.TITANS_ROSTER[1].name;'+
+      ' __T.set("Runs",1,a); __T.set("Earned",1,a);'+
+      ' __T.set("Runs",2,c); __T.set("Earned",0,c);'+
+      ' var t=__T.q(".intot").textContent;'+
+      ' var inputs=__T.box().querySelectorAll(".intot input, .intot select").length;'+
+      ' return (inputs===0 && /3 runs/.test(t) && /1 earned/.test(t)) ? "3/1"'+
+      '      : t + " (" + inputs + " inputs)"; })()',
+      null, "3/1"],
+    ["per-arm earned cannot exceed runs", null,
+      '(function(){ var a=window.TITANS_ROSTER[0].name;'+
+      ' return __T.capped("Earned", 1, a); })()',
+      null, "capped"],
+    /* Confirming inning 2 is also the fixture for everything below it. */
+    ["confirm files both lines", null,
+      '(function(){ __T.q("#innOk").click();'+
+      ' var a=window.TITANS_ROSTER[0].name, c=window.TITANS_ROSTER[1].name;'+
+      ' var two=__T.ledger().filter(function(r){ return r[0]==="2"; });'+
+      ' var got=two.map(function(r){ return r[1]+" "+r[6]+"/"+r[7]; }).join(" | ")'+
+      '         + " inn=" + __T.inn();'+
+      ' var want=a+" 1/1 | "+c+" 2/0 inn=3";'+
+      ' return got===want ? "filed" : got+"  WANT  "+want; })()',
+      null, "filed"],
+    /* The book disagrees sometimes, and it disagrees AFTER the game. Tapping a
+       ledger row re-opens that inning without touching the live count - and
+       without stamping Partial on an inning that was never partial. */
+    ["the ledger is editable after the fact", null,
+      '(function(){ __T.qa("#innLedger tbody tr")[0].click();'+
+      ' if(!__T.box()) return "row did not open";'+
+      ' if(!/^Inning 1/.test(__T.head())) return "headed: "+__T.head();'+
+      ' __T.set("Runs",1); __T.q("#innOk").click();'+
+      ' var L=__T.ledger();'+
+      ' return "R="+L[0][6]+" inn="+__T.inn()+" outs="+__T.outsOn(); })()',
+      null, "R=1 inn=3 outs=0"],
+    /* IP is outs/3 - the actual definition - so a double play has to count two.
+       Inning 3: a DP from the reliever takes him from 0.2 to 1.1 innings. */
+    ["DP counts two outs", null,
+      '(function(){ var before=__T.summary().filter(function(r){'+
+      '   return r[0]===window.TITANS_ROSTER[1].name; })[0][1];'+
+      ' __T.ab("DP");'+
+      ' var after=__T.summary().filter(function(r){'+
+      '   return r[0]===window.TITANS_ROSTER[1].name; })[0][1];'+
+      ' return before+" -> "+after; })()',
+      null, "0.2 -> 1.1"],
+    /* P/IP and the 7-inning ERA are computed off the same two numbers the strip
+       already shows, so they cannot be allowed to drift from them. */
+    ["the summary agrees with itself", null,
+      '(function(){ var bad=[];'+
+      ' __T.summary().forEach(function(r){'+
+      '   var ip=parseInt(r[1].split(".")[0],10) + parseInt(r[1].split(".")[1],10)/3;'+
+      '   var p=+r[2], er=+r[5];'+
+      '   if(!ip) return;'+
+      '   if(r[3] !== (p/ip).toFixed(1)) bad.push(r[0]+" P/IP "+r[3]+" want "+(p/ip).toFixed(1));'+
+      '   if(r[6] !== (er*7/ip).toFixed(2)) bad.push(r[0]+" ERA "+r[6]+" want "+(er*7/ip).toFixed(2));'+
+      ' });'+
+      ' return bad.length ? bad.join(" ; ") : "agrees"; })()',
+      null, "agrees"],
+    ["the pitch log carries Inning", null,
+      '(function(){ var rows=__T.block("PITCH LOG");'+
+      ' if(!rows.length) return "no pitch log";'+
+      ' if(rows[0][0] !== "Inning") return "first column is "+rows[0][0];'+
+      ' var blank=rows.slice(1).filter(function(r){ return !r[0]; });'+
+      ' return blank.length ? blank.length+" pitches with no inning" : "stamped"; })()',
+      null, "stamped"],
+    /* One row per inning x pitcher: inning totals are a sum of these rows and a
+       pitcher's game line is a sum of these rows, so both pivots are trivial and
+       neither is stored twice. Unearned is computed, never entered. */
+    ["the INNING LOG is inning x pitcher", null,
+      '(function(){ var rows=__T.block("INNING LOG");'+
+      ' if(rows.length<2) return "no inning log";'+
+      ' var h=rows[0], body=rows.slice(1);'+
+      ' if(h[0]!=="Inning" || h.indexOf("PitcherID")<0 || h.indexOf("Unearned")<0)'+
+      '   return "header: "+h.join(",");'+
+      ' var keys={}, dup=0;'+
+      ' body.forEach(function(r){ var k=r[0]+"|"+r[2]; if(keys[k]) dup++; keys[k]=1; });'+
+      ' if(dup) return dup+" duplicate inning/pitcher rows";'+
+      ' var ri=h.indexOf("Runs"), ei=h.indexOf("Earned"), ui=h.indexOf("Unearned");'+
+      ' var idi=h.indexOf("PitcherID"), bad=[];'+
+      ' body.forEach(function(r){'+
+      '   if(!r[idi]) bad.push("inning "+r[0]+" "+r[2]+" has no PitcherID");'+
+      '   if(r[ri]==="") return;'+
+      '   if(+r[ui] !== (+r[ri] - +r[ei])) bad.push("inning "+r[0]+" unearned "+r[ui]); });'+
+      /* One row per inning x pitcher: inning 1 is the starter alone, inning 2 is
+         both arms, inning 3 is the reliever alone. Four rows, and the check says
+         so rather than asserting a number somebody has to re-derive. */
+      ' if(body.length !== 4) return body.length+" rows, wanted 4: "'+
+      '   + body.map(function(r){ return r[0]+"/"+r[2]; }).join(" ");'+
+      ' return bad.length ? bad.join(" ; ") : "inning x pitcher"; })()',
+      null, "inning x pitcher"],
+    /* Most games end mid-inning - walk-off, run rule, time limit - so the third
+       out never comes and the last inning would never be asked about. Cancelling
+       that prompt must leave the game unfiled: a half-filed game is worse. */
+    ["Finish & file asks about the partial inning", null,
+      '(function(){ var before=__T.qa("#histList .hrow").length;'+
+      ' __T.q("#btnFinish").click();'+
+      ' if(!__T.box()) return "no prompt";'+
+      ' if(!/Final inning \\(partial\\)/.test(__T.head())) return "headed: "+__T.head();'+
+      ' __T.q("#innBack").click();'+
+      ' if(__T.box()) return "cancel did not close it";'+
+      ' return (__T.qa("#histList .hrow").length === before) ? "asked, unfiled"'+
+      '      : "IT FILED ANYWAY"; })()',
+      null, "asked, unfiled"],
+  ]);
+
+  await migration(b);
 
   await b.close();
   console.log("\n" + checks + " controls checked");

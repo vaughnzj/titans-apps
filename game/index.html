@@ -268,8 +268,70 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .bs-legend{display:flex;flex-direction:column;line-height:1.15}
 .bs-legend span{font-family:var(--cond);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--text-3)}
 .outs{display:flex;gap:4px;align-items:center;cursor:pointer;padding:4px}
-.outdot{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--text-3)}
+.outs{display:flex;gap:4px;align-items:center;padding:4px}
+.outdot{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--text-3);
+  padding:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
 .outdot.on{background:var(--strike);border-color:var(--strike)}
+/* Inning readout in the count bar. The number is authoritative - the dots roll it,
+   but a wrong one has to be fixable without faking outs. */
+.innbox{display:flex;align-items:center;gap:5px;padding:0 4px}
+.innbox .il{font-family:var(--cond);font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-2)}
+.innbox .iv{font-family:var(--mono);font-size:17px;font-weight:600;min-width:18px;text-align:center}
+.innbox button{width:26px;height:26px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--surface);font:inherit;font-size:15px;font-weight:600;padding:0;line-height:1}
+
+/* ---- the end-of-inning overlay ----
+   Built on .askwrap/.askbox on purpose: the playground sandbox has no
+   allow-modals, so anything reaching for confirm() here would be a dead button
+   there while working perfectly on an iPad. Convention 18. */
+.inbox{max-width:540px}
+.inhead{font-family:var(--cond);font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+  font-size:11.5px;color:var(--text-2);margin:0 0 14px!important}
+.noruns{display:block;width:100%;padding:17px;border-radius:var(--r);border:none;
+  background:var(--navy);color:#fff;font:inherit;font-size:17px;font-weight:700;
+  letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px;cursor:pointer}
+.inpad{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.inpad .lab{width:70px;font-family:var(--cond);font-size:10.5px;font-weight:600;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.inpad button{min-width:46px;padding:11px 0;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--surface);font:inherit;font-size:16px;font-weight:600;cursor:pointer}
+.inpad button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.inpad button:disabled{opacity:.28}
+.inrow{display:flex;gap:12px;align-items:center;justify-content:space-between;
+  padding:11px 0;border-top:1px solid var(--line-soft);flex-wrap:wrap}
+.inrow b{font-size:15px;font-weight:600;flex:1;min-width:92px}
+/* .instep, not .step - the charting panel already has four <span class="lbl step">
+   section labels, and a bare .step rule would have made every one of them a flex
+   container with a gap. A new class name is cheaper than finding that later. */
+.instep{display:flex;align-items:center;gap:4px}
+.instep .sl{font-family:var(--cond);font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-2);margin-right:2px}
+.instep button{width:38px;height:38px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--surface);font:inherit;font-size:18px;font-weight:600;padding:0;cursor:pointer}
+.instep button:disabled{opacity:.28}
+.instep .v{min-width:26px;text-align:center;font-family:var(--mono);font-size:17px;font-weight:600}
+.intot{margin:13px 0 0!important;font-size:14px;font-weight:600}
+.inhint{margin:7px 0 16px!important;font-size:12.5px;color:var(--text-2);line-height:1.45}
+
+/* ---- the inning ledger on the Game tab ---- */
+.inntbl{width:100%;font-size:12.5px;border-collapse:collapse}
+.inntbl th{font-family:var(--cond);font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-2);text-align:center;padding:4px 2px;white-space:nowrap}
+.inntbl th.l,.inntbl td.l{text-align:left}
+.inntbl td{text-align:center;padding:6px 2px;border-top:1px solid var(--line-soft);
+  font-variant-numeric:tabular-nums}
+.inntbl td.l{overflow:hidden;text-overflow:ellipsis;max-width:96px;white-space:nowrap}
+.inntbl tbody tr{cursor:pointer}
+.inntbl tr.open td{background:var(--inplay-bg);color:var(--inplay);font-weight:600}
+.inntbl td.rr{font-weight:700}
+.sumtbl{width:100%;font-size:12.5px;border-collapse:collapse;margin-top:10px}
+.sumtbl th{font-family:var(--cond);font-size:9.5px;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-2);text-align:center;padding:4px 2px;white-space:nowrap}
+.sumtbl th.l,.sumtbl td.l{text-align:left}
+.sumtbl td{text-align:center;padding:6px 2px;border-top:1px solid var(--line-soft);
+  font-variant-numeric:tabular-nums}
+.sumtbl td.pip{font-weight:700}
 .bigcount.due{color:var(--strike)}
 .due-flag{font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;
   color:#fff;background:var(--strike);padding:4px 10px;border-radius:var(--r)}
@@ -417,6 +479,17 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
   max-width:540px;width:100%;padding:20px;box-shadow:0 18px 44px rgba(0,0,0,.34)}
 .askbox p{margin:0 0 18px;font-size:15px;line-height:1.5;white-space:pre-line;color:var(--text)}
 .askrow{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+/* .btn had NO rule in this app at all - so every ask() dialog in it, going back
+   to the first one, rendered Cancel and Confirm as bare text with the global
+   button reset stripping the border and background. Both sibling apps style it;
+   this one was simply missed, and nothing caught it because the controls worked.
+   The end-of-inning overlay is what made it matter: a plain-text Confirm beside a
+   full-width NO RUNS button reads as disabled. Same shape as the bullpen's. */
+.btn{border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r);
+  padding:10px 16px;font-family:var(--cond);font-weight:600;font-size:15px;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--text)}
+.btn.pri{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
 
 .minizone{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;width:100%;max-width:124px;aspect-ratio:1;background:var(--line-soft);padding:1px;border-radius:4px}
 .mcell{background:var(--surface);display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1px;padding:1px;border-radius:1px}
@@ -494,13 +567,8 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .ao3tag.good{background:var(--ball-bg);color:var(--ball);border-color:transparent}
 .ao3tag.bad{background:var(--strike-bg);color:var(--strike);border-color:transparent}
 
-.iphead,.iprow{display:grid;grid-template-columns:1fr 54px 44px 44px;gap:6px;align-items:center}
-.iphead{margin:4px 0 3px}
-.iphead span{font-family:var(--cond);font-weight:600;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);text-align:center}
-.iprow{margin-bottom:4px}
-.iprow b{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.iprow input{width:100%;padding:7px 4px;border:1px solid var(--line);border-radius:var(--r);background:var(--ground);
-  font-family:var(--mono);font-size:12px;text-align:center}
+/* .iphead / .iprow styled the hand-typed IP/R/ER card. Removed in v19 along with
+   the card - the inning ledger (.inntbl) and the summary strip (.sumtbl) replace it. */
 .mix{display:flex;flex-direction:column;gap:6px}
 .mixrow{display:grid;grid-template-columns:34px 1fr 50px;gap:9px;align-items:center;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
 .mixrow span:last-child{text-align:right;color:var(--text-2)}
@@ -683,7 +751,8 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
     <div class="countbar">
       <div class="bigcount" id="bigCount">0–0</div>
       <div class="bs-legend"><span>Balls</span><span>Strikes</span></div>
-      <div class="outs" id="outs" title="Tap to change outs"></div>
+      <div class="outs" id="outs" title="Tap a dot to set the outs"></div>
+      <div class="innbox"><span class="il">Inn</span><button id="innDown" title="Back an inning">&minus;</button><span class="iv" id="innNow">1</span><button id="innUp" title="On an inning">+</button></div>
       <span class="closed hidden" id="closedFlag">At-bat closed</span>
       <span class="due-flag hidden" id="dueFlag"></span>
       <div style="margin-left:auto" class="lbl" id="abPitchCount">0 pitches</div>
@@ -827,9 +896,10 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
     </div>
 
     <div class="pbody tabpane" id="tab-game" style="display:none">
-      <span class="lbl">Enter by hand · the app can't derive these</span>
-      <div class="iphead"><span></span><span>IP</span><span>R</span><span>ER</span></div>
-      <div id="ipRows"></div>
+      <span class="lbl">Runs by inning · tap a row to change it</span>
+      <div id="innLedger"></div>
+      <span class="lbl" style="margin-top:10px;display:block">Each arm · all computed</span>
+      <div id="innSummary"></div>
       <label class="field" style="margin:9px 0 10px"><span class="lbl">Game note</span>
         <input id="fNotes2" placeholder="e.g. all 4 BB in the first"></label>
       <button class="finishbtn" id="btnFinish">Finish &amp; file this game</button>
@@ -1235,6 +1305,12 @@ function ask(msg, yesLabel, onYes){
 function note2(msg){ var e=document.getElementById("saveNote"); if(e) e.textContent = msg; }
 function finishAndFile(){
   if(!chartedAnything(G)){ nudge("Nothing charted yet"); return; }
+  /* Most games end mid-inning - walk-off, run rule, time limit - so the third out
+     never comes and the last inning would never be asked about. Ask here, once,
+     in the only place it is needed. Cancelling returns to the game WITHOUT
+     filing: a half-finished file is worse than an unfiled game. */
+  var open = pitchersIn(G.inning || 1).length && inningOpen(G.inning || 1);
+  if(open){ promptInning(G.inning || 1, true, finishAndFile); return; }
   ask("File this game and start a clean one?\n\nIt moves to History and stays there "+
       "\u2014 nothing is deleted.", "Finish & file", doFile);
 }
@@ -1259,7 +1335,7 @@ function newSpot(n){ return {num:n, men:[newBatter(n)], cur:0}; }
 function emptyGame(){
   var l=[],i;
   for(i=1;i<=MAXSPOTS;i++) l.push(newSpot(i));
-  return {v:5, date:"", opp:"",
+  return {v:6, date:"", opp:"", inning:1, innings:[],
           pitchers:[newGamePitcher(),newGamePitcher(),newGamePitcher(),
                     newGamePitcher(),newGamePitcher()], notes:"",
           curP:0, shown:1, lineup:l, curB:0, liveB:0, lastClosed:null,
@@ -1314,6 +1390,12 @@ function load(){
     if(!valid(p)) return null;
     if(p.sample) return null;              /* a saved sample is not a game */
     if(!p.nextType) p.nextType="FB";               // carried over from a pre-pitch-type save
+    /* v5 -> v6: innings. A game charted before this build has no inning on any
+       pitch; it still opens and still exports, with a blank Inning column. Do NOT
+       backfill a guess - a made-up inning is worse than an empty cell. */
+    if(typeof p.inning !== "number" || p.inning < 1) p.inning = 1;
+    if(!Array.isArray(p.innings)) p.innings = [];
+    p.v = 6;
     if(typeof p.liveB!=="number" || p.liveB<0 || p.liveB>=p.lineup.length) p.liveB = p.curB;
     if(!p.lastClosed) p.lastClosed = null;
     toSpots(p);
@@ -1429,7 +1511,11 @@ function logPitch(t, r, c){
     autoClose(a);
     if(a.result){ nudge("That at-bat just closed — undo the result to add a pitch"); render(); save(); return false; }
   }
-  var np = {r:(r==null?-1:r), c:(c==null?-1:c), t:t, k:G.nextType||"FB", p:G.curP, q:1};
+  /* inn is stamped at log time and never recomputed. The inning is the charter's
+     count, so a pitch belongs to whatever inning he had on screen when he logged
+     it - not to whatever the ledger says later. */
+  var np = {r:(r==null?-1:r), c:(c==null?-1:c), t:t, k:G.nextType||"FB", p:G.curP, q:1,
+            inn:(G.inning||1)};
   /* The call was set before the pitch; it belongs to this pitch and nothing after it. */
   if(G.call){ np.cr = G.call.r; np.cc = G.call.c; G.call = null; }
   a.pitches.push(np);
@@ -1730,13 +1816,296 @@ function pitcherStats(i){
         else if(a.result==="HBP") r.hbp++;
         else if(HITS[a.result]) r.h++;
         else if(a.result==="E") r.err++;
-        else if(OUT_RESULT[a.result]) r.outs++;
+        /* A double play is one at-bat and TWO outs. Nothing consumed this count
+           before innings existed; IP does now, so it has to be right. */
+        else if(OUT_RESULT[a.result]) r.outs += (a.result === "DP" ? 2 : 1);
       }
     });
   });
   return r;
 }
-function n1(v){ return (v==null||v==="") ? "" : String(v); }
+/* ===================== innings =====================
+   One row per inning x pitcher. EVERYTHING here is derived from the pitch log -
+   the only things ever entered are runs and earned runs, and those live in
+   G.innings. That split is the whole design: a computed column can never
+   disagree with the pitches, and an entered one can never be silently wrong
+   because the ledger shows it. */
+function inningRows(){
+  var map = {}, order = [];
+  function row(inn, p){
+    var k = inn + "|" + p;
+    if(!map[k]){
+      map[k] = {inn:inn, p:p, tot:0, str:0, fp:0, fps:0, bf:0, outs:0, fb:0, k:0, h:0};
+      order.push(map[k]);
+    }
+    return map[k];
+  }
+  allPlayers().forEach(function(b){
+    b.abs.forEach(function(a){
+      if(!a.pitches.length) return;
+      a.pitches.forEach(function(p, idx){
+        if(p.inn == null) return;                 /* pre-v6 pitch: no inning to file it under */
+        var r = row(p.inn, p.p);
+        r.tot++;
+        if(isStrikeType(p.t)) r.str++;
+        if(idx === 0){ r.fp++; if(isStrikeType(p.t)) r.fps++; }
+      });
+      /* At-bat outcomes go to the inning AND pitcher of the FIRST pitch of the
+         at-bat - the same rule pitcherStats already uses, with the inning added.
+         An at-bat that spans a pitching change belongs to whoever started it. */
+      var f = a.pitches[0];
+      if(f.inn != null && a.result){
+        var r2 = row(f.inn, f.p);
+        r2.bf++;
+        if(a.result === "K" || a.result === "Kc") r2.k++;
+        else if(a.result === "BB" || a.result === "HBP") r2.fb++;
+        else if(HITS[a.result]) r2.h++;
+        if(OUT_RESULT[a.result]) r2.outs += (a.result === "DP" ? 2 : 1);
+      }
+    });
+  });
+  order.sort(function(x, y){ return (x.inn - y.inn) || (x.p - y.p); });
+  return order;
+}
+/* Which arms threw in one inning, in the order they appeared. */
+function pitchersIn(inn){
+  var out = [];
+  inningRows().forEach(function(r){ if(r.inn === inn && out.indexOf(r.p) < 0) out.push(r.p); });
+  return out;
+}
+function inningEntry(n){
+  for(var i=0;i<(G.innings||[]).length;i++) if(G.innings[i].n === n) return G.innings[i];
+  return null;
+}
+function inningLine(n, p){
+  var e = inningEntry(n);
+  if(!e || !Array.isArray(e.lines)) return null;
+  for(var i=0;i<e.lines.length;i++) if(e.lines[i].p === p) return e.lines[i];
+  return null;
+}
+/* inningTotals() was written here and never called. The ledger shows R/ER per
+   inning x pitcher - which is the grain the data is stored at - and the overlay
+   sums its own rows for the read-out line. Nothing wants an inning total on its
+   own, so it went rather than sit as a second way to compute the same number. */
+/* Outs recorded against one arm, across every inning. IP is outs/3 - the actual
+   definition - so nothing is typed. Known gap, and it is in the guide: an out
+   that is not a plate appearance (caught stealing, a pickoff, a runner thrown
+   out) is not captured, so this can read low. The ledger shows it, so a wrong
+   number is visible rather than silent; for the record the book wins. */
+function outsOf(pi){
+  var n = 0;
+  inningRows().forEach(function(r){ if(r.p === pi) n += r.outs; });
+  return n;
+}
+function ipText(outs){ return Math.floor(outs/3) + "." + (outs % 3); }
+function erOf(pi){
+  var n = 0;
+  (G.innings||[]).forEach(function(e){
+    (e.lines||[]).forEach(function(l){ if(l.p === pi) n += (l.er||0); });
+  });
+  return n;
+}
+function runsOf(pi){
+  var n = 0;
+  (G.innings||[]).forEach(function(e){
+    (e.lines||[]).forEach(function(l){ if(l.p === pi) n += (l.r||0); });
+  });
+  return n;
+}
+/* A closed inning with nothing entered. Should only ever happen through the
+   escape hatch or a game charted on an older build - and it goes amber so it
+   does not slip past. */
+function inningOpen(n){ return !inningEntry(n); }
+
+/* The end-of-inning prompt. Blocking on purpose - Jim's call: "it will force that
+   data to be entered and not forgotten." The cost of blocking is paid for by
+   making the common case one tap, and by ALWAYS having a way out: an inning ended
+   by a mis-tap must be recoverable or the overlay is a trap. */
+/* partial: false = the live 3-outs prompt · true = the partial final inning at
+   Finish & file · "edit" = re-opening a closed inning from the ledger. "edit"
+   exists because the first version passed true for a ledger tap, which quietly
+   stamped Partial=Y on the export for any inning anyone corrected after the game. */
+function promptInning(n, partial, onDone){
+  var isEdit = (partial === "edit");
+  var arms = pitchersIn(n);
+  if(!arms.length) arms = [G.curP];
+  var existing = inningEntry(n);
+  var vals = arms.map(function(p){
+    var l = existing ? inningLine(n, p) : null;
+    return {p:p, r:(l ? l.r : 0), er:(l ? l.er : 0)};
+  });
+
+  var w = document.createElement("div");
+  w.className = "askwrap";
+  var box = document.createElement("div");
+  box.className = "askbox inbox";
+  w.appendChild(box);
+
+  var head = document.createElement("p");
+  head.className = "inhead";
+  head.textContent = (isEdit ? "Inning " : partial ? "Final inning (partial) \u00b7 inning " : "End of inning ") +
+                     n +
+                     (arms.length === 1 ? (" \u00b7 " + (pitcherName(arms[0])))
+                                       : (" \u00b7 " + arms.length + " pitchers"));
+  box.appendChild(head);
+
+  var noRuns = document.createElement("button");
+  noRuns.className = "noruns";
+  noRuns.id = "innNoRuns";
+  noRuns.textContent = "No runs";
+  box.appendChild(noRuns);
+
+  var body = document.createElement("div");
+  box.appendChild(body);
+
+  var tot = document.createElement("p");
+  tot.className = "intot";
+  var hint = document.createElement("p");
+  hint.className = "inhint";
+  hint.textContent = arms.length === 1
+    ? "Unearned = wouldn\u2019t have scored without an error or a passed ball."
+    : "Charge the run to the pitcher you would charge it to. This can differ from the book \u2014 that is expected, and we do not reconcile them.";
+
+  var row = document.createElement("div");
+  row.className = "askrow";
+  var no = document.createElement("button");
+  no.className = "btn"; no.id = "innBack";
+  no.textContent = isEdit ? "Cancel"
+                 : partial ? "Not yet \u2014 back to the game"
+                           : "Wrong \u2014 back to 2 outs";
+  var yes = document.createElement("button");
+  yes.className = "btn pri"; yes.id = "innOk";
+  yes.textContent = "Confirm";
+  row.appendChild(no); row.appendChild(yes);
+
+  box.appendChild(tot); box.appendChild(hint); box.appendChild(row);
+
+  function totals(){
+    var r = 0, er = 0;
+    vals.forEach(function(v){ r += v.r; er += v.er; });
+    return {r:r, er:er};
+  }
+  function syncTot(){
+    var t = totals();
+    tot.textContent = "Inning: " + t.r + (t.r === 1 ? " run, " : " runs, ") + t.er + " earned";
+  }
+
+  /* big[field] latches once "6+" is tapped: that field becomes a stepper for the
+     rest of the overlay. A seven-run inning does not deserve ten buttons, and a
+     pad that silently capped at six would file a 7-run inning as 6. */
+  var big = {Runs:false, Earned:false};
+  function pad(label, get, set, cap){
+    if(big[label]) return stepper(label, get, set, cap);
+    var d = document.createElement("div");
+    d.className = "inpad";
+    var l = document.createElement("span"); l.className = "lab"; l.textContent = label;
+    d.appendChild(l);
+    for(var i=0;i<=6;i++){
+      (function(i){
+        var b = document.createElement("button");
+        b.textContent = (i === 6) ? "6+" : String(i);
+        b.setAttribute("data-v", String(i));
+        if(get() === i) b.className = "on";
+        if(cap != null && i > cap()) b.disabled = true;
+        b.addEventListener("click", function(){
+          if(i === 6){ big[label] = true; }
+          set(i); draw();
+        });
+        d.appendChild(b);
+      })(i);
+    }
+    return d;
+  }
+  function stepper(label, get, set, max){
+    var d = document.createElement("div"); d.className = "instep";
+    var l = document.createElement("span"); l.className = "sl"; l.textContent = label;
+    var minus = document.createElement("button"); minus.textContent = "\u2212";
+    var v = document.createElement("span"); v.className = "v"; v.textContent = String(get());
+    var plus = document.createElement("button"); plus.textContent = "+";
+    minus.disabled = get() <= 0;
+    if(max != null) plus.disabled = get() >= max();
+    minus.addEventListener("click", function(){ set(Math.max(0, get()-1)); draw(); });
+    plus.addEventListener("click", function(){ set(get()+1); draw(); });
+    d.appendChild(l); d.appendChild(minus); d.appendChild(v); d.appendChild(plus);
+    return d;
+  }
+
+  function draw(){
+    /* Earned can never exceed runs. Clamp the model first, then redraw - a
+       disabled button is visible, a silently wrong number is not. */
+    vals.forEach(function(v){ if(v.er > v.r) v.er = v.r; });
+    body.innerHTML = "";
+    if(arms.length === 1){
+      var v0 = vals[0];
+      /* Setting the runs sets Earned to match. Most runs are earned, so the common
+         case becomes "tap the number, Confirm" - and the uncommon one is one more
+         tap down. Lowering the runs clamps Earned through draw()'s clamp. */
+      body.appendChild(pad("Runs",   function(){ return v0.r; },
+                           function(x){ if(v0.er === v0.r) v0.er = x; v0.r = x; }, null));
+      body.appendChild(pad("Earned", function(){ return v0.er; }, function(x){ v0.er = x; },
+                           function(){ return v0.r; }));
+    } else {
+      vals.forEach(function(v){
+        var r2 = document.createElement("div"); r2.className = "inrow";
+        r2.setAttribute("data-arm", String(v.p));
+        var nm = document.createElement("b"); nm.textContent = pitcherName(v.p);
+        r2.appendChild(nm);
+        r2.appendChild(stepper("Runs",   function(){ return v.r; },
+                               function(x){ if(v.er === v.r) v.er = x; v.r = x; }, null));
+        r2.appendChild(stepper("Earned", function(){ return v.er; }, function(x){ v.er = x; },
+                               function(){ return v.r; }));
+        body.appendChild(r2);
+      });
+    }
+    syncTot();
+  }
+
+  function close(){
+    if(w.parentNode) w.parentNode.removeChild(w);
+    document.removeEventListener("keydown", key);
+  }
+  /* The way out. An inning ended by a mis-tap has to be recoverable: outs go
+     back to two, the inning does not advance, nothing is written. Escape and a
+     backdrop tap do the same. Without this a blocking overlay is a trap. */
+  function back(){
+    close();
+    if(!partial){ G.outs = 2; render(); save(); }
+  }
+  function key(e){ if(e.key === "Escape") back(); }
+  w.addEventListener("click", function(e){ if(e.target === w) back(); });
+  no.addEventListener("click", back);
+  noRuns.addEventListener("click", function(){
+    vals.forEach(function(v){ v.r = 0; v.er = 0; });
+    commit();
+  });
+  yes.addEventListener("click", commit);
+
+  function commit(){
+    var e2 = inningEntry(n);
+    var rec = {n:n,
+               partial: isEdit ? !!(e2 && e2.partial) : !!partial,
+               lines:vals.map(function(v){
+      return {p:v.p, r:v.r, er:v.er};
+    })};
+    if(e2){
+      e2.partial = rec.partial; e2.lines = rec.lines;
+    } else {
+      G.innings.push(rec);
+      G.innings.sort(function(a, b){ return a.n - b.n; });
+    }
+    if(!partial){ G.outs = 0; G.inning = n + 1; }
+    close(); save(); render();
+    if(onDone) onDone();
+  }
+
+  document.addEventListener("keydown", key);
+  document.body.appendChild(w);
+  draw();
+}
+/* n1() lived here - it rendered a possibly-blank hand-typed number as "" instead
+   of "null". Removed in v19: the only three fields that were ever blank were the
+   typed IP/R/ER, and all three are computed now, so there is nothing left that
+   can be empty. */
 function ratio(a,b,dp){ return b ? (a/b).toFixed(dp==null?2:dp) : "—"; }
 
 function gameStats(){
@@ -1759,8 +2128,10 @@ function el(t,c,x){ var e=document.createElement(t); if(c) e.className=c; if(x!=
 var CHAINS = [
   "#fDate, #fOpp, #lineup .slot input",   // the pre-game run: header, then the whole lineup
   /* The pitcher run used to live here as "#pitchers .pchip input". The chips are
-     roster pickers now, so there is no text field to walk and no Enter to press. */
-  "#ipRows .iprow input"                  // IP / R / ER down the card at the end
+     roster pickers now, so there is no text field to walk and no Enter to press.
+     "#ipRows .iprow input" followed it out in v19 - IP is computed and R/ER are
+     stepper buttons in the end-of-inning overlay, so the last text field in the
+     app is gone and this is a one-run chain now. */
 ];
 function chainFor(t){
   for(var i=0;i<CHAINS.length;i++){
@@ -1853,25 +2224,107 @@ function renderStats(){
   }
 }
 
-function renderIP(){
-  var host=document.getElementById("ipRows"); if(!host) return;
-  host.innerHTML="";
-  var shown=Math.max(G.shown||1, G.curP+1);
-  for(var i=0;i<shown;i++){
-    (function(i){
-      var pit=G.pitchers[i], row=el("div","iprow");
-      row.appendChild(el("b",null, pit.name || ROLES[i]));
-      ["ip","r","er"].forEach(function(f){
-        var inp=document.createElement("input");
-        inp.value = (pit[f]==null?"":pit[f]);
-        inp.inputMode="decimal"; inp.placeholder="—";
-        inp.addEventListener("input",function(){ pit[f]=inp.value; save(); });
-        row.appendChild(inp);
+/* The IP/R/ER card used to live here - three hand-typed numbers per pitcher,
+   fifteen in all, reconstructed off the scorebook after the game. IP is computed
+   now and R/ER are entered an inning at a time while the charter still remembers
+   it, so this replaced typing rather than adding any. */
+function renderInnings(){
+  var host = document.getElementById("innLedger");
+  if(host){
+    host.innerHTML = "";
+    var rows = inningRows();
+    if(!rows.length){
+      host.appendChild(el("div","lbl","Nothing charted yet."));
+    } else {
+      var t = document.createElement("table"); t.className = "inntbl";
+      var hd = document.createElement("tr");
+      /* "Free", not "FB". FB is the fastball code in the pitch-type row a few
+         inches up this same screen, and a column that means free bases here and
+         fastball there is a trap nobody needs. */
+      ["Inn","Pitcher","P","Str%","FPS","Free","R","ER"].forEach(function(h, i){
+        var th = document.createElement("th");
+        if(i === 1) th.className = "l";
+        th.textContent = h; hd.appendChild(th);
       });
-      host.appendChild(row);
-    })(i);
+      var thead = document.createElement("thead"); thead.appendChild(hd); t.appendChild(thead);
+      var tb = document.createElement("tbody");
+      rows.forEach(function(r){
+        var line = inningLine(r.inn, r.p);
+        /* Amber means "this inning is CLOSED and nobody entered its runs" - only
+           reachable through the escape hatch or an older build. The inning being
+           charted right now has no entry either and must not nag: it is not late,
+           it is in progress. Comparing against G.inning is what separates them. */
+        var live = (r.inn >= (G.inning || 1));
+        var open = inningOpen(r.inn) && !live;
+        var tr = document.createElement("tr");
+        if(open) tr.className = "open";
+        tr.setAttribute("data-inn", String(r.inn));
+        tr.setAttribute("data-arm", String(r.p));
+        [[String(r.inn),0], [pitcherName(r.p),1],
+         [String(r.tot),0], [r.tot ? Math.round(r.str/r.tot*100)+"%" : "\u2014",0],
+         [r.fp ? (r.fps+"/"+r.fp) : "\u2014",0], [String(r.fb),0],
+         [line ? String(line.r) : "\u2014",2],
+         [line ? String(line.er) : "\u2014",2]].forEach(function(c){
+          var td = document.createElement("td");
+          if(c[1] === 1) td.className = "l";
+          if(c[1] === 2) td.className = "rr";
+          td.textContent = c[0]; tr.appendChild(td);
+        });
+        /* Editable after the fact: the book disagrees sometimes, and it disagrees
+           after the game. Re-opens the same overlay for that inning. */
+        tr.addEventListener("click", function(){ promptInning(r.inn, "edit"); });
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb); host.appendChild(t);
+      if(rows.some(function(r){ return inningOpen(r.inn) && r.inn < (G.inning||1); }))
+        host.appendChild(el("div","lbl","An inning in amber has no runs entered. Tap it."));
+    }
   }
-  var n=document.getElementById("fNotes2");
+
+  var sum = document.getElementById("innSummary");
+  if(sum){
+    sum.innerHTML = "";
+    var shown = Math.max(G.shown||1, G.curP+1), any = false;
+    var t2 = document.createElement("table"); t2.className = "sumtbl";
+    var hd2 = document.createElement("tr");
+    ["Pitcher","IP","P","P/IP","R","ER","ERA"].forEach(function(h, i){
+      var th = document.createElement("th");
+      if(i === 0) th.className = "l";
+      th.textContent = h; hd2.appendChild(th);
+    });
+    var th2 = document.createElement("thead"); th2.appendChild(hd2); t2.appendChild(th2);
+    var tb2 = document.createElement("tbody");
+    for(var i=0;i<shown;i++){
+      var st = pitcherStats(i);
+      if(!st.tot) continue;
+      any = true;
+      var outs = outsOf(i), ip = outs/3, er = erOf(i);
+      var tr2 = document.createElement("tr");
+      tr2.setAttribute("data-arm", String(i));
+      [[pitcherName(i) || ROLES[i], "l"],
+       [ipText(outs), ""],
+       [String(st.tot), ""],
+       /* P/IP is the efficiency number and the one that says mid-game whether an
+          arm finishes the inning. Jim asked for it live, not only in the export. */
+       [ip ? (st.tot/ip).toFixed(1) : "\u2014", "pip"],
+       [String(runsOf(i)), ""],
+       [String(er), ""],
+       /* Seven-inning basis, matching the deck and last year's sheet. */
+       [ip ? (er*7/ip).toFixed(2) : "\u2014", ""]].forEach(function(c){
+        var td = document.createElement("td");
+        if(c[1]) td.className = c[1];
+        td.textContent = c[0]; tr2.appendChild(td);
+      });
+      tb2.appendChild(tr2);
+    }
+    t2.appendChild(tb2);
+    if(any) sum.appendChild(t2);
+    else sum.appendChild(el("div","lbl","Nobody has thrown a pitch yet."));
+  }
+
+  var nn = document.getElementById("innNow");
+  if(nn) nn.textContent = String(G.inning || 1);
+  var n = document.getElementById("fNotes2");
   if(n && document.activeElement!==n) n.value = G.notes || "";
 }
 
@@ -2361,8 +2814,25 @@ function renderBatter(){
   });
   var sb=document.getElementById("btnSub");
   if(sb) sb.disabled = reviewing();
+  /* Each dot is its own button. Tapping dot N sets N outs; tapping the dot that
+     already IS the count clears back to N-1, so every state is one tap away. It
+     used to be one cycling control, which stopped working the moment the third
+     out opened a prompt - you could no longer tap past it to correct an
+     over-count. */
   var o=document.getElementById("outs"); o.innerHTML="";
-  for(var i=0;i<3;i++) o.appendChild(el("div","outdot"+(i<G.outs?" on":"")));
+  for(var i=0;i<3;i++){
+    (function(i){
+      var d = el("button","outdot"+(i<G.outs?" on":""));
+      d.setAttribute("data-out", String(i+1));
+      d.setAttribute("aria-label", (i+1)+(i ? " outs" : " out"));
+      d.addEventListener("click", function(){
+        var want = (G.outs === i+1) ? i : i+1;
+        if(want === 3){ G.outs = 3; render(); save(); promptInning(G.inning, false); return; }
+        G.outs = want; render(); save();
+      });
+      o.appendChild(d);
+    })(i);
+  }
 
   var sb=scouted(), away = scoutIdx()!==G.curB;
   document.querySelectorAll(".tags .tag").forEach(function(t){
@@ -2678,7 +3148,7 @@ function renderMix(){
 
 function render(){
   try{
-    renderPitchers(); renderStats(); renderLineup(); renderMix(); renderAo3(); renderIP();
+    renderPitchers(); renderStats(); renderLineup(); renderMix(); renderAo3(); renderInnings();
     renderZone(); renderSeq(); renderBatter(); renderDiamond(); renderHistory(); renderBackBar();
     hintKeys();
     drawRosSrc();
@@ -2753,12 +3223,15 @@ function exportText(){
     var st=pitcherStats(i);
     if(!pit.name && !st.tot) return;
     var a3=ao3Stats({pitcher:i}), m=pitchMix(i);
-    var ip=parseFloat(pit.ip);
+    /* IP, R and ER used to be three hand-typed fields on this pitcher. IP is now
+       outs/3 - the actual definition - and R/ER are the sum of what was entered
+       inning by inning, so none of the three can be typed wrong here. */
+    var outs=outsOf(i), ip=outs/3;
     L.push("  "+ROLES[i].toUpperCase()+" — "+(pit.name||"unnamed"));
-    L.push("    Line               IP "+(pit.ip||"—").toString().padEnd(6)+
+    L.push("    Line               IP "+ipText(outs).padEnd(6)+
            "BF "+String(st.bf).padEnd(5)+"#P "+String(st.tot).padEnd(5)+
-           "H "+String(st.h).padEnd(4)+"R "+(n1(pit.r)||"—").padEnd(4)+
-           "ER "+(n1(pit.er)||"—").padEnd(4)+"BB "+String(st.bb).padEnd(4)+
+           "H "+String(st.h).padEnd(4)+"R "+String(runsOf(i)).padEnd(4)+
+           "ER "+String(erOf(i)).padEnd(4)+"BB "+String(st.bb).padEnd(4)+
            "SO "+String(st.k)+(st.hbp?"   HBP "+st.hbp:""));
     L.push("    Efficiency         P/IP "+(ip?(st.tot/ip).toFixed(1):"—").padEnd(7)+
            "P/BF "+ratio(st.tot,st.bf,2).padEnd(7)+"K/BB "+ratio(st.k,st.bb,2));
@@ -2808,7 +3281,8 @@ function exportText(){
   G.pitchers.forEach(function(pit,i){
     var st=pitcherStats(i);
     if(!pit.name && !st.tot) return;
-    L.push("  "+[pit.name||ROLES[i], n1(pit.ip), st.bf, st.tot, st.h, n1(pit.r), n1(pit.er),
+    L.push("  "+[pit.name||ROLES[i], ipText(outsOf(i)), st.bf, st.tot, st.h,
+                 runsOf(i), erOf(i),
                  st.bb, st.k,
                  st.tot?(st.str/st.tot).toFixed(4):"",
                  st.fp?(st.fps/st.fp).toFixed(4):"",
@@ -2855,7 +3329,7 @@ function exportText(){
      on the roster - so it is for reading, not grouping, and it can change between
      releases. PitcherID is the join key, and it is what makes the game numbers
      comparable with the bullpen's. */
-  L.push(["Spot","Batter","Hand","AB","Pitch","Type","Call","ZoneRow","ZoneCol","InZone",
+  L.push(["Inning","Spot","Batter","Hand","AB","Pitch","Type","Call","ZoneRow","ZoneCol","InZone",
           "CalledRow","CalledCol","Execution","MissV","MissH",
           "Pitcher","PitcherID","PitcherLast","PitcherFirst","Class","ClassName","Throws",
           "ABResult","Traj","HardContact","SprayX","SprayY"].join("\t"));
@@ -2876,7 +3350,8 @@ function exportText(){
           p.cr+1, p.cc+1, g ? g.toUpperCase() : "",
           (p.r<0||g==="spot") ? "" : (p.r<p.cr ? "UP" : p.r>p.cr ? "DOWN" : ""),
           (p.r<0||g==="spot") ? "" : (p.c<p.cc ? "IN"  : p.c>p.cc ? "OUT"  : "")];
-        L.push([b.num, (b.name||"Batter "+b.num), b.hand, ai+1, pi+1,
+        L.push([(p.inn == null ? "" : p.inn),
+                b.num, (b.name||"Batter "+b.num), b.hand, ai+1, pi+1,
                 (p.k||"FB"), CALLNAME[p.t]||p.t, loc[0], loc[1], loc[2],
                 cal[0], cal[1], cal[2], cal[3], cal[4],
                 pitcherName(p.p), pw(p.p).rid, pw(p.p).last, pw(p.p).first,
@@ -2895,6 +3370,46 @@ function exportText(){
   L.push("");
   L.push("Legend: B ball · S strike · F foul · S* swing & miss · X in play");
   L.push("Pitch types: FB fastball · CH change-up · SL slider · CB curveball · SP splitter · CT cutter");
+
+  /* INNING LOG - one row per inning x pitcher. The grain is deliberate: inning
+     totals are a sum of these rows and a pitcher's game line is a sum of these
+     rows, so both pivots are trivial and neither is stored twice. The rejected
+     alternative was stamping InnRuns/InnER onto every pitch row, which repeats
+     one fact across twenty rows and lets a hand-edit disagree with itself.
+     Everything here is computed except Runs and Earned, which are the only two
+     numbers a human ever types; Unearned is their difference. */
+  L.push("");
+  L.push("INNING LOG — tab separated, one row per inning × pitcher");
+  L.push("");
+  L.push(["Inning","Partial","Pitcher","PitcherID","PitcherLast","PitcherFirst",
+          "Pitches","Strikes","StrikePct","FirstPitches","FirstPitchStrikes",
+          "BattersFaced","Outs","FreeBases","K","Hits","Runs","Earned","Unearned"].join("\t"));
+  var irows = inningRows();
+  if(!irows.length){
+    L.push("  (nothing charted)");
+  } else {
+    irows.forEach(function(r){
+      var e = inningEntry(r.inn), ln = inningLine(r.inn, r.p);
+      /* An inning with no entry at all - the escape hatch, or a game charted on
+         an older build - exports blank rather than 0. A blank says "never
+         entered"; a zero says "entered as none", and the two must not look alike
+         in a spreadsheet anyone is going to total. */
+      var rr = (ln && ln.r != null) ? ln.r : null;
+      var er = (ln && ln.er != null) ? ln.er : null;
+      L.push([r.inn,
+              (e && e.partial) ? "Y" : "",
+              pitcherName(r.p), pw(r.p).rid, pw(r.p).last, pw(r.p).first,
+              r.tot, r.str, (r.tot ? Math.round(r.str / r.tot * 100) : ""),
+              r.fp, r.fps,
+              r.bf, r.outs, r.fb, r.k, r.h,
+              (rr == null ? "" : rr),
+              (er == null ? "" : er),
+              (rr == null || er == null) ? "" : (rr - er)].join("\t"));
+    });
+    L.push("");
+    L.push("  Outs are plate-appearance outs only, so IP from this block can read low if a");
+    L.push("  runner was thrown out. Blank Runs/Earned means that inning was never entered.");
+  }
   return L.join("\n");
 }
 
@@ -3143,7 +3658,14 @@ function build(){
     try{ nx.setSelectionRange(nx.value.length, nx.value.length); }catch(err){}
   });
 
-  document.getElementById("outs").addEventListener("click",function(){ G.outs=(G.outs+1)%4; render(); save(); });
+  /* The out dots bind their own handlers per dot in render(); there is no
+     container listener any more. */
+  document.getElementById("innUp").addEventListener("click",function(){
+    G.inning = (G.inning||1) + 1; render(); save();
+  });
+  document.getElementById("innDown").addEventListener("click",function(){
+    if((G.inning||1) > 1){ G.inning = G.inning - 1; render(); save(); }
+  });
   document.getElementById("fDate").addEventListener("input",function(){ G.date=this.value; save(); });
   document.getElementById("fOpp").addEventListener("input",function(){ G.opp=this.value; save(); });
   document.getElementById("fNotes").addEventListener("input",function(){ scouted().notes=this.value; save(); });
@@ -3195,7 +3717,7 @@ function build(){
    The number shown is the one baked into THIS index.html. If the service worker
    is serving a different version the two disagree — which is the silent failure
    worth catching: a stale app that looks perfectly fine. */
-var BUILD = "v18";
+var BUILD = "v19";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;

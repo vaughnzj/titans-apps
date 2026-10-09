@@ -17,14 +17,17 @@ old one — tap the amber stamp to fix it.
 
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
-| **Bullpen Chart** | **v29** | v27 — **v28 and v29 waiting to be pushed** |
-| **Pitch Chart** (game) | **v18** | v17 — **v18 waiting to be pushed** |
-| **Offense Chart** | **v40** | v37 — **v38, v39 and v40 waiting to be pushed** |
+| **Bullpen Chart** | **v29** | **v29** — up to date |
+| **Pitch Chart** (game) | **v19** | v18 — **v19 waiting to be pushed** |
+| **Offense Chart** | **v40** | **v40** — up to date |
 
-**All three apps now read the roster**, so `roster.js` needs a copy in `bullpen/`, `offense/`
+Verified live Oct 8 against the Pages URLs: bullpen v29, offense v40, game v18, and
+`game/roster.js` serving the 66-player release stamped 2026-10-07 with no sample flag.
+
+**All three apps read the roster**, so `roster.js` needs a copy in `bullpen/`, `offense/`
 **and `game/`** — the same file, three times. A service worker can only cache files inside its own
 folder, so one shared copy at the repo root would work online and vanish the moment an iPad lost
-signal. `game/roster.js` is the new one in this push.
+signal.
 
 **Do not overwrite `bullpen/roster.js` or `offense/roster.js`.** The copies already live on GitHub
 are the real 66-player release. The copy in the working folder is the 4-player SAMPLE. Push
@@ -254,6 +257,75 @@ execution grading.
 ---
 
 ## Pitch Chart (game)
+
+### v19 · Oct 9, 2026
+**Headline:** The app knows about innings. The third out stops you and asks how many runs scored
+and how many were earned; **IP, R and ER are no longer typed in at the end** — they are computed,
+or entered one inning at a time while you still remember the inning.
+
+- **The third out opens a blocking prompt.** Jim's call, and the reason is the honest one: *"it will
+  force that data to be entered and not forgotten."* A scoreless inning is **one tap** — `NO RUNS`
+  — which is most innings. Runs are a tap on the number; **Earned pre-fills to match**, because
+  most runs are earned, so the common case is tap-and-confirm. Earned can never exceed runs and the
+  buttons above it go grey rather than disappearing.
+- **More than one arm in the inning gets a row each,** with steppers, and **the list is built from
+  who actually threw** — every pitch already carries its pitcher, so nobody chooses it. The inning
+  total underneath is a read-out: it is the sum of the rows, so there is no second place a number
+  can be typed and disagree with itself.
+- **`Wrong — back to 2 outs` is not optional.** A blocking overlay with no exit is a trap, and the
+  charter *will* tap to three outs mid-correction. It restores two outs, leaves the inning alone and
+  writes nothing; escape and a tap outside the box do the same. There is a sweep check whose whole
+  job is to never let that regress.
+- **Games that end mid-inning still get asked.** Walk-off, run rule, time limit — the third out
+  never comes, so `Finish & file` asks about the last inning first, headed *Final inning (partial)*.
+  Cancelling files nothing.
+- **The IP/R/ER card is gone from the Game tab,** replaced by two tables: an **inning ledger** at
+  inning × pitcher (pitches, strike %, first-pitch strikes, free bases, R, ER) and **each arm's
+  line** — IP, pitches, **P/IP**, R, ER and a 7-inning ERA. All computed. Fifteen hand-typed
+  numbers became zero. Tap any ledger row to correct an inning after the game.
+- **IP is outs ÷ 3** — the actual definition — with a `DP` counting two. **Known limit, and it is
+  in the guide:** outs that are not plate appearances (caught stealing, a pickoff, a runner thrown
+  out) are not captured, so IP can read a third low. The ledger shows the outs it has, so the gap is
+  visible rather than silent, and for the record the scorebook wins.
+- **Our R/ER and GameChanger's will differ, and we are not reconciling them.** Official scoring
+  charges a run to whoever let the runner reach — a bookkeeping rule, applied by whoever has the
+  iPad in the stands. The dugout coach watched it happen. Jim: *"In all likelihood the coach in the
+  dugout tracking R/ER will do a better job than the parent in the stands, but I'll live with
+  potential inconsistencies at this point."* So **GameChanger stays the official record** and
+  **this app's number drives the analysis**. The guide says so plainly, or the first discrepancy
+  anybody notices gets filed as a bug.
+- **An inning closed with no runs entered shows amber,** the same nag as an unsent game in History.
+  It should only be reachable through the escape hatch or a game charted on an older build. The
+  inning being charted *right now* also has no entry and deliberately does **not** nag — it is not
+  late, it is in progress.
+
+**Export — this is a schema change.**
+
+- The pitch log gains **`Inning`** as its first column, 27 → **28**.
+- A fourth block, **`INNING LOG`**, one row per inning × pitcher: `Inning Partial Pitcher
+  PitcherID PitcherLast PitcherFirst Pitches Strikes StrikePct FirstPitches FirstPitchStrikes
+  BattersFaced Outs FreeBases K Hits Runs Earned Unearned`. Inning totals are a sum of these rows
+  and a pitcher's game line is a sum of these rows, so both pivots are trivial and neither is
+  stored twice. `Unearned` is computed. `PitcherID` carries through, so an inning row joins to the
+  bullpen's winter files on the same key as everything else.
+- The alternative — stamping `InnRuns`/`InnER` onto every pitch row — was rejected: it repeats one
+  fact across twenty rows, and one hand-edit would silently disagree with the rest.
+- **A blank `Runs`/`Earned` means that inning was never entered.** A zero means entered as none.
+  Those must not look alike in a spreadsheet somebody is going to total.
+
+**Schema `v:5` → `v:6`.** A game charted on an older build still opens, still charts on and still
+exports — its existing pitches get **no inning rather than a guessed one**, so their `Inning` cell
+is blank. A made-up inning is worse than an empty cell. There is a sweep check that boots the app
+with a v5 game seeded in storage.
+
+**Three bits of dead weight went with it:** the `.iphead`/`.iprow` styles, the `#ipRows` entry in
+the return-key chains (the app has no text field outside the lineup now), and `n1()`, which existed
+only to render a possibly-blank typed number.
+
+**One collision worth recording:** the first draft styled the steppers as `.step`. The charting
+panel already has four `<span class="lbl step">` section labels, and a bare `.step` rule would have
+made every one of them a flex container with a gap — a visual regression on the main screen,
+nowhere near the feature. Renamed `.instep`. Check the class name against the file before taking it.
 
 ### v18 · Oct 7, 2026
 **Headline:** You pick your pitchers off the roster now instead of typing their names — and the
