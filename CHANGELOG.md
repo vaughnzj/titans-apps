@@ -18,7 +18,7 @@ old one — tap the amber stamp to fix it.
 | App | Source & folder | Live on GitHub Pages |
 |---|---|---|
 | **Bullpen Chart** | **v31** | v29 — **v30 and v31 waiting to be pushed** |
-| **Pitch Chart** (game) | **v22** | **v20** — **v21 and v22 waiting to be pushed** |
+| **Pitch Chart** (game) | **v23** | **v20** — **v21, v22 and v23 waiting to be pushed** |
 | **Offense Chart** | **v42** | v40 — **v41 and v42 waiting to be pushed** |
 
 Verified live Oct 8 against the Pages URLs: bullpen v29, offense v40, game v18, and
@@ -302,6 +302,47 @@ execution grading.
 ---
 
 ## Pitch Chart (game)
+
+### v23 · Oct 9, 2026
+**Headline:** A jersey number and a fielding position each belong to **one spot** in the lineup.
+Put one on a second spot and the app puts it back and tells you where the other one is — **enter
+it again and it stays.** Position is now a drop-down of the scorecard numbers.
+
+- **Why:** Jim, on Setup — *"you can enter multiple players with the same number in the starting
+  lineup; that isn't allowed, also, we need to make the position a dropdown (also unique values)."*
+- **Refuse, then allow — and that shape is the whole feature.** Jim again: *"This can really only
+  happen in the situation of a sub entering with the same number, so I guess we need to refuse but
+  allow override."* So it is a speed bump, not a validator. The first attempt is put back and
+  **named** — "#12 is already on spot 1 — enter it again to keep it" — and the second goes
+  through. A hard block would have been the app refusing to chart a game that was actually
+  happening.
+- **Both spots then wear amber**, the same amber the inning ledger uses for "this needs you", so
+  the duplicate is visible on the card rather than only in the moment you agreed to it.
+- **A blank never collides with a blank.** Nine empty jersey cells are the normal state of a fresh
+  card; a rule that fired there would fire on the first thing a scorer does.
+- **Position is numbers, not `1B`/`2B`/`3B`.** Those three are already *at-bat results* on the pad
+  two inches away, and this app has been bitten by a shared namespace before. The picker prints
+  the abbreviation beside each number — `6 · SS` — so nobody is counting on their fingers. `DH` is
+  on the list.
+- **On the charting screen the position is a read-out**, not a picker. A `<select>` in that row
+  would sit on top of the batter selector and eat the tap that picks the hitter — the row *is* the
+  control.
+- **The export gained two columns**, `Pos` and `PosName`, after `Hand`: the number to group a
+  pivot on, the abbreviation to read in the cell. Thirty columns in the pitch log now.
+- **Old games migrate.** Position used to be free text, so a filed game holds whatever was typed.
+  `SS` and `rf` map onto `6` and `9`; anything the picker cannot show (`Rover`) is let go rather
+  than kept as a value no drop-down will ever display.
+- **Fixed on the way past:** `load()` ended with a leftover `p.v = 5` that overwrote the schema
+  stamp it had just set, so a brand-new game was stamped 7 and *every game ever opened* was
+  stamped back down to 5. Nothing reads the field yet — which is exactly why it sat there. The
+  stamp now lives in one place, `SCHEMA`, and is written last, after every migration has run.
+- **Checks:** nine new ones — the picker's values *and its labels*, the refusal and the spot it
+  names, the override, the amber on both spots, blank-vs-blank, the read-only lineup cell, the two
+  export columns, and the migration *read back off disk* rather than off the screen. Ten mutations
+  run against them, all ten caught. Two of those checks were wrong first: one watched the Setup
+  cell, which is repainted through `posNormal()` on every render and so reads correctly with the
+  migration turned off entirely; the other counted amber flags to prove a blank is not a
+  duplicate, and flags are computed by a different function from the one that decides a refusal.
 
 ### v22 · Oct 9, 2026
 **Headline:** A red **Erase everything on this iPad** button, for testing. It deletes the game in

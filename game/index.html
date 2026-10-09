@@ -217,6 +217,15 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
 .slot-jsy{width:32px;padding:0 1px;border:1px solid var(--line-soft);border-radius:3px;background:var(--ground);
   font-family:var(--mono);font-size:12px;text-align:center;line-height:1.45;flex:0 0 auto}
 .slot.on .slot-jsy{background:var(--surface)}
+.slot-posr{min-width:28px;padding:0 4px;border:1px solid var(--line-soft);border-radius:3px;
+  background:var(--ground);font-family:var(--mono);font-size:12px;text-align:center;line-height:1.45;flex:0 0 auto}
+.slot.on .slot-posr{background:var(--surface)}
+/* A value shared with another spot. Amber, which in this app means "this needs
+   you" - the same thing the inning ledger's amber row means. */
+.dup{border-color:var(--inplay)!important;color:var(--inplay)!important;background:var(--inplay-bg)!important}
+.sunote.dupwarn{color:var(--inplay);font-weight:600}
+.sutbl .c-p select{width:100%;padding:7px 4px;font-size:15px;border:1px solid var(--line);
+  border-radius:var(--r);background:var(--ground);font-family:var(--mono)}
 .slot-pos{width:28px;padding:0 1px;border:1px solid var(--line-soft);border-radius:3px;background:var(--ground);
   font-family:var(--mono);font-size:12px;text-align:center;line-height:1.45;flex:0 0 auto}
 .slot.on .slot-pos{background:var(--surface)}
@@ -709,6 +718,7 @@ a.topbtn{display:inline-block;text-decoration:none;border:0}
         <tbody id="suRows"></tbody>
       </table>
 
+      <div class="sunote" id="suWarn" style="margin-top:8px"></div>
       <div class="rowsplit" style="margin-top:12px">
         <button class="ghost" id="suMinus">&minus; Spot</button>
         <button class="ghost" id="suPlus">+ Spot</button>
@@ -1223,6 +1233,154 @@ function drawRosSrc(){
    both of them. Truthiness still works for the "is this an out" tests. */
 var OUT_RESULT = {K:1, Kc:1, GO:1, FO:1, LO:1, PO:1, FC:1, DP:2, SAC:1};
 
+/* ---------- one number and one glove per spot ----------
+   Jim: "you can enter multiple players with the same number in the starting
+   lineup; that isn't allowed." Position joins it as a picked list, because a
+   batting order has one of each.
+
+   STORED AS THE NUMBER, shown as "6 - SS". The abbreviations lose on a collision
+   this app already has: 1B, 2B, 3B and E are RESULT codes, sitting on the pad a
+   few inches from the lineup and in the export as ABResult. A column reading
+   Pos=1B beside ABResult=1B is two different facts wearing one code, which is
+   the rule in claude/app-conventions.md: a new code has to clear every other
+   list a reader sees next to it. 1-9 collides with nothing, and it is what a
+   scorebook speaks anyway.
+
+   DH is the tenth entry. An order with a DH has no pitcher in it, so the list is
+   never all nine, and blank is always legal. */
+var POSITIONS = [
+  {v:"1",  s:"P"},  {v:"2", s:"C"},  {v:"3", s:"1B"}, {v:"4", s:"2B"},
+  {v:"5",  s:"3B"}, {v:"6", s:"SS"}, {v:"7", s:"LF"}, {v:"8", s:"CF"},
+  {v:"9",  s:"RF"}, {v:"DH", s:"DH"}
+];
+function posName(v){
+  var k = String(v == null ? "" : v).trim().toUpperCase();
+  for(var i=0;i<POSITIONS.length;i++) if(POSITIONS[i].v === k) return POSITIONS[i].s;
+  return "";
+}
+/* Free text until v23, so a saved game can hold "SS", "ss", "6" or "shortstop".
+   Map what maps, drop what does not - nothing real has been charted yet, and a
+   value the picker cannot show is worse than an empty one. */
+function posNormal(raw){
+  var t = String(raw == null ? "" : raw).trim().toUpperCase();
+  if(!t) return "";
+  for(var i=0;i<POSITIONS.length;i++){
+    if(POSITIONS[i].v === t || POSITIONS[i].s === t) return POSITIONS[i].v;
+  }
+  return "";
+}
+
+/* Whoever is in each spot RIGHT NOW - not the starters. A sub replacing the man
+   in his own spot therefore never collides with the man he came in for, which is
+   the case Jim named ("a sub entering with the same number") and the one that
+   must never need an override.
+
+   This leans on the EXISTING occupantOf(spot) rather than declaring a second
+   function of that name. The first draft did declare one, taking an index, and
+   it silently replaced the real one - valid JavaScript, no warning, last
+   definition wins - so batter() started resolving against G.lineup[spotObject]
+   and the whole screen stopped rendering. Same shape as the renderHistory()
+   collision in the changelog, and the reason the sweep refuses duplicate
+   top-level function names at all. */
+function manInSpot(i){
+  var sp = G.lineup[i];
+  if(!sp || !sp.men) return null;
+  return occupantOf(sp) || null;
+}
+/* One normaliser, and it does NOT know about positions - load() has already
+   mapped every stored pos onto a picker value by the time anything here runs,
+   so a pos-aware branch would be a guard that cannot fire. That is the same
+   mistake as a check that cannot fail, and the migration test is where the
+   old spellings are actually proved. */
+function dupNorm(v){ return String(v == null ? "" : v).trim().toLowerCase(); }
+/* The spot already holding this value, or -1. Blank never collides. */
+function dupSpot(key, val, mine){
+  var v = dupNorm(val);
+  if(!v) return -1;
+  for(var i=0;i<spots();i++){
+    if(i === mine) continue;
+    var m = manInSpot(i);
+    if(m && dupNorm(m[key]) === v) return i;
+  }
+  return -1;
+}
+/* Armed by the first refusal, keyed by field+value. Jim's call: refuse, then
+   take a second entry as consent - "this can really only happen in the situation
+   of a sub entering with the same number." It stays armed for the session: he
+   has already said he means it, and asking twice for the same number is nagging. */
+var DUP_OK = {};
+/* Named at refusal time, from the value being refused. */
+var LABEL = {
+  jersey: function(v){ return "#" + String(v || "").trim(); },
+  pos:    function(v){ return posName(v) || ("position " + v); }
+};
+function dupArmed(key, val){ return !!DUP_OK[key + "\u0000" + dupNorm(val)]; }
+function dupArm(key, val){ DUP_OK[key + "\u0000" + dupNorm(val)] = true; }
+
+/* The message has to land where the charter is standing. nudge() writes to the
+   chart screen's zone hint, which is not on screen while Setup is open - the
+   exact mistake the conventions file records about "Filed. 1 session in
+   History." being written to a pane nobody was looking at. */
+function dupSay(msg){
+  var su = document.getElementById("v-setup");
+  if(su && !su.hidden){
+    var w = document.getElementById("suWarn");
+    if(w){ w.textContent = msg; w.className = "sunote dupwarn"; }
+    return;
+  }
+  nudge(msg);
+}
+
+/* Attaches the refuse-then-allow guard to one field. The VALUE is still written
+   on every keystroke, as everything in this app is - only the CHECK waits for
+   the field to be left, so it never fights a typist mid-number. */
+function uniqueField(input, b, key, mine, label){
+  input.addEventListener("focus", function(){ input._prev = input.value; });
+  input.addEventListener("change", function(){
+    var val = input.value;
+    var other = dupSpot(key, val, mine);
+    if(other < 0) return;
+    if(dupArmed(key, val)){
+      /* He insisted. Keep it, and REDRAW so both rows pick up the amber flag -
+         the first cut returned here without rendering, so an accepted duplicate
+         sat on screen looking exactly like a unique one. */
+      save(); renderSetup(); render();
+      dupSay(label(val) + " is on two spots. Left as you entered it.");
+      return;
+    }
+    dupArm(key, val);
+    b[key] = input._prev || "";
+    input.value = b[key];
+    save(); renderSetup(); render();
+    /* label is a FUNCTION of the value, not a string fixed when the field was
+       built - at bind time the field is empty, so the first version said
+       "# is already on spot 1". */
+    dupSay(label(val) + " is already on spot " + (other + 1) +
+           " \u2014 enter it again to keep it.");
+  });
+}
+/* Flags every field whose value is shared with another spot, recomputed on each
+   render rather than tracked. A flag that is derived cannot go stale. */
+function markDups(){
+  var seen = {}, dups = {};
+  for(var i=0;i<spots();i++){
+    var m = manInSpot(i);
+    if(!m) continue;
+    ["jersey","pos"].forEach(function(k){
+      var v = dupNorm(m[k]);
+      if(!v) return;
+      var tag = k + "\u0000" + v;
+      if(seen[tag]) dups[tag] = true;
+      seen[tag] = true;
+    });
+  }
+  return dups;
+}
+function isDup(dups, key, val){
+  var v = dupNorm(val);
+  return !!(v && dups[key + "\u0000" + v]);
+}
+
 /* ---------- the out count follows the result pad (v21) ----------
    Until v21 the dots were tapped by hand and a charted strikeout moved nothing.
    Jim, first time through: the prompt "doesn't seem to work" - he charted three
@@ -1392,13 +1550,20 @@ function doFile(){
 var G = null, confirmClear = false;
 
 /* ---------- model ---------- */
+/* The schema stamp, in ONE place. It was two - emptyGame() wrote the current
+   number and load() ended with a hard-coded p.v = 5 left over from an older
+   migration, so a brand new game was stamped 7 and every game ever opened was
+   stamped back down to 5. Nothing read it yet, which is exactly why it sat
+   there: a version field nobody checks is wrong silently until the first
+   migration that gates on it. */
+var SCHEMA = 7;
 function newAB(){ return {pitches:[], result:null, auto:false, spray:null, traj:null, hard:false}; }
 function newBatter(n){ return {num:n, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{}, carried:null, abs:[newAB()], cur:0}; }
 function newSpot(n){ return {num:n, men:[newBatter(n)], cur:0}; }
 function emptyGame(){
   var l=[],i;
   for(i=1;i<=MAXSPOTS;i++) l.push(newSpot(i));
-  return {v:6, date:"", opp:"", inning:1, innings:[],
+  return {v:SCHEMA, date:"", opp:"", inning:1, innings:[],
           pitchers:[newGamePitcher(),newGamePitcher(),newGamePitcher(),
                     newGamePitcher(),newGamePitcher()], notes:"",
           curP:0, shown:1, lineup:l, curB:0, liveB:0, lastClosed:null,
@@ -1458,7 +1623,14 @@ function load(){
        backfill a guess - a made-up inning is worse than an empty cell. */
     if(typeof p.inning !== "number" || p.inning < 1) p.inning = 1;
     if(!Array.isArray(p.innings)) p.innings = [];
-    p.v = 6;
+    /* v6 -> v7: position was free text and is a picked list now. Map "SS", "ss"
+       and "6" onto "6"; anything the picker cannot show is dropped rather than
+       kept as a value no dropdown will ever display. Nothing real is charted
+       yet, so there is nothing to lose. */
+    p.lineup.forEach(function(e){
+      var men = (e && e.men) ? e.men : [e];
+      men.forEach(function(m){ if(m) m.pos = posNormal(m.pos); });
+    });
     if(typeof p.liveB!=="number" || p.liveB<0 || p.liveB>=p.lineup.length) p.liveB = p.curB;
     if(!p.lastClosed) p.lastClosed = null;
     toSpots(p);
@@ -1474,7 +1646,8 @@ function load(){
     p.spots = Math.max(1, Math.min(MAXSPOTS, p.spots));
     if(p.curB>=p.spots) p.curB=0;
     if(p.liveB>=p.spots) p.liveB=0;
-    p.v = 5;
+    /* Stamped LAST, once every migration above has run. */
+    p.v = SCHEMA;
     return p;
   }catch(e){ return null; }
 }
@@ -2506,10 +2679,20 @@ function showSetup(on){
 /* Editing men[0] - the starter. A substitution is a game-time action and stays
    on the charting screen where the Sub button lives. */
 function suStarter(i){ return spot(i).men[0]; }
+function posOptions(){
+  var h = '<option value="">\u2014</option>';
+  for(var i=0;i<POSITIONS.length;i++){
+    var p = POSITIONS[i];
+    h += '<option value="' + p.v + '">' +
+         (p.v === p.s ? p.s : (p.v + " \u00b7 " + p.s)) + '</option>';
+  }
+  return h;
+}
 function renderSetup(){
   var body = document.getElementById("suRows");
   if(!body) return;
   document.getElementById("suCount").textContent = spots() + " spots";
+  var dups = markDups();
   body.innerHTML = "";
   for(var i=0;i<spots();i++){
     (function(i){
@@ -2518,12 +2701,14 @@ function renderSetup(){
       tr.innerHTML = '<td class="no">'+(i+1)+'</td>'+
         '<td class="c-nm"><input data-su="name" placeholder="Batter '+(i+1)+'"></td>'+
         '<td class="c-j"><input data-su="jersey" placeholder="#"></td>'+
-        '<td class="c-p"><input data-su="pos" placeholder="pos"></td>'+
+        '<td class="c-p"><select data-su="pos">' + posOptions() + '</select></td>'+
         '<td><span class="suhand">'+
           '<button data-h="R">R</button><button data-h="L">L</button></span></td>';
       tr.querySelector('[data-su="name"]').value   = b.name || "";
       tr.querySelector('[data-su="jersey"]').value = b.jersey || "";
-      tr.querySelector('[data-su="pos"]').value    = b.pos || "";
+      tr.querySelector('[data-su="pos"]').value    = posNormal(b.pos);
+      if(isDup(dups,"jersey",b.jersey)) tr.querySelector('[data-su="jersey"]').className = "dup";
+      if(isDup(dups,"pos",b.pos))       tr.querySelector('[data-su="pos"]').className    = "dup";
       var hb = tr.querySelectorAll("[data-h]");
       for(var k=0;k<hb.length;k++){
         hb[k].className = (hb[k].getAttribute("data-h") === (b.hand||"R")) ? "on" : "";
@@ -2533,9 +2718,12 @@ function renderSetup(){
         });
       }
       ["name","jersey","pos"].forEach(function(f){
-        tr.querySelector('[data-su="'+f+'"]').addEventListener("input", function(){
+        var fld = tr.querySelector('[data-su="'+f+'"]');
+        fld.addEventListener("input", function(){
           b[f] = this.value; save(); render();
+          if(f === "pos"){ renderSetup(); }      /* a picked value settles at once */
         });
+        if(f !== "name") uniqueField(fld, b, f, i, LABEL[f]);
       });
       body.appendChild(tr);
     })(i);
@@ -2631,6 +2819,7 @@ function renderLineup(){
   var sm=document.getElementById("spotMinus"), sp=document.getElementById("spotPlus");
   if(sm) sm.disabled = spots()<=1;
   if(sp) sp.disabled = spots()>=MAXSPOTS;
+  var lineDups = markDups();
   var host=document.getElementById("lineup"); host.innerHTML="";
   G.lineup.slice(0, spots()).forEach(function(sp,i){
     var b = occupantOf(sp);
@@ -2668,8 +2857,15 @@ function renderLineup(){
     row.appendChild(abr);
 
     var meta=el("div","slot-meta");
-    meta.appendChild(field("slot-jsy", b.jersey, "jersey", "#"));
-    meta.appendChild(field("slot-pos", b.pos, "pos", "pos"));
+    var jf = field("slot-jsy", b.jersey, "jersey", "#");
+    uniqueField(jf, b, "jersey", sp.num - 1, LABEL.jersey);
+    if(isDup(lineDups,"jersey",b.jersey)) jf.className += " dup";
+    meta.appendChild(jf);
+    /* Read-only here: the picker lives on Setup, and a <select> in a row that is
+       also the batter selector would eat the tap that picks the hitter. */
+    var pf = el("span","slot-posr", posName(b.pos) || "\u2014");
+    if(isDup(lineDups,"pos",b.pos)) pf.className += " dup";
+    meta.appendChild(pf);
     meta.appendChild(el("span","hand",b.hand));
     var tw=el("div","minitags");
     if(sp.men.length>1){
@@ -3439,7 +3635,7 @@ function exportText(){
     if(!used.length && !b.name) return;
     var tg=TAGKEYS.filter(function(t){return tagOn(b,t);})
                   .map(function(t){ return tagIsAuto(b,t) ? t+"*" : t; });
-    L.push("  "+b.num+". "+(b.name||"Batter "+b.num)+" ("+b.hand+")"+(b.pos?" pos "+b.pos:"")+
+    L.push("  "+b.num+". "+(b.name||"Batter "+b.num)+" ("+b.hand+")"+(posNormal(b.pos)?" fld "+posNormal(b.pos)+" "+posName(b.pos):"")+
            (b.play?"  position "+b.play:"")+(mi?"   [in for "+(sp.men[mi-1].name||("Batter "+sp.num))+"]":""));
     if(tg.length) L.push("      tags: "+tg.join(" ")+"   (* detected from the charted data)");
     /* Provenance, so a season roll-up can tell a standing read from a fresh one. */
@@ -3470,7 +3666,7 @@ function exportText(){
      on the roster - so it is for reading, not grouping, and it can change between
      releases. PitcherID is the join key, and it is what makes the game numbers
      comparable with the bullpen's. */
-  L.push(["Inning","Spot","Batter","Hand","AB","Pitch","Type","Call","ZoneRow","ZoneCol","InZone",
+  L.push(["Inning","Spot","Batter","Hand","Pos","PosName","AB","Pitch","Type","Call","ZoneRow","ZoneCol","InZone",
           "CalledRow","CalledCol","Execution","MissV","MissH",
           "Pitcher","PitcherID","PitcherLast","PitcherFirst","Class","ClassName","Throws",
           "ABResult","Traj","HardContact","SprayX","SprayY"].join("\t"));
@@ -3492,7 +3688,8 @@ function exportText(){
           (p.r<0||g==="spot") ? "" : (p.r<p.cr ? "UP" : p.r>p.cr ? "DOWN" : ""),
           (p.r<0||g==="spot") ? "" : (p.c<p.cc ? "IN"  : p.c>p.cc ? "OUT"  : "")];
         L.push([(p.inn == null ? "" : p.inn),
-                b.num, (b.name||"Batter "+b.num), b.hand, ai+1, pi+1,
+                b.num, (b.name||"Batter "+b.num), b.hand,
+                posNormal(b.pos), posName(b.pos), ai+1, pi+1,
                 (p.k||"FB"), CALLNAME[p.t]||p.t, loc[0], loc[1], loc[2],
                 cal[0], cal[1], cal[2], cal[3], cal[4],
                 pitcherName(p.p), pw(p.p).rid, pw(p.p).last, pw(p.p).first,
@@ -3877,7 +4074,7 @@ function build(){
    gateWipe(), wipeEverything(), WIPE_KEYS, the #wipeBox markup and its listener. */
 var ALLOW_WIPE = true;
 
-var BUILD = "v22";
+var BUILD = "v23";
 function stampBuild(){
   var e = document.getElementById("buildStamp");
   if(!e) return;

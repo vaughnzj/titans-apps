@@ -128,9 +128,14 @@ async function migration(b) {
               {},{},{},{}],
     curP:0, shown:1, curB:0, liveB:0, lastClosed:null,
     outs:1, nextType:"FB", hideLeft:false, spots:9,
+    /* Position was free text before v7, so a filed game holds whatever the
+       scorer typed. Three shapes that matter: an abbreviation the picker knows
+       ("SS"), the same thing in the wrong case ("rf"), and something no dropdown
+       can ever show ("Rover"). */
     lineup: Array.from({length:12}, (_, i) => ({
       num:i+1, cur:0,
-      men:[{num:i+1, name:"", jersey:"", pos:"", notes:"", hand:"R", play:null, tags:{},
+      men:[{num:i+1, name:"", jersey:"", pos:["SS","rf","Rover"][i] || "",
+            notes:"", hand:"R", play:null, tags:{},
             carried:null, cur:0,
             abs:[ i === 0
               ? {pitches:[{r:2,c:2,t:"S",k:"FB",p:0,q:1},{r:1,c:3,t:"B",k:"CH",p:0,q:1}],
@@ -146,10 +151,28 @@ async function migration(b) {
   const errs = []; pg.on("pageerror", e => errs.push(String(e)));
   await pg.goto(BASE + "/game/index.html", { waitUntil:"load" });
   await pg.waitForTimeout(1400);
-  console.log("\nPITCH CHART · a v5 game on a v19 build");
+  console.log("\nPITCH CHART · a v5 game on a v23 build");
 
   const probes = [
     ["it opens at all", '(document.getElementById("fOpp")||{}).value', "Old Build"],
+    /* v6 -> v7. The picker can only show values it has options for, so free text
+       has to land on one of them or be let go. Keeping "Rover" would leave a
+       value in the record that no dropdown will ever display and no export
+       column can explain - a quieter kind of wrong than dropping it. */
+    /* Reads the STORED RECORD, not the Setup cell. The cell is painted with
+       posNormal(b.pos) on every render, so it shows "6" whether or not the
+       record was ever migrated - the first version of this check watched that
+       cell and stayed green with the migration turned off entirely. The
+       migration is about what is on disk; so is the check. */
+    ["free text becomes picker values",
+      '(function(){ document.getElementById("btnSetup").click();'+
+      ' var tr=document.querySelectorAll("#suRows tr")[0];'+
+      ' tr.querySelector(\'[data-h="R"]\').click();'+        /* any edit writes the record */
+      ' document.getElementById("suDone").click();'+
+      ' var p=JSON.parse(localStorage.getItem("dugout-pitch-chart-v2"));'+
+      ' return "v"+p.v+" "+p.lineup.slice(0,3).map(function(sp){'+
+      '   return JSON.stringify(sp.men[0].pos); }).join(","); })()',
+      'v7 "6","9",""'],
     ["the inning box reads 1", '(document.getElementById("innNow")||{}).textContent', "1"],
     /* The old pitch has no inning, so it cannot appear in a ledger keyed by one.
        An empty ledger with a game loaded is the correct answer here, not a bug. */
@@ -1471,6 +1494,149 @@ async function wipeOff(b) {
       '      + ", kept " + (after - start)'+
       '      + ", outs gave back " + (o1 - o2); })()',
       null, "K scored 1 plusplus, kept 1, outs gave back 1"],
+  ]);
+
+  /* ====== ONE JERSEY, ONE POSITION (game v23) ======
+     Jim: "you can enter multiple players with the same number in the starting
+     lineup; that isn't allowed, also, we need to make the position a dropdown
+     (also unique values)."
+
+     And then the shape of the rule, which is the whole design: "This can really
+     only happen in the situation of a sub entering with the same number, so I
+     guess we need to refuse but allow override." So this is NOT a validator. It
+     is a speed bump - the first attempt is put back and named, the second goes
+     through, and both spots then wear amber so the scorer can see what he
+     agreed to. A suite that only proved "duplicates are refused" would be
+     testing half of it, and the half Jim did not ask for. */
+  const GLINE = `window.__L = (function(){
+    function q(s){ return document.querySelector(s); }
+    function qa(s){ return [].slice.call(document.querySelectorAll(s)); }
+    function done(){ var b=q("#suDone"); if(b) b.click(); }
+    function fld(i, key){
+      var tr = qa("#suRows tr")[i];
+      return tr ? tr.querySelector('[data-su="'+key+'"]') : null;
+    }
+    /* focus, then input, then change - in that order, because the app hangs
+       three different things off them. focus is how the field remembers what to
+       put back; input is what SAVES the value; change is what checks it against
+       the other eight spots. A fixture that fired only change wrote into a field
+       the app never read, so every spot stayed blank and nothing collided with
+       anything - eight green checks proving the fixture, which is how this one
+       first came out. */
+    function put(i, key, v){
+      var f = fld(i, key); if(!f) return "no spot " + i;
+      f.dispatchEvent(new Event("focus"));
+      f.value = v;
+      f.dispatchEvent(new Event("input",{bubbles:true}));
+      f.dispatchEvent(new Event("change",{bubbles:true}));
+      return "ok";
+    }
+    /* re-read FRESH: renderSetup() rebuilds the row on every one of these, so
+       the node we just wrote to is detached (Convention 19). */
+    function val(i, key){ var f = fld(i, key); return f ? f.value : "∅"; }
+    function warn(){ var w=q("#suWarn"); return w ? w.textContent : "∅"; }
+    function flags(){ return qa("#suRows .dup").length; }
+    /* value AND label. The value is what gets stored and exported; the label is
+       the only thing the scorer actually sees, and the first version of this
+       check read values alone - so a mutation that relabelled the picker
+       "1B/2B/3B" sailed through the check whose whole job is Jim's choice of
+       encoding. */
+    function opts(){
+      var s = fld(0,"pos"); if(!s) return "no picker";
+      return s.tagName + ":" + [].slice.call(s.options).map(function(o){
+        return o.value + "=" + o.textContent; }).join(",");
+    }
+    function arm(chip, nth){
+      var s = qa("#pitchers select[data-pick]")[chip];
+      if(!s) return "no chip " + chip;
+      s.value = window.TITANS_ROSTER[nth].id;
+      s.dispatchEvent(new Event("change",{bubbles:true}));
+      return "ok";
+    }
+    function pitch(){ q('#zone .cell:nth-child(13)').click(); }
+    function res(k){ var b = q('#results button[data-res="' + k + '"]'); if(b) b.click(); }
+    function logRow(){
+      var b = q("#btnExport2"); if(b) b.click();
+      var t = q("#exportText"), L = (t ? (t.value||"") : "").split(/\\r?\\n/);
+      for(var i=0;i<L.length;i++){
+        if(L[i].indexOf("PITCH LOG") !== 0) continue;
+        for(var j=i+1;j<L.length;j++){
+          if(L[j].indexOf("\\t") < 0) continue;
+          if(L[j].indexOf("Inning\\tSpot") === 0) continue;   /* the header */
+          return L[j].split("\\t");
+        }
+      }
+      return [];
+    }
+    return {q:q, qa:qa, done:done, put:put, val:val, warn:warn, flags:flags,
+            opts:opts, arm:arm, pitch:pitch, res:res, logRow:logRow};
+  })(); document.getElementById("btnSetup").click(); "ready"`;
+
+  await sweep(b, "PITCH CHART · one jersey, one position", "/game/index.html", [
+    /* Numbers, not 1B/2B/3B. Those three are already AT-BAT RESULTS on the pad
+       two inches away, and this app has been bitten by a shared namespace
+       before. The scorecard number is what every other baseball tool means by
+       "position" anyway, and the picker spells the abbreviation out beside it. */
+    ["the position is a picker", null, '__L.opts()',
+      GLINE,
+      "SELECT:=—,1=1 · P,2=2 · C,3=3 · 1B,4=4 · 2B,5=5 · 3B," +
+      "6=6 · SS,7=7 · LF,8=8 · CF,9=9 · RF,DH=DH"],
+    /* The refusal has to NAME the spot. "Already used" would send the scorer
+       hunting through nine rows mid-inning; this is the one moment the app
+       knows exactly where the other one is. */
+    ["a taken jersey is put back, and named", null,
+      '(function(){ __L.put(0,"jersey","12"); __L.put(3,"jersey","12");'+
+      ' return JSON.stringify(__L.val(3,"jersey")) + " | " + __L.warn(); })()',
+      null,
+      '"" | #12 is already on spot 1 — enter it again to keep it.'],
+    /* The override, which is the half Jim asked for: a sub really does come in
+       wearing a number already on the card, and the app must not be the thing
+       standing in the way of charting him. */
+    ["entering it again keeps it, and flags both", null,
+      '(function(){ __L.put(3,"jersey","12");'+
+      ' return JSON.stringify(__L.val(3,"jersey")) + " | flags=" + __L.flags(); })()',
+      null, '"12" | flags=2'],
+    /* Nine empty jersey cells are the normal state of a fresh card, so blank
+       must never collide with blank - otherwise the rule fires on the first
+       thing a scorer does. */
+    /* Watches the WARNING, not the flags. The first version read the flag count,
+       which is computed by markDups() - a different function from the one that
+       decides a refusal - so pulling the blank guard out of dupSpot left the app
+       scolding a scorer for clearing an empty cell and the check stayed green. */
+    ["two blanks are not a duplicate", null,
+      '(function(){ var before = __L.warn();'+
+      ' __L.put(5,"jersey",""); __L.put(6,"jersey","");'+
+      ' return "flags=" + __L.flags() +'+
+      '   (__L.warn() === before ? " quiet" : " SCOLDED: " + __L.warn()); })()',
+      null, "flags=2 quiet"],
+    ["a taken position is put back, and named", null,
+      '(function(){ __L.put(0,"pos","6"); __L.put(1,"pos","6");'+
+      ' return JSON.stringify(__L.val(1,"pos")) + " | " + __L.warn(); })()',
+      null,
+      '"" | SS is already on spot 1 — enter it again to keep it.'],
+    /* Overridable too, and for the same reason: a double switch puts two men at
+       one spot on the card for as long as it takes to write the second one down. */
+    ["a position overrides the same way", null,
+      '(function(){ __L.put(1,"pos","6");'+
+      ' return JSON.stringify(__L.val(1,"pos")) + " | flags=" + __L.flags(); })()',
+      null, '"6" | flags=4'],
+    /* On the charting screen the position is a read-out. A <select> in that row
+       would sit on top of the batter selector and eat the tap that picks the
+       hitter - the row is the control. */
+    ["the lineup shows it, read-only", null,
+      '(function(){ __L.done();'+
+      ' var r = __L.qa("#lineup .slot-posr");'+
+      ' return r.length + " readouts, " + __L.qa("#lineup select").length + " selects, first=" +'+
+      '   (r[0] ? r[0].textContent : "∅"); })()',
+      null, "9 readouts, 0 selects, first=SS"],
+    /* Both columns, because they answer different questions: Pos is the join key
+       a pivot groups on, PosName is what a human reads in the cell. */
+    ["the export carries Pos and PosName", null,
+      '(function(){ __L.arm(0,0); __L.pitch(); __L.res("K");'+
+      ' var r = __L.logRow();'+
+      ' return r.length ? ("spot=" + r[1] + " Pos=" + r[4] + " PosName=" + r[5])'+
+      '                 : "NO PITCH ROW"; })()',
+      null, "spot=1 Pos=6 PosName=SS"],
   ]);
 
   /* ====== ERASE EVERYTHING ON THIS IPAD (all three apps) ======
